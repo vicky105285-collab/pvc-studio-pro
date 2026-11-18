@@ -117,9 +117,20 @@ namespace PVCStudioPro.Core.Services.Implementations
                     slot2YMm = 15.0 + profile.OffsetYMm;
                     break;
 
+                case "EPSON_L8050_TRAY":
+                    // Epson EcoTank L8050 / L18050 tray with modified mechanical stop offset
+                    trayWidthMm = 140.0;
+                    trayHeightMm = 297.0;
+                    slot1XMm = 27.20 + profile.OffsetXMm;
+                    slot1YMm = 22.50 + profile.OffsetYMm;
+                    slot2XMm = 27.20 + profile.OffsetXMm;
+                    slot2YMm = 22.50 + 54.00 + (profile.CardGapMm > 0 ? profile.CardGapMm : 6.00) + profile.OffsetYMm;
+                    break;
+
+                case "EPSON_L805_TRAY":
                 case "EPSON_2CARD_TRAY":
                 default:
-                    // Standard Epson CD/DVD 2-Card Tray (L805, L8050, L18050)
+                    // Standard Classic Epson CD/DVD 2-Card Tray (L805, L800, L850)
                     trayWidthMm = 140.0;
                     trayHeightMm = 297.0;
                     slot1XMm = 27.20 + profile.OffsetXMm;

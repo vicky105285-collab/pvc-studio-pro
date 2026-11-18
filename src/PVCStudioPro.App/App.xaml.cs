@@ -34,6 +34,7 @@ namespace PVCStudioPro.App
 
             // ViewModels
             services.AddSingleton<CardPrintViewModel>();
+            services.AddSingleton<PhotoStudioViewModel>();
             services.AddSingleton<CalibrationViewModel>();
             services.AddSingleton<BusinessLedgerViewModel>();
             services.AddSingleton<MainViewModel>();

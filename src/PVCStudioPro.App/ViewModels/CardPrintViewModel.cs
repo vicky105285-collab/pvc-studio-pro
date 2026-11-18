@@ -167,13 +167,31 @@ namespace PVCStudioPro.App.ViewModels
                 }
 
                 // Match against 10 Indian Government card templates
-                _activeTemplate = _templateService.MatchTemplateByText(docInfo.ExtractedTextSample);
-                DetectedTemplateName = $"{_activeTemplate.DisplayName} ({_activeTemplate.DocumentType})";
+                var matchResult = _templateService.MatchTemplate(docInfo.ExtractedTextSample, docInfo.PageWidthMm, docInfo.PageHeightMm);
+                if (!matchResult.IsSuccess || matchResult.Template == null)
+                {
+                    DetectedTemplateName = "UNSUPPORTED / UNKNOWN DOCUMENT";
+                    StatusMessage = $"Document rejected: {matchResult.MatchReason}";
+                    HasLoadedCards = false;
+                    FrontCardImage = null;
+                    BackCardImage = null;
+                    return;
+                }
+
+                _activeTemplate = matchResult.Template;
+                if (matchResult.RequiresOperatorConfirmation)
+                {
+                    DetectedTemplateName = $"{_activeTemplate.DisplayName} (Confidence: {matchResult.ConfidenceScore:P0})";
+                    StatusMessage = $"Please confirm: {matchResult.MatchReason}";
+                }
+                else
+                {
+                    DetectedTemplateName = $"{_activeTemplate.DisplayName} ({_activeTemplate.DocumentType})";
+                    StatusMessage = $"Document Loaded: {_activeTemplate.DisplayName} (CR80 600 DPI Vector Ready)";
+                }
 
                 await ExtractAndDisplayFacesAsync();
-
                 HasLoadedCards = true;
-                StatusMessage = $"Document Loaded: {_activeTemplate.DisplayName} (CR80 600 DPI Vector Ready)";
             }
             catch (Exception ex)
             {

@@ -17,15 +17,18 @@ namespace PVCStudioPro.App.ViewModels
         private string _languageButtonText = "தமிழ் (Tamil)";
 
         public CardPrintViewModel CardPrintVM { get; }
+        public PhotoStudioViewModel PhotoStudioVM { get; }
         public CalibrationViewModel CalibrationVM { get; }
         public BusinessLedgerViewModel LedgerVM { get; }
 
         public MainViewModel(
             CardPrintViewModel cardPrintVM,
+            PhotoStudioViewModel photoStudioVM,
             CalibrationViewModel calibrationVM,
             BusinessLedgerViewModel ledgerVM)
         {
             CardPrintVM = cardPrintVM;
+            PhotoStudioVM = photoStudioVM;
             CalibrationVM = calibrationVM;
             LedgerVM = ledgerVM;
 
@@ -39,6 +42,9 @@ namespace PVCStudioPro.App.ViewModels
             {
                 case "Cards":
                     CurrentView = CardPrintVM;
+                    break;
+                case "Photo":
+                    CurrentView = PhotoStudioVM;
                     break;
                 case "Calibration":
                     CurrentView = CalibrationVM;

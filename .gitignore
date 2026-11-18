@@ -5,3 +5,4 @@ dist/
 .vs/
 *.db
 *.log
+TestResults/

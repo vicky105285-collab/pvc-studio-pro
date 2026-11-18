@@ -147,4 +147,42 @@ namespace PVCStudioPro.Core.Models
         [JsonPropertyName("y")]
         public double Y { get; set; }
     }
+
+    public class TemplateMatchResult
+    {
+        public bool IsSuccess { get; set; }
+        public CardTemplate? Template { get; set; }
+        public double ConfidenceScore { get; set; }
+        public int MatchedKeywordsCount { get; set; }
+        public List<string> MatchedKeywords { get; set; } = new();
+        public bool RequiresOperatorConfirmation { get; set; }
+        public string MatchReason { get; set; } = string.Empty;
+
+        public static TemplateMatchResult Success(CardTemplate template, double confidence, List<string> matched, bool requiresConfirmation, string reason)
+        {
+            return new TemplateMatchResult
+            {
+                IsSuccess = true,
+                Template = template,
+                ConfidenceScore = Math.Round(confidence, 2),
+                MatchedKeywordsCount = matched.Count,
+                MatchedKeywords = matched,
+                RequiresOperatorConfirmation = requiresConfirmation,
+                MatchReason = reason
+            };
+        }
+
+        public static TemplateMatchResult Unknown(string reason)
+        {
+            return new TemplateMatchResult
+            {
+                IsSuccess = false,
+                Template = null,
+                ConfidenceScore = 0.0,
+                MatchedKeywordsCount = 0,
+                RequiresOperatorConfirmation = true,
+                MatchReason = reason
+            };
+        }
+    }
 }

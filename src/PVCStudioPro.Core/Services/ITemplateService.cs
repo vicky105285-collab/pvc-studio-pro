@@ -10,7 +10,9 @@ namespace PVCStudioPro.Core.Services
         Task InitializeTemplatesAsync();
         IReadOnlyList<CardTemplate> GetAllTemplates();
         CardTemplate? GetTemplateById(string templateId);
-        CardTemplate MatchTemplateByText(string extractedText);
+        TemplateMatchResult MatchTemplate(string extractedText, double pageWidthMm = 0, double pageHeightMm = 0);
+        TemplateMatchResult MatchTemplateByText(string extractedText);
         Task SaveCustomTemplateAsync(CardTemplate template);
+        bool ValidateTemplate(CardTemplate template, out List<string> validationErrors);
     }
 }

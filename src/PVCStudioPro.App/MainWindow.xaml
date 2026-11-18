@@ -18,6 +18,9 @@
         <DataTemplate DataType="{x:Type vm:CardPrintViewModel}">
             <views:CardPrintView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PhotoStudioViewModel}">
+            <views:PhotoStudioView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:CalibrationViewModel}">
             <views:CalibrationView/>
         </DataTemplate>
@@ -53,6 +56,11 @@
                     <ui:NavigationViewItem Content="{DynamicResource NavCardPrint}" TargetPageType="{x:Type views:CardPrintView}" Command="{Binding NavigateCommand}" CommandParameter="Cards">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Document24" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem Content="{DynamicResource NavPhotoStudio}" TargetPageType="{x:Type views:PhotoStudioView}" Command="{Binding NavigateCommand}" CommandParameter="Photo">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:SymbolIcon Symbol="Image24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
                     <ui:NavigationViewItem Content="{DynamicResource NavCalibration}" TargetPageType="{x:Type views:CalibrationView}" Command="{Binding NavigateCommand}" CommandParameter="Calibration">

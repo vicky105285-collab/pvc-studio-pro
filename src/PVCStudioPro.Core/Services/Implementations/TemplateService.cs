@@ -20,17 +20,29 @@ namespace PVCStudioPro.Core.Services.Implementations
                 "PVCStudioPro", "templates"
             );
 
-            // Populate built-in defaults synchronously so templates are immediately available
+            // Populate all 10 standard Indian Government templates synchronously
+            RegisterDefaultTemplates();
+        }
+
+        private void RegisterDefaultTemplates()
+        {
+            _templates.Clear();
             _templates.Add(CreateDefaultAadhaarTemplate());
-            _templates.Add(CreateDefaultPanTemplate());
+            _templates.Add(CreateDefaultPanNsdlTemplate());
+            _templates.Add(CreateDefaultPanUtiitslTemplate());
             _templates.Add(CreateDefaultVoterTemplate());
             _templates.Add(CreateDefaultAyushmanTemplate());
             _templates.Add(CreateDefaultTamilNaduRationTemplate());
+            _templates.Add(CreateDefaultDrivingLicenceTemplate());
+            _templates.Add(CreateDefaultVehicleRcTemplate());
+            _templates.Add(CreateDefaultEShramTemplate());
+            _templates.Add(CreateDefaultAbhaTemplate());
         }
 
         public async Task InitializeTemplatesAsync()
         {
-            // Load Disk Templates to allow overrides or custom templates
+            RegisterDefaultTemplates();
+
             try
             {
                 if (Directory.Exists(_templatesDirectory))
@@ -40,9 +52,8 @@ namespace PVCStudioPro.Core.Services.Implementations
                     {
                         string json = await File.ReadAllTextAsync(file);
                         var template = JsonSerializer.Deserialize<CardTemplate>(json);
-                        if (template != null)
+                        if (template != null && ValidateTemplate(template, out _))
                         {
-                            // Override or add
                             _templates.RemoveAll(t => t.TemplateId == template.TemplateId);
                             _templates.Add(template);
                         }
@@ -60,37 +71,108 @@ namespace PVCStudioPro.Core.Services.Implementations
         public CardTemplate? GetTemplateById(string templateId) =>
             _templates.FirstOrDefault(t => t.TemplateId == templateId);
 
-        public CardTemplate MatchTemplateByText(string extractedText)
+        public TemplateMatchResult MatchTemplateByText(string extractedText) =>
+            MatchTemplate(extractedText, 0, 0);
+
+        public TemplateMatchResult MatchTemplate(string extractedText, double pageWidthMm = 0, double pageHeightMm = 0)
         {
             if (string.IsNullOrWhiteSpace(extractedText))
-                return _templates.First(); // Default to Aadhaar
+            {
+                return TemplateMatchResult.Unknown("Document contains no readable text or is an un-rasterized image scan.");
+            }
 
-            CardTemplate? bestMatch = null;
-            int highestMatches = 0;
+            var scoredMatches = new List<(CardTemplate Template, double Score, List<string> MatchedKeywords)>();
 
             foreach (var template in _templates)
             {
-                int matches = 0;
+                var matched = new List<string>();
                 foreach (var keyword in template.Identification.AnchorKeywords)
                 {
                     if (extractedText.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                     {
-                        matches++;
+                        matched.Add(keyword);
                     }
                 }
 
-                if (matches >= template.Identification.MinKeywordMatches && matches > highestMatches)
+                if (matched.Count >= template.Identification.MinKeywordMatches)
                 {
-                    highestMatches = matches;
-                    bestMatch = template;
+                    double keywordScore = (double)matched.Count / Math.Max(1, template.Identification.AnchorKeywords.Count);
+                    double sizeScore = 1.0;
+
+                    // If physical page dimensions were provided, verify A4 or card bounds
+                    if (pageWidthMm > 0 && pageHeightMm > 0)
+                    {
+                        // Check if within A4 dimensions (210 x 297 mm)
+                        bool isA4 = Math.Abs(pageWidthMm - 210.0) <= template.Identification.PageSizeToleranceMm &&
+                                    Math.Abs(pageHeightMm - 297.0) <= template.Identification.PageSizeToleranceMm;
+                        if (!isA4 && template.Identification.ExpectedPages == 1)
+                        {
+                            sizeScore = 0.85;
+                        }
+                    }
+
+                    double totalConfidence = (keywordScore * 0.7) + (sizeScore * 0.3);
+                    scoredMatches.Add((template, totalConfidence, matched));
                 }
             }
 
-            return bestMatch ?? _templates.First();
+            if (scoredMatches.Count == 0)
+            {
+                return TemplateMatchResult.Unknown("Document keywords did not match any supported Indian Government identity template.");
+            }
+
+            // Order by score descending
+            scoredMatches = scoredMatches.OrderByDescending(m => m.Score).ThenByDescending(m => m.MatchedKeywords.Count).ToList();
+            var topMatch = scoredMatches[0];
+
+            bool isAmbiguous = false;
+            string matchReason = $"Matched {topMatch.MatchedKeywords.Count} keywords ({string.Join(", ", topMatch.MatchedKeywords.Take(3))})";
+
+            if (scoredMatches.Count > 1)
+            {
+                var secondMatch = scoredMatches[1];
+                if (Math.Abs(topMatch.Score - secondMatch.Score) < 0.10)
+                {
+                    isAmbiguous = true;
+                    matchReason += $" [Ambiguous with {secondMatch.Template.DisplayName}]";
+                }
+            }
+
+            bool requiresConfirmation = isAmbiguous || topMatch.Score < 0.70;
+
+            return TemplateMatchResult.Success(
+                topMatch.Template,
+                topMatch.Score,
+                topMatch.MatchedKeywords,
+                requiresConfirmation,
+                matchReason);
+        }
+
+        public bool ValidateTemplate(CardTemplate template, out List<string> validationErrors)
+        {
+            validationErrors = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(template.TemplateId))
+                validationErrors.Add("TemplateId cannot be empty.");
+            if (string.IsNullOrWhiteSpace(template.DisplayName))
+                validationErrors.Add("DisplayName cannot be empty.");
+            if (template.PhysicalCard.WidthMm < 50 || template.PhysicalCard.WidthMm > 150)
+                validationErrors.Add($"Invalid PhysicalCard.WidthMm: {template.PhysicalCard.WidthMm}");
+            if (template.PhysicalCard.HeightMm < 30 || template.PhysicalCard.HeightMm > 100)
+                validationErrors.Add($"Invalid PhysicalCard.HeightMm: {template.PhysicalCard.HeightMm}");
+            if (template.Faces.Front.CropRectMm.Width <= 0 || template.Faces.Front.CropRectMm.Height <= 0)
+                validationErrors.Add("Front face crop rectangle dimensions must be positive.");
+
+            return validationErrors.Count == 0;
         }
 
         public async Task SaveCustomTemplateAsync(CardTemplate template)
         {
+            if (!ValidateTemplate(template, out var errors))
+            {
+                throw new ArgumentException($"Template validation failed: {string.Join("; ", errors)}");
+            }
+
             Directory.CreateDirectory(_templatesDirectory);
             string filePath = Path.Combine(_templatesDirectory, $"{template.TemplateId}.json");
             string json = JsonSerializer.Serialize(template, new JsonSerializerOptions { WriteIndented = true });
@@ -100,133 +182,384 @@ namespace PVCStudioPro.Core.Services.Implementations
             _templates.Add(template);
         }
 
-        private static CardTemplate CreateDefaultAadhaarTemplate() => new()
+        #region Default Template Factories (10 Indian Identity Templates)
+
+        private static CardTemplate CreateDefaultAadhaarTemplate()
         {
-            TemplateId = "in_gov_aadhaar_standard",
-            DisplayName = "Aadhaar Card (UIDAI Standard)",
-            Category = "AADHAAR",
-            Identification = new TemplateIdentification
+            return new CardTemplate
             {
-                AnchorKeywords = new List<string> { "Unique Identification Authority of India", "Government of India", "Enrollment No", "Help@uidai.gov.in" },
-                MinKeywordMatches = 2
-            },
-            Faces = new CardFaces
-            {
-                Front = new FaceDefinition
+                TemplateId = "aadhaar_v2024",
+                DisplayName = "UIDAI e-Aadhaar (Letter / Download)",
+                Category = "GOVERNMENT_IDENTITY",
+                DocumentType = "AADHAAR",
+                Identification = new TemplateIdentification
                 {
-                    SourcePage = 0,
-                    CropRectMm = new MillimeterRect { X = 18.0, Y = 204.0, Width = 85.60, Height = 53.98 },
-                    MaskZones = new List<MaskZone>
+                    AnchorKeywords = new List<string>
                     {
-                        new() { Name = "Aadhaar First 8 Digits", RelativeXMm = 28.0, RelativeYMm = 46.5, WidthMm = 24.0, HeightMm = 4.5, OverlayText = "XXXX XXXX " }
+                        "Unique Identification Authority of India",
+                        "Enrollment No",
+                        "मेरा आधार, मेरी पहचान",
+                        "VID:",
+                        "आधार"
+                    },
+                    MinKeywordMatches = 2,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 17.5, Y = 212.0, Width = 85.60, Height = 53.98 },
+                        MaskZones = new List<MaskZone>
+                        {
+                            new MaskZone
+                            {
+                                Name = "AadhaarFirst8Digits",
+                                RelativeXMm = 25.0,
+                                RelativeYMm = 44.5,
+                                WidthMm = 32.0,
+                                HeightMm = 6.0,
+                                OverlayText = "XXXX XXXX "
+                            }
+                        }
+                    },
+                    Back = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 107.0, Y = 212.0, Width = 85.60, Height = 53.98 }
                     }
-                },
-                Back = new FaceDefinition
-                {
-                    SourcePage = 0,
-                    CropRectMm = new MillimeterRect { X = 108.0, Y = 204.0, Width = 85.60, Height = 53.98 }
                 }
-            }
-        };
+            };
+        }
 
-        private static CardTemplate CreateDefaultPanTemplate() => new()
+        private static CardTemplate CreateDefaultPanNsdlTemplate()
         {
-            TemplateId = "in_gov_pan_standard",
-            DisplayName = "PAN Card (NSDL / UTIITSL)",
-            Category = "PAN",
-            Identification = new TemplateIdentification
+            return new CardTemplate
             {
-                AnchorKeywords = new List<string> { "INCOME TAX DEPARTMENT", "Permanent Account Number", "GOVT. OF INDIA" },
-                MinKeywordMatches = 2
-            },
-            Faces = new CardFaces
-            {
-                Front = new FaceDefinition
+                TemplateId = "pan_nsdl",
+                DisplayName = "NSDL Income Tax PAN Card",
+                Category = "TAX_IDENTITY",
+                DocumentType = "PAN",
+                Identification = new TemplateIdentification
                 {
-                    SourcePage = 0,
-                    CropRectMm = new MillimeterRect { X = 18.0, Y = 210.0, Width = 85.60, Height = 53.98 }
+                    AnchorKeywords = new List<string>
+                    {
+                        "INCOME TAX DEPARTMENT",
+                        "GOVT. OF INDIA",
+                        "Permanent Account Number",
+                        "National Securities Depository"
+                    },
+                    MinKeywordMatches = 2,
+                    ExpectedPages = 1
                 },
-                Back = new FaceDefinition
+                Faces = new CardFaces
                 {
-                    SourcePage = 0,
-                    CropRectMm = new MillimeterRect { X = 108.0, Y = 210.0, Width = 85.60, Height = 53.98 }
+                    Front = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 18.0, Y = 70.0, Width = 85.60, Height = 53.98 }
+                    },
+                    Back = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 108.0, Y = 70.0, Width = 85.60, Height = 53.98 }
+                    }
                 }
-            }
-        };
+            };
+        }
 
-        private static CardTemplate CreateDefaultVoterTemplate() => new()
+        private static CardTemplate CreateDefaultPanUtiitslTemplate()
         {
-            TemplateId = "in_gov_voter_epic",
-            DisplayName = "Voter ID (e-EPIC)",
-            Category = "VOTER",
-            Identification = new TemplateIdentification
+            return new CardTemplate
             {
-                AnchorKeywords = new List<string> { "ELECTION COMMISSION OF INDIA", "ELECTOR PHOTO IDENTITY CARD", "EPIC NO" },
-                MinKeywordMatches = 2
-            },
-            Faces = new CardFaces
-            {
-                Front = new FaceDefinition
+                TemplateId = "pan_utiitsl",
+                DisplayName = "UTIITSL PAN Card",
+                Category = "TAX_IDENTITY",
+                DocumentType = "PAN",
+                Identification = new TemplateIdentification
                 {
-                    SourcePage = 0,
-                    CropRectMm = new MillimeterRect { X = 15.0, Y = 195.0, Width = 85.60, Height = 53.98 }
+                    AnchorKeywords = new List<string>
+                    {
+                        "INCOME TAX DEPARTMENT",
+                        "UTI Infrastructure Technology",
+                        "Permanent Account Number Card",
+                        "UTIITSL"
+                    },
+                    MinKeywordMatches = 2,
+                    ExpectedPages = 1
                 },
-                Back = new FaceDefinition
+                Faces = new CardFaces
                 {
-                    SourcePage = 0,
-                    CropRectMm = new MillimeterRect { X = 105.0, Y = 195.0, Width = 85.60, Height = 53.98 }
+                    Front = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 15.0, Y = 65.0, Width = 85.60, Height = 53.98 }
+                    },
+                    Back = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 105.0, Y = 65.0, Width = 85.60, Height = 53.98 }
+                    }
                 }
-            }
-        };
+            };
+        }
 
-        private static CardTemplate CreateDefaultAyushmanTemplate() => new()
+        private static CardTemplate CreateDefaultVoterTemplate()
         {
-            TemplateId = "in_gov_ayushman_pmjay",
-            DisplayName = "Ayushman Bharat (PM-JAY)",
-            Category = "AYUSHMAN",
-            Identification = new TemplateIdentification
+            return new CardTemplate
             {
-                AnchorKeywords = new List<string> { "Ayushman Bharat", "PM-JAY", "National Health Authority" },
-                MinKeywordMatches = 2
-            },
-            Faces = new CardFaces
-            {
-                Front = new FaceDefinition
+                TemplateId = "voter_epic_v2",
+                DisplayName = "ECI e-EPIC (Voter ID Card)",
+                Category = "ELECTION_IDENTITY",
+                DocumentType = "VOTER",
+                Identification = new TemplateIdentification
                 {
-                    SourcePage = 0,
-                    CropRectMm = new MillimeterRect { X = 18.0, Y = 180.0, Width = 85.60, Height = 53.98 }
+                    AnchorKeywords = new List<string>
+                    {
+                        "ELECTION COMMISSION OF INDIA",
+                        "ELECTOR PHOTO IDENTITY CARD",
+                        "வாக்காளர் அடையாள அட்டை",
+                        "भारत निर्वाचन आयोग"
+                    },
+                    MinKeywordMatches = 2,
+                    ExpectedPages = 1
                 },
-                Back = new FaceDefinition
+                Faces = new CardFaces
                 {
-                    SourcePage = 0,
-                    CropRectMm = new MillimeterRect { X = 108.0, Y = 180.0, Width = 85.60, Height = 53.98 }
+                    Front = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 18.0, Y = 160.0, Width = 85.60, Height = 53.98 }
+                    },
+                    Back = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 108.0, Y = 160.0, Width = 85.60, Height = 53.98 }
+                    }
                 }
-            }
-        };
+            };
+        }
 
-        private static CardTemplate CreateDefaultTamilNaduRationTemplate() => new()
+        private static CardTemplate CreateDefaultAyushmanTemplate()
         {
-            TemplateId = "in_tn_smart_ration",
-            DisplayName = "Tamil Nadu Smart Ration Card (e-PDS)",
-            Category = "STATE_GOVT",
-            Identification = new TemplateIdentification
+            return new CardTemplate
             {
-                AnchorKeywords = new List<string> { "உணவுப் பொருள் வழங்கல்", "Civil Supplies", "Tamil Nadu Smart Family Card" },
-                MinKeywordMatches = 1
-            },
-            Faces = new CardFaces
-            {
-                Front = new FaceDefinition
+                TemplateId = "ayushman_pmjay",
+                DisplayName = "Ayushman Bharat PM-JAY Golden Card",
+                Category = "HEALTH_IDENTITY",
+                DocumentType = "AYUSHMAN",
+                Identification = new TemplateIdentification
                 {
-                    SourcePage = 0,
-                    CropRectMm = new MillimeterRect { X = 12.0, Y = 140.0, Width = 85.60, Height = 53.98 }
+                    AnchorKeywords = new List<string>
+                    {
+                        "Ayushman Bharat",
+                        "PM-JAY",
+                        "National Health Authority",
+                        "Pradhan Mantri Jan Arogya Yojana"
+                    },
+                    MinKeywordMatches = 2,
+                    ExpectedPages = 1
                 },
-                Back = new FaceDefinition
+                Faces = new CardFaces
                 {
-                    SourcePage = 0,
-                    CropRectMm = new MillimeterRect { X = 102.0, Y = 140.0, Width = 85.60, Height = 53.98 }
+                    Front = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 20.0, Y = 100.0, Width = 85.60, Height = 53.98 }
+                    },
+                    Back = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 110.0, Y = 100.0, Width = 85.60, Height = 53.98 }
+                    }
                 }
-            }
-        };
+            };
+        }
+
+        private static CardTemplate CreateDefaultTamilNaduRationTemplate()
+        {
+            return new CardTemplate
+            {
+                TemplateId = "tn_smart_ration",
+                DisplayName = "Tamil Nadu Smart Family Card (TNPDS)",
+                Category = "STATE_RATION",
+                DocumentType = "RATION",
+                Identification = new TemplateIdentification
+                {
+                    AnchorKeywords = new List<string>
+                    {
+                        "உணவுப்பொருள் வழங்கல்",
+                        "உணவுப் பொருள்",
+                        "Civil Supplies",
+                        "TNPDS",
+                        "குடும்ப அட்டை"
+                    },
+                    MinKeywordMatches = 2,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 15.0, Y = 140.0, Width = 85.60, Height = 53.98 }
+                    },
+                    Back = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 105.0, Y = 140.0, Width = 85.60, Height = 53.98 }
+                    }
+                }
+            };
+        }
+
+        private static CardTemplate CreateDefaultDrivingLicenceTemplate()
+        {
+            return new CardTemplate
+            {
+                TemplateId = "parivahan_dl",
+                DisplayName = "Parivahan Driving Licence (DL)",
+                Category = "TRANSPORT_IDENTITY",
+                DocumentType = "DRIVING_LICENCE",
+                Identification = new TemplateIdentification
+                {
+                    AnchorKeywords = new List<string>
+                    {
+                        "UNION OF INDIA",
+                        "DRIVING LICENCE",
+                        "FORM 7",
+                        "Transport Department",
+                        "Licence No"
+                    },
+                    MinKeywordMatches = 2,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 20.0, Y = 80.0, Width = 85.60, Height = 53.98 }
+                    },
+                    Back = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 110.0, Y = 80.0, Width = 85.60, Height = 53.98 }
+                    }
+                }
+            };
+        }
+
+        private static CardTemplate CreateDefaultVehicleRcTemplate()
+        {
+            return new CardTemplate
+            {
+                TemplateId = "parivahan_rc",
+                DisplayName = "Parivahan Certificate of Registration (RC)",
+                Category = "TRANSPORT_IDENTITY",
+                DocumentType = "VEHICLE_RC",
+                Identification = new TemplateIdentification
+                {
+                    AnchorKeywords = new List<string>
+                    {
+                        "CERTIFICATE OF REGISTRATION",
+                        "FORM 23",
+                        "Motor Vehicles Act",
+                        "Chassis No",
+                        "Engine No"
+                    },
+                    MinKeywordMatches = 2,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 20.0, Y = 90.0, Width = 85.60, Height = 53.98 }
+                    },
+                    Back = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 110.0, Y = 90.0, Width = 85.60, Height = 53.98 }
+                    }
+                }
+            };
+        }
+
+        private static CardTemplate CreateDefaultEShramTemplate()
+        {
+            return new CardTemplate
+            {
+                TemplateId = "eshram_card",
+                DisplayName = "e-Shram National Worker Card",
+                Category = "LABOUR_IDENTITY",
+                DocumentType = "ESHRAM",
+                Identification = new TemplateIdentification
+                {
+                    AnchorKeywords = new List<string>
+                    {
+                        "e-Shram",
+                        "Ministry of Labour and Employment",
+                        "Universal Account Number",
+                        "UAN"
+                    },
+                    MinKeywordMatches = 2,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 20.0, Y = 110.0, Width = 85.60, Height = 53.98 }
+                    },
+                    Back = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 110.0, Y = 110.0, Width = 85.60, Height = 53.98 }
+                    }
+                }
+            };
+        }
+
+        private static CardTemplate CreateDefaultAbhaTemplate()
+        {
+            return new CardTemplate
+            {
+                TemplateId = "abha_health_id",
+                DisplayName = "ABHA Health ID Card (ABDM)",
+                Category = "HEALTH_IDENTITY",
+                DocumentType = "ABHA",
+                Identification = new TemplateIdentification
+                {
+                    AnchorKeywords = new List<string>
+                    {
+                        "Ayushman Bharat Digital Mission",
+                        "ABHA Number",
+                        "National Health Authority",
+                        "ABHA Address"
+                    },
+                    MinKeywordMatches = 2,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 20.0, Y = 75.0, Width = 85.60, Height = 53.98 }
+                    },
+                    Back = new FaceDefinition
+                    {
+                        SourcePage = 0,
+                        CropRectMm = new MillimeterRect { X = 110.0, Y = 75.0, Width = 85.60, Height = 53.98 }
+                    }
+                }
+            };
+        }
+
+        #endregion
     }
 }
