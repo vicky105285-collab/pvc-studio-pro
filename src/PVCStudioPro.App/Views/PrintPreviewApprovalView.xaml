@@ -1,0 +1,201 @@
+<UserControl x:Class="PVCStudioPro.App.Views.PrintPreviewApprovalView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:vm="clr-namespace:PVCStudioPro.App.ViewModels"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=vm:PrintPreviewApprovalViewModel}"
+             d:DesignHeight="850" d:DesignWidth="1200">
+
+    <Grid Margin="16,8,16,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Header -->
+            <RowDefinition Height="*"/>    <!-- Split Preview & Controls -->
+            <RowDefinition Height="Auto"/> <!-- Status Bar -->
+        </Grid.RowDefinitions>
+
+        <!-- ROW 0: Workspace Header -->
+        <Border Grid.Row="0" Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Universal Print Preview &amp; Operator Approval Gate" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                    <TextBlock Text="Simulates exact physical tray / media dimensions and alignment before spooling to Windows Print Subsystem" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </StackPanel>
+
+                <ui:Button Grid.Column="1" Command="{Binding CloseCommand}" Content="Back to Document Desk" Height="36" Padding="14,0" FontWeight="SemiBold" CornerRadius="4" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- ROW 1: Split View (Virtual Tray Preview + Hardware Calibration Controls) -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="6*"/> <!-- Virtual Tray Preview -->
+                <ColumnDefinition Width="12"/> <!-- Splitter -->
+                <ColumnDefinition Width="5*"/> <!-- Hardware & Calibration Controls -->
+            </Grid.ColumnDefinitions>
+
+            <!-- LEFT: Virtual Media Tray Simulation Canvas -->
+            <Border Grid.Column="0" Background="#1E232A" BorderBrush="#374151" BorderThickness="1" CornerRadius="8" Padding="14">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <TextBlock Text="VIRTUAL PRINT TRAY SIMULATOR" FontWeight="Bold" FontSize="12" Foreground="#9CA3AF"/>
+                        <TextBlock Text="{Binding CanvasDimensionText}" FontSize="11" Foreground="#60A5FA" HorizontalAlignment="Right"/>
+                    </Grid>
+
+                    <!-- Tray Preview Render -->
+                    <Border Grid.Row="1" Background="#111827" BorderBrush="#374151" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <Image Source="{Binding VirtualTrayPreview}" Stretch="Uniform" Margin="12"/>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- Calibration Indicator & Nudge Shortcuts -->
+                    <Border Grid.Row="2" Background="#1F2937" CornerRadius="6" Padding="12,8" Margin="0,10,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="PHYSICAL CALIBRATION OFFSET" FontWeight="Bold" FontSize="11" Foreground="#F59E0B"/>
+                                <TextBlock Text="Compensates for feed-roller tolerance on Epson/Canon trays." FontSize="10" Foreground="#9CA3AF"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <ui:Button Command="{Binding NudgeOffsetCommand}" CommandParameter="LEFT" Content="◀ -0.5 mm" Height="28" Padding="8,0" FontSize="10" CornerRadius="3" Margin="0,0,4,0"/>
+                                <ui:Button Command="{Binding NudgeOffsetCommand}" CommandParameter="RIGHT" Content="▶ +0.5 mm" Height="28" Padding="8,0" FontSize="10" CornerRadius="3" Margin="0,0,8,0"/>
+                                <ui:Button Command="{Binding NudgeOffsetCommand}" CommandParameter="UP" Content="▲ -0.5 mm" Height="28" Padding="8,0" FontSize="10" CornerRadius="3" Margin="0,0,4,0"/>
+                                <ui:Button Command="{Binding NudgeOffsetCommand}" CommandParameter="DOWN" Content="▼ +0.5 mm" Height="28" Padding="8,0" FontSize="10" CornerRadius="3" Margin="0,0,8,0"/>
+                                <ui:Button Command="{Binding NudgeOffsetCommand}" CommandParameter="RESET" Content="Reset" Height="28" Padding="8,0" FontSize="10" CornerRadius="3"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
+
+            <!-- RIGHT: Production Hardware & Approval Panel -->
+            <Border Grid.Column="2" Background="{DynamicResource CardSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="Hardware &amp; Output Media Configuration" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+
+                        <!-- Target Media Profile -->
+                        <TextBlock Text="Target Print Media &amp; Tray Profile" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                        <ComboBox ItemsSource="{Binding MediaOptions}" SelectedItem="{Binding SelectedMediaString}" Height="34" Margin="0,0,0,12"/>
+
+                        <!-- Printer Selection -->
+                        <TextBlock Text="Select Physical Printer" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                        <ComboBox ItemsSource="{Binding PrinterList}" SelectedItem="{Binding SelectedPrinter}" Height="34" Margin="0,0,0,12"/>
+
+                        <!-- Offsets Manual Inputs -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="X Offset (Horizontal mm)" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding OffsetXMm, UpdateSourceTrigger=PropertyChanged}" Height="32" VerticalContentAlignment="Center" Padding="6,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Y Offset (Vertical mm)" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding OffsetYMm, UpdateSourceTrigger=PropertyChanged}" Height="32" VerticalContentAlignment="Center" Padding="6,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Copies & Mirror Mode -->
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Print Copies" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding Copies, UpdateSourceTrigger=PropertyChanged}" Height="32" VerticalContentAlignment="Center" Padding="6,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+                                <CheckBox IsChecked="{Binding MirrorMode}" Content="Mirror Mode (Dragon Sheet)" FontSize="11" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Separator Margin="0,4,0,12"/>
+
+                        <!-- Commercials & Accounting -->
+                        <TextBlock Text="e-Sevai Accounting &amp; Ledger" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Card Fee Charged (₹)" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <TextBox Text="{Binding CardFee, UpdateSourceTrigger=PropertyChanged}" Height="32" VerticalContentAlignment="Center" Padding="6,0" FontWeight="Bold"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Payment Mode" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <ComboBox ItemsSource="{Binding PaymentModes}" SelectedItem="{Binding SelectedPaymentMode}" Height="32"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Pre-Flight Verification Checklist -->
+                        <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Pre-Print Quality &amp; Compliance Checklist" FontWeight="Bold" FontSize="11" Foreground="#374151" Margin="0,0,0,6"/>
+                                <CheckBox IsChecked="{Binding IsApprovedByOperator}" Content="Card dimensions verified to ISO/IEC 7810 CR80 standard" FontSize="11" Margin="0,0,0,4"/>
+                                <CheckBox IsChecked="True" Content="Physical tray media inserted along feed arrow direction" FontSize="11" Margin="0,0,0,4" IsEnabled="False"/>
+                                <CheckBox IsChecked="True" Content="Zero-Citizen-PII: No citizen identity numbers saved in log" FontSize="11" IsEnabled="False"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Approval & Spool Button -->
+                        <ui:Button Command="{Binding ApproveAndSpoolCommand}" Height="50" CornerRadius="6" Background="#059669" Foreground="White" FontWeight="Bold" FontSize="14" Margin="0,0,0,8">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Print24" Margin="0,0,8,0"/>
+                                <TextBlock Text="APPROVE &amp; SPOOL PRINT JOB"/>
+                            </StackPanel>
+                        </ui:Button>
+
+                        <!-- Success Alert Banner -->
+                        <Border Background="#ECFDF5" BorderBrush="#10B981" BorderThickness="1" CornerRadius="6" Padding="12,8" Visibility="{Binding PrintSuccessful, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✓" FontWeight="Bold" Foreground="#059669" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Job spooled successfully. Transaction recorded in local ledger." FontWeight="SemiBold" Foreground="#047857" VerticalAlignment="Center" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- ROW 2: Status Bar -->
+        <Border Grid.Row="2" Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="4" Padding="10,6" Margin="0,10,0,0">
+            <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+        </Border>
+    </Grid>
+</UserControl>

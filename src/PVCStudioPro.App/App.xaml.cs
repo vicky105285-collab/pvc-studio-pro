@@ -80,6 +80,13 @@ namespace PVCStudioPro.App
                 var services = new ServiceCollection();
 
                 services.AddSingleton<IPdfService, PdfService>();
+                services.AddSingleton<IPdfDocumentService, PdfService>();
+                services.AddSingleton<IDocumentImportService, DocumentImportService>();
+                services.AddSingleton<IOfficeDocumentService, OfficeDocumentService>();
+                services.AddSingleton<IDocumentTypeDetectionService, DocumentTypeDetectionService>();
+                services.AddSingleton<ICardDetectionService, CardDetectionService>();
+                services.AddSingleton<IManualCropService, ManualCropService>();
+                services.AddSingleton<IPrintPreviewService, PrintPreviewService>();
                 services.AddSingleton<ITemplateService, TemplateService>();
                 services.AddSingleton<IPrinterDiscoveryService, PrinterDiscoveryService>();
                 services.AddSingleton<IPrintService, PrintService>();
@@ -97,6 +104,9 @@ namespace PVCStudioPro.App
                 services.AddSingleton<IBatchProcessingService, BatchProcessingService>();
 
                 services.AddSingleton<DashboardViewModel>();
+                services.AddSingleton<DocumentDeskViewModel>();
+                services.AddSingleton<CropStudioViewModel>();
+                services.AddSingleton<PrintPreviewApprovalViewModel>();
                 services.AddSingleton<CardPrintViewModel>();
                 services.AddSingleton<PhotoStudioViewModel>();
                 services.AddSingleton<DocumentProcessingViewModel>();

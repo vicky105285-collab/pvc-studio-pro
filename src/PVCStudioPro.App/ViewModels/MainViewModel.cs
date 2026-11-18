@@ -22,8 +22,11 @@ namespace PVCStudioPro.App.ViewModels
         [ObservableProperty]
         private string _activeWorkspaceTitle = "Dashboard";
 
-        // 14 Core Workspaces
+        // Production & Processing Workspaces
         public DashboardViewModel DashboardVM { get; }
+        public DocumentDeskViewModel DocumentDeskVM { get; }
+        public CropStudioViewModel CropStudioVM { get; }
+        public PrintPreviewApprovalViewModel PrintPreviewApprovalVM { get; }
         public CardPrintViewModel CardPrintVM { get; }
         public PhotoStudioViewModel PhotoStudioVM { get; }
         public DocumentProcessingViewModel DocProcessingVM { get; }
@@ -40,6 +43,9 @@ namespace PVCStudioPro.App.ViewModels
 
         public MainViewModel(
             DashboardViewModel dashboardVM,
+            DocumentDeskViewModel documentDeskVM,
+            CropStudioViewModel cropStudioVM,
+            PrintPreviewApprovalViewModel printPreviewApprovalVM,
             CardPrintViewModel cardPrintVM,
             PhotoStudioViewModel photoStudioVM,
             DocumentProcessingViewModel docProcessingVM,
@@ -55,6 +61,9 @@ namespace PVCStudioPro.App.ViewModels
             SettingsViewModel settingsVM)
         {
             DashboardVM = dashboardVM;
+            DocumentDeskVM = documentDeskVM;
+            CropStudioVM = cropStudioVM;
+            PrintPreviewApprovalVM = printPreviewApprovalVM;
             CardPrintVM = cardPrintVM;
             PhotoStudioVM = photoStudioVM;
             DocProcessingVM = docProcessingVM;
@@ -71,6 +80,34 @@ namespace PVCStudioPro.App.ViewModels
 
             // Wire cross-workspace callbacks
             DashboardVM.NavigateAction = dest => Navigate(dest);
+
+            DocumentDeskVM.OpenInCropStudioAction = (bmp, title) =>
+            {
+                CropStudioVM.LoadImage(bmp, title);
+                Navigate("CropStudio");
+            };
+
+            DocumentDeskVM.OpenInPrintPreviewAction = (front, back, kind) =>
+            {
+                _ = PrintPreviewApprovalVM.LoadCardsAsync(front, back, kind);
+                Navigate("PrintPreviewApproval");
+            };
+
+            CropStudioVM.ReturnToDeskAction = (bmp, isFront) =>
+            {
+                DocumentDeskVM.ReceiveCroppedCard(bmp, isFront);
+            };
+
+            CropStudioVM.CloseAction = () =>
+            {
+                Navigate("DocumentDesk");
+            };
+
+            PrintPreviewApprovalVM.CloseAction = () =>
+            {
+                Navigate("DocumentDesk");
+            };
+
             SettingsVM.ToggleLanguageAction = lang =>
             {
                 if (lang != CurrentLanguage)
@@ -80,8 +117,8 @@ namespace PVCStudioPro.App.ViewModels
             };
             SettingsVM.ToggleThemeAction = theme => SetTheme(theme);
 
-            CurrentView = DashboardVM;
-            ActiveWorkspaceTitle = "Dashboard";
+            CurrentView = DocumentDeskVM;
+            ActiveWorkspaceTitle = "Document Desk";
         }
 
         [RelayCommand]
@@ -89,6 +126,18 @@ namespace PVCStudioPro.App.ViewModels
         {
             switch (destination)
             {
+                case "DocumentDesk":
+                    CurrentView = DocumentDeskVM;
+                    ActiveWorkspaceTitle = "Document Desk";
+                    break;
+                case "CropStudio":
+                    CurrentView = CropStudioVM;
+                    ActiveWorkspaceTitle = "Crop Studio";
+                    break;
+                case "PrintPreviewApproval":
+                    CurrentView = PrintPreviewApprovalVM;
+                    ActiveWorkspaceTitle = "Print Preview & Approval";
+                    break;
                 case "Dashboard":
                     _ = DashboardVM.LoadDashboardDataAsync();
                     CurrentView = DashboardVM;

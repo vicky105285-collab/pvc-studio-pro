@@ -15,7 +15,16 @@
                    WindowBackdropType="Mica">
 
     <Window.Resources>
-        <!-- 14 Workspace DataTemplates -->
+        <!-- Workspace DataTemplates -->
+        <DataTemplate DataType="{x:Type vm:DocumentDeskViewModel}">
+            <views:DocumentDeskView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:CropStudioViewModel}">
+            <views:CropStudioView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PrintPreviewApprovalViewModel}">
+            <views:PrintPreviewApprovalView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
             <views:DashboardView/>
         </DataTemplate>
@@ -101,6 +110,13 @@
             <!-- Fluent Navigation View (14 Workspaces) -->
             <ui:NavigationView Grid.Column="0" PaneDisplayMode="Left" OpenPaneLength="250" IsBackButtonVisible="Collapsed">
                 <ui:NavigationView.MenuItems>
+                    <!-- HERO: UNIVERSAL WORKSPACE -->
+                    <ui:NavigationViewItem Content="{DynamicResource NavDocumentDesk}" Command="{Binding NavigateCommand}" CommandParameter="DocumentDesk">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:SymbolIcon Symbol="DocumentTable24" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+
                     <!-- SECTION 1: PRODUCTION -->
                     <ui:NavigationViewItem Content="{DynamicResource NavDashboard}" Command="{Binding NavigateCommand}" CommandParameter="Dashboard">
                         <ui:NavigationViewItem.Icon>

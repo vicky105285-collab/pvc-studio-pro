@@ -11,10 +11,12 @@ Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host " Installing $appName (Fluent 2 Redesign) on this Laptop" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
-# 1. Ensure source exists
+# 1. Ensure source exists and kill any running instance
 if (-not (Test-Path (Join-Path $sourceDir "PVCStudioPro.App.exe"))) {
     throw "Published application not found at: $sourceDir"
 }
+Get-Process -Name "PVCStudioPro.App" -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Milliseconds 500
 
 # 2. Create Target Directory
 Write-Host "[1/6] Creating application directory: $installDir" -ForegroundColor Yellow
@@ -24,7 +26,7 @@ if (-not (Test-Path $installDir)) {
 
 # 3. Copy Application Files
 Write-Host "[2/6] Copying binaries and dependencies..." -ForegroundColor Yellow
-robocopy $sourceDir $installDir /E /IS /IT /NP /NDL /NFL | Out-Null
+robocopy $sourceDir $installDir /E /IS /IT /NP /NDL /NFL /R:2 /W:1 | Out-Null
 if ($LASTEXITCODE -gt 7) {
     throw "Robocopy failed with exit code $LASTEXITCODE"
 }
