@@ -209,6 +209,86 @@ namespace PVCStudioPro.Tests
             }
         }
 
+        [Fact]
+        public async Task AllCompetitorTemplates_LoadedAndVerified_FromRealDbCatalogue()
+        {
+            var templateService = new TemplateService();
+            await templateService.InitializeTemplatesAsync();
+            var allTemplates = templateService.GetAllTemplates();
+
+            allTemplates.Count.Should().BeGreaterThanOrEqualTo(25);
+
+            string[] expectedIds = new[]
+            {
+                "aadhaar_v2024",
+                "child_aadhaar",
+                "m_aadhaar",
+                "pan_nsdl",
+                "pan_utiitsl",
+                "pan_instant",
+                "voter_epic_v2",
+                "ayushman_pmjay",
+                "ayushman_new",
+                "cm_insurance",
+                "umid_railways",
+                "pm_sym",
+                "pm_kmy",
+                "pf_insurance",
+                "uan_card",
+                "e_pran",
+                "udid_card",
+                "pravasi_card",
+                "senior_citizen",
+                "jan_aadhaar",
+                "vaccination_card",
+                "kerala_ration",
+                "wb_ration",
+                "tn_smart_ration",
+                "parivahan_dl",
+                "parivahan_rc"
+            };
+
+            foreach (var expectedId in expectedIds)
+            {
+                var tmpl = allTemplates.FirstOrDefault(t => t.TemplateId == expectedId);
+                tmpl.Should().NotBeNull($"Template {expectedId} from competitor Real.db should be registered");
+                tmpl!.Faces.Front.CropRectMm.Width.Should().BeGreaterThan(0);
+                tmpl.Faces.Front.CropRectMm.Height.Should().BeGreaterThan(0);
+            }
+        }
+
+        [Fact]
+        public void PhysicalPageLayout_SwitchingModes_CalculatesAccuratePhysicalGeometry()
+        {
+            var renderService = new PhysicalPageRenderService();
+
+            // 1. Single Side A4 (210 x 297 mm)
+            var layoutA4 = PageLayoutModel.CreateDefaultA4();
+            layoutA4.Items.Add(new PageLayoutItem
+            {
+                Label = "Front",
+                Kind = LayoutItemKind.FrontCard,
+                XPositionMm = 15.0,
+                YPositionMm = 20.0,
+                WidthMm = 85.60,
+                HeightMm = 53.98
+            });
+
+            var sheetBitmapA4 = renderService.RenderLayoutToBitmap(layoutA4, 150);
+            sheetBitmapA4.Should().NotBeNull();
+            sheetBitmapA4.Width.Should().BeInRange(1230, 1250); // 210mm @ 150 DPI ~ 1240 px
+            sheetBitmapA4.Height.Should().BeInRange(1740, 1765); // 297mm @ 150 DPI ~ 1754 px
+            sheetBitmapA4.Dispose();
+
+            // 2. Epson 2-Card Tray (120 x 180 mm)
+            var layoutEpson = PageLayoutModel.CreateEpsonTray();
+            var sheetBitmapEpson = renderService.RenderLayoutToBitmap(layoutEpson, 150);
+            sheetBitmapEpson.Should().NotBeNull();
+            sheetBitmapEpson.Width.Should().BeInRange(700, 720); // 120mm @ 150 DPI ~ 709 px
+            sheetBitmapEpson.Height.Should().BeInRange(1050, 1075); // 180mm @ 150 DPI ~ 1063 px
+            sheetBitmapEpson.Dispose();
+        }
+
         #endregion
     }
 }

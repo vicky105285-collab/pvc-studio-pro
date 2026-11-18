@@ -104,6 +104,7 @@ namespace PVCStudioPro.App
                 services.AddSingleton<IBackupService>(sp => new BackupService(dbPath, configDir));
                 services.AddSingleton<IBatchProcessingService, BatchProcessingService>();
 
+                services.AddSingleton<ProductionWorkspaceViewModel>();
                 services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<DocumentDeskViewModel>();
                 services.AddSingleton<CropStudioViewModel>();

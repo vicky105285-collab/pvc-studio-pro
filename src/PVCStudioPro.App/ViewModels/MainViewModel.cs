@@ -23,6 +23,7 @@ namespace PVCStudioPro.App.ViewModels
         private string _activeWorkspaceTitle = "Dashboard";
 
         // Production & Processing Workspaces
+        public ProductionWorkspaceViewModel ProductionVM { get; }
         public DashboardViewModel DashboardVM { get; }
         public DocumentDeskViewModel DocumentDeskVM { get; }
         public CropStudioViewModel CropStudioVM { get; }
@@ -43,6 +44,7 @@ namespace PVCStudioPro.App.ViewModels
         public SettingsViewModel SettingsVM { get; }
 
         public MainViewModel(
+            ProductionWorkspaceViewModel productionVM,
             DashboardViewModel dashboardVM,
             DocumentDeskViewModel documentDeskVM,
             CropStudioViewModel cropStudioVM,
@@ -62,6 +64,7 @@ namespace PVCStudioPro.App.ViewModels
             BackupRestoreViewModel backupVM,
             SettingsViewModel settingsVM)
         {
+            ProductionVM = productionVM;
             DashboardVM = dashboardVM;
             DocumentDeskVM = documentDeskVM;
             CropStudioVM = cropStudioVM;
@@ -155,8 +158,8 @@ namespace PVCStudioPro.App.ViewModels
             };
             SettingsVM.ToggleThemeAction = theme => SetTheme(theme);
 
-            CurrentView = DocumentDeskVM;
-            ActiveWorkspaceTitle = "Document Desk";
+            CurrentView = ProductionVM;
+            ActiveWorkspaceTitle = "Production Studio";
         }
 
         [RelayCommand]
@@ -164,6 +167,10 @@ namespace PVCStudioPro.App.ViewModels
         {
             switch (destination)
             {
+                case "Production":
+                    CurrentView = ProductionVM;
+                    ActiveWorkspaceTitle = "Production Studio";
+                    break;
                 case "DocumentDesk":
                     CurrentView = DocumentDeskVM;
                     ActiveWorkspaceTitle = "Document Desk";

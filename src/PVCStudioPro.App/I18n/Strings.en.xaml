@@ -9,6 +9,7 @@
     <sys:String x:Key="NavGroupBusiness">BUSINESS &amp; AUDIT</sys:String>
     <sys:String x:Key="NavGroupSystem">SYSTEM</sys:String>
 
+    <sys:String x:Key="NavProductionStudio">Production Studio</sys:String>
     <sys:String x:Key="NavDocumentDesk">Document Desk</sys:String>
     <sys:String x:Key="NavDashboard">Dashboard</sys:String>
     <sys:String x:Key="NavCardPrint">Card Studio</sys:String>

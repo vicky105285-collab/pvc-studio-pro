@@ -9,6 +9,7 @@
     <sys:String x:Key="NavGroupBusiness">வணிகம் &amp; கணக்கு</sys:String>
     <sys:String x:Key="NavGroupSystem">அமைப்பு</sys:String>
 
+    <sys:String x:Key="NavProductionStudio">உற்பத்தி அரங்கு (Production Studio)</sys:String>
     <sys:String x:Key="NavDocumentDesk">ஆவண மையம் (Document Desk)</sys:String>
     <sys:String x:Key="NavDashboard">அறிக்கைப் பலகை</sys:String>
     <sys:String x:Key="NavCardPrint">அட்டை அச்சிடுதல்</sys:String>

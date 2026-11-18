@@ -17,7 +17,7 @@ namespace PVCStudioPro.Tests
             await service.InitializeTemplatesAsync();
 
             var templates = service.GetAllTemplates().ToList();
-            templates.Should().HaveCount(10);
+            templates.Should().HaveCountGreaterThanOrEqualTo(25);
 
             // Verify each specific agreed template is present
             templates.Should().Contain(t => t.TemplateId == "aadhaar_v2024");
