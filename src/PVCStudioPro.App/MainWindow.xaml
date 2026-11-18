@@ -1,0 +1,74 @@
+﻿<ui:FluentWindow x:Class="PVCStudioPro.App.MainWindow"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                  xmlns:vm="clr-namespace:PVCStudioPro.App.ViewModels"
+                  xmlns:views="clr-namespace:PVCStudioPro.App.Views"
+                  mc:Ignorable="d"
+                  Title="{DynamicResource AppTitle}"
+                  Height="850" Width="1300"
+                  MinHeight="700" MinWidth="1050"
+                  WindowStartupLocation="CenterScreen"
+                  ExtendsContentIntoTitleBar="True"
+                  WindowBackdropType="Mica">
+
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type vm:CardPrintViewModel}">
+            <views:CardPrintView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:CalibrationViewModel}">
+            <views:CalibrationView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:BusinessLedgerViewModel}">
+            <views:BusinessLedgerView/>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top TitleBar with Language Toggle -->
+        <ui:TitleBar Grid.Row="0" Title="{DynamicResource AppTitle}">
+            <ui:TitleBar.Header>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                    <ui:Button Command="{Binding ToggleLanguageCommand}" Content="{Binding LanguageButtonText}" Height="28" Padding="10,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Background="#EBF3FC" Foreground="#0067B8" BorderBrush="#C2DCF7" BorderThickness="1"/>
+                </StackPanel>
+            </ui:TitleBar.Header>
+        </ui:TitleBar>
+
+        <!-- Main Content Area with Navigation Sidebar -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <ui:NavigationView Grid.Column="0" PaneDisplayMode="Left" OpenPaneLength="240" IsBackButtonVisible="Collapsed">
+                <ui:NavigationView.MenuItems>
+                    <ui:NavigationViewItem Content="{DynamicResource NavCardPrint}" TargetPageType="{x:Type views:CardPrintView}" Command="{Binding NavigateCommand}" CommandParameter="Cards">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:SymbolIcon Symbol="Document24" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem Content="{DynamicResource NavCalibration}" TargetPageType="{x:Type views:CalibrationView}" Command="{Binding NavigateCommand}" CommandParameter="Calibration">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:SymbolIcon Symbol="Settings24" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem Content="{DynamicResource NavLedger}" TargetPageType="{x:Type views:BusinessLedgerView}" Command="{Binding NavigateCommand}" CommandParameter="Ledger">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:SymbolIcon Symbol="Receipt24" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                </ui:NavigationView.MenuItems>
+            </ui:NavigationView>
+
+            <ContentControl Grid.Column="1" Content="{Binding CurrentView}" Margin="12"/>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

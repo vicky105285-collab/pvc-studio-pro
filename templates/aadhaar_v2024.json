@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0.0",
+  "template_id": "in_gov_aadhaar_2024",
+  "display_name": "Aadhaar Card (UIDAI Standard 2020-2026)",
+  "category": "GOVERNMENT_IDENTITY",
+  "document_type": "PDF",
+  "identification": {
+    "anchor_keywords": [
+      "Unique Identification Authority of India",
+      "Government of India",
+      "Enrollment No",
+      "Help@uidai.gov.in"
+    ],
+    "min_keyword_matches": 2,
+    "expected_pages": 1,
+    "page_size_tolerance_mm": 5.0
+  },
+  "physical_card": {
+    "standard": "CR80",
+    "width_mm": 85.60,
+    "height_mm": 53.98,
+    "corner_radius_mm": 3.18,
+    "target_dpi": 600
+  },
+  "faces": {
+    "front": {
+      "source_page": 0,
+      "crop_rect_mm": {
+        "x": 18.0,
+        "y": 204.0,
+        "width": 85.60,
+        "height": 53.98
+      },
+      "rotation_degrees": 0,
+      "mask_zones": [
+        {
+          "name": "aadhaar_first_8_digits",
+          "relative_x_mm": 28.0,
+          "relative_y_mm": 46.5,
+          "width_mm": 24.0,
+          "height_mm": 4.5,
+          "fill_color": "#FFFFFF",
+          "overlay_text": "XXXX XXXX "
+        }
+      ],
+      "photo_zone": {
+        "relative_x_mm": 4.0,
+        "relative_y_mm": 14.0,
+        "width_mm": 22.0,
+        "height_mm": 27.0
+      }
+    },
+    "back": {
+      "source_page": 0,
+      "crop_rect_mm": {
+        "x": 108.0,
+        "y": 204.0,
+        "width": 85.60,
+        "height": 53.98
+      },
+      "rotation_degrees": 0,
+      "qr_zone": {
+        "relative_x_mm": 58.0,
+        "relative_y_mm": 18.0,
+        "width_mm": 24.0,
+        "height_mm": 24.0
+      }
+    }
+  },
+  "tray_layout": {
+    "epson_cd_dvd": {
+      "card_1_pos_mm": { "x": 14.2, "y": 22.0 },
+      "card_2_pos_mm": { "x": 14.2, "y": 80.5 }
+    },
+    "canon_multi_tray": {
+      "card_1_pos_mm": { "x": 18.0, "y": 30.0 },
+      "card_2_pos_mm": { "x": 18.0, "y": 90.0 }
+    }
+  }
+}

@@ -1,0 +1,57 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Application Shell (தமிழ்) -->
+    <sys:String x:Key="AppTitle">பிவிசி ஸ்டுடியோ ப்ரோ - பிவிசி அட்டை அச்சிடும் மென்பொருள்</sys:String>
+    <sys:String x:Key="NavDashboard">அறிக்கைப் பலகை</sys:String>
+    <sys:String x:Key="NavCardPrint">அட்டை அச்சிடுதல்</sys:String>
+    <sys:String x:Key="NavPhotoStudio">புகைப்பட அரங்கு</sys:String>
+    <sys:String x:Key="NavLedger">கணக்குப் பதிவேடு</sys:String>
+    <sys:String x:Key="NavCalibration">அச்சுப்பொறி அளவீடு</sys:String>
+    <sys:String x:Key="NavSettings">அமைப்புகள்</sys:String>
+    <sys:String x:Key="LangToggle">English</sys:String>
+
+    <!-- Card Print Studio -->
+    <sys:String x:Key="BtnOpenDocument">ஆவணத்தைத் திற (Ctrl+O)</sys:String>
+    <sys:String x:Key="BtnPrintNow">இப்போதே அச்சிடு (Ctrl+P)</sys:String>
+    <sys:String x:Key="ChkMaskAadhaar">ஆதார் மறைத்தல் (XXXX-XXXX-1234)</sys:String>
+    <sys:String x:Key="LblFrontFace">முன்பக்கம் (பகுதி 1)</sys:String>
+    <sys:String x:Key="LblBackFace">பின்பக்கம் (பகுதி 2)</sys:String>
+    <sys:String x:Key="LblPrinterDevice">அச்சுப்பொறி:</sys:String>
+    <sys:String x:Key="LblMediaTray">தட்டு வகை:</sys:String>
+    <sys:String x:Key="LblCopies">பிரதிகள்:</sys:String>
+    <sys:String x:Key="LblCardPrice">கட்டணம் (₹):</sys:String>
+    <sys:String x:Key="LblOffsetX">கிடைமட்ட இடைவெளி X (மிமீ):</sys:String>
+    <sys:String x:Key="LblOffsetY">செங்குத்து இடைவெளி Y (மிமீ):</sys:String>
+    <sys:String x:Key="LblMirrorMode">பிரதிபலிப்பு முறை (டிராகன் தாள்)</sys:String>
+    <sys:String x:Key="LblPreflightStatus">முன் சரிபார்ப்பு நிலை:</sys:String>
+    <sys:String x:Key="StatusReady">தயாராக உள்ளது | ஆஃப்லைன் செயல்பாடு | குடிமக்கள் தரவு சேமிப்பு இல்லை</sys:String>
+    <sys:String x:Key="LblDocumentType">கண்டறியப்பட்ட ஆவணம்:</sys:String>
+
+    <!-- Business Ledger -->
+    <sys:String x:Key="LedgerHeader">தினசரி வணிகப் பணப் பரிவர்த்தனைப் பதிவேடு</sys:String>
+    <sys:String x:Key="LblTodayCards">இன்று அச்சிடப்பட்ட மொத்த அட்டைகள்</sys:String>
+    <sys:String x:Key="LblTodayRevenue">இன்றைய மொத்த வருவாய்</sys:String>
+    <sys:String x:Key="LblRecentJobs">சமீபத்திய அச்சுப் பரிவர்த்தனைகள்</sys:String>
+    <sys:String x:Key="ColTime">நேரம்</sys:String>
+    <sys:String x:Key="ColDocType">ஆவண வகை</sys:String>
+    <sys:String x:Key="ColQty">எண்ணிக்கை</sys:String>
+    <sys:String x:Key="ColAmount">தொகை (₹)</sys:String>
+    <sys:String x:Key="ColPayment">செலுத்தல் முறை</sys:String>
+    <sys:String x:Key="BtnPrintReceipt">58மிமீ / 80மிமீ ரசீது அச்சிடு</sys:String>
+
+    <!-- Calibration -->
+    <sys:String x:Key="CalibHeader">அச்சுப்பொறி தட்டு நேர்த்தி மற்றும் அளவீடு</sys:String>
+    <sys:String x:Key="CalibInstructions">அளவீட்டுத் தாளை உங்கள் தட்டில் அச்சிடுங்கள். ஏதேனும் இடைவெளி இருந்தால் அளவுகோலால் சரிபார்த்து X மற்றும் Y எண்களை மாற்றவும்.</sys:String>
+    <sys:String x:Key="BtnPrintCalibSheet">சோதனை அளவீட்டுத் தாளை அச்சிடு</sys:String>
+    <sys:String x:Key="BtnSaveCalibration">அளவீட்டைச் சேமி</sys:String>
+
+    <!-- Photo Studio -->
+    <sys:String x:Key="PhotoHeader">பாஸ்போர்ட் புகைப்பட அரங்கு</sys:String>
+    <sys:String x:Key="BtnOpenPhoto">புகைப்படத்தை ஏற்று</sys:String>
+    <sys:String x:Key="ChkRemoveBg">பின்னணி நீக்குதல் (செயற்கை நுண்ணறிவு)</sys:String>
+    <sys:String x:Key="LblGridSize">புகைப்படத் தாள் கட்டமைப்பு:</sys:String>
+    <sys:String x:Key="BtnPrintPhotos">புகைப்படத் தாளை அச்சிடு (4x6 / A4)</sys:String>
+
+</ResourceDictionary>

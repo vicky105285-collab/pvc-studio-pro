@@ -1,0 +1,92 @@
+<UserControl x:Class="PVCStudioPro.App.Views.BusinessLedgerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="900">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="{DynamicResource LedgerHeader}" FontSize="20" FontWeight="Bold" Foreground="#1A1A1A"/>
+                <TextBlock Text="Local Offline Accounting | Zero Citizen Identity PII Retained" Foreground="#5C5C5C" Margin="0,4,0,0"/>
+            </StackPanel>
+            <ui:Button Grid.Column="1" Command="{Binding LoadLedgerCommand}" Height="40" Padding="14,0" Background="#F0F0F0" BorderBrush="#D1D1D1" BorderThickness="1" CornerRadius="4">
+                <StackPanel Orientation="Horizontal">
+                    <ui:SymbolIcon Symbol="ArrowClockwise24" Margin="0,0,6,0"/>
+                    <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+                </StackPanel>
+            </ui:Button>
+        </Grid>
+
+        <!-- KPI Metric Cards -->
+        <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,20">
+            <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,8,0">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource LblTodayCards}" Foreground="#5C5C5C" FontSize="11" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding TodayCards}" FontSize="28" FontWeight="Bold" Foreground="#0067B8" Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16" Margin="4,0,4,0">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource LblTodayRevenue}" Foreground="#5C5C5C" FontSize="11" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding TodayRevenue, StringFormat='₹ {0:N2}'}" FontSize="28" FontWeight="Bold" Foreground="#107C41" Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16" Margin="4,0,4,0">
+                <StackPanel>
+                    <TextBlock Text="Aadhaar Cards Today" Foreground="#5C5C5C" FontSize="11" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding TodayAadhaarCount}" FontSize="28" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16" Margin="8,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="PAN Cards Today" Foreground="#5C5C5C" FontSize="11" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding TodayPanCount}" FontSize="28" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <!-- Transactions DataGrid -->
+        <Border Grid.Row="2" Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="12">
+            <DataGrid ItemsSource="{Binding RecentJobs}" AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal" HeadersVisibility="Column" Background="Transparent" BorderThickness="0" RowHeight="38">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{DynamicResource ColTime}" Binding="{Binding CreatedAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="160"/>
+                    <DataGridTextColumn Header="{DynamicResource ColDocType}" Binding="{Binding DocumentType}" Width="150"/>
+                    <DataGridTextColumn Header="{DynamicResource ColQty}" Binding="{Binding Quantity}" Width="80"/>
+                    <DataGridTextColumn Header="{DynamicResource ColAmount}" Binding="{Binding TotalAmount, StringFormat='₹ {0:N2}'}" Width="120"/>
+                    <DataGridTextColumn Header="{DynamicResource ColPayment}" Binding="{Binding PaymentMode}" Width="100"/>
+                    <DataGridTextColumn Header="Printer" Binding="{Binding PrinterName}" Width="*"/>
+                    <DataGridTemplateColumn Width="180">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ui:Button Content="{DynamicResource BtnPrintReceipt}" Command="{Binding DataContext.PrintReceiptCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Height="28" Padding="8,0" FontSize="11" CornerRadius="3" Background="#F0F0F0"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Status -->
+        <Border Grid.Row="3" Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="12,8" Margin="0,16,0,0">
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#1A1A1A" FontWeight="Medium"/>
+        </Border>
+    </Grid>
+</UserControl>

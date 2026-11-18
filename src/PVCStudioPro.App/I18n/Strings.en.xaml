@@ -1,0 +1,57 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Application Shell -->
+    <sys:String x:Key="AppTitle">PVC Studio Pro - Professional PVC Card Suite</sys:String>
+    <sys:String x:Key="NavDashboard">Dashboard</sys:String>
+    <sys:String x:Key="NavCardPrint">Card Printing</sys:String>
+    <sys:String x:Key="NavPhotoStudio">Photo Studio</sys:String>
+    <sys:String x:Key="NavLedger">Business Ledger</sys:String>
+    <sys:String x:Key="NavCalibration">Printer Setup &amp; Calibration</sys:String>
+    <sys:String x:Key="NavSettings">Settings</sys:String>
+    <sys:String x:Key="LangToggle">தமிழ் (Tamil)</sys:String>
+
+    <!-- Card Print Studio -->
+    <sys:String x:Key="BtnOpenDocument">Open Document (Ctrl+O)</sys:String>
+    <sys:String x:Key="BtnPrintNow">PRINT NOW (Ctrl+P)</sys:String>
+    <sys:String x:Key="ChkMaskAadhaar">Mask Aadhaar (XXXX-XXXX-1234)</sys:String>
+    <sys:String x:Key="LblFrontFace">FRONT FACE (Slot 1)</sys:String>
+    <sys:String x:Key="LblBackFace">BACK FACE (Slot 2)</sys:String>
+    <sys:String x:Key="LblPrinterDevice">Target Printer:</sys:String>
+    <sys:String x:Key="LblMediaTray">Media Tray:</sys:String>
+    <sys:String x:Key="LblCopies">Copies:</sys:String>
+    <sys:String x:Key="LblCardPrice">Price (₹):</sys:String>
+    <sys:String x:Key="LblOffsetX">Offset X (mm):</sys:String>
+    <sys:String x:Key="LblOffsetY">Offset Y (mm):</sys:String>
+    <sys:String x:Key="LblMirrorMode">Mirror Mode (Dragon Sheet)</sys:String>
+    <sys:String x:Key="LblPreflightStatus">Pre-Flight Check:</sys:String>
+    <sys:String x:Key="StatusReady">System Ready | Local Offline Engine | Zero Citizen PII Retention</sys:String>
+    <sys:String x:Key="LblDocumentType">Detected Document:</sys:String>
+
+    <!-- Business Ledger -->
+    <sys:String x:Key="LedgerHeader">Daily Business Transaction Ledger</sys:String>
+    <sys:String x:Key="LblTodayCards">Total Cards Printed Today</sys:String>
+    <sys:String x:Key="LblTodayRevenue">Total Revenue Today</sys:String>
+    <sys:String x:Key="LblRecentJobs">Recent Print Transactions</sys:String>
+    <sys:String x:Key="ColTime">Time</sys:String>
+    <sys:String x:Key="ColDocType">Document Type</sys:String>
+    <sys:String x:Key="ColQty">Quantity</sys:String>
+    <sys:String x:Key="ColAmount">Amount (₹)</sys:String>
+    <sys:String x:Key="ColPayment">Payment</sys:String>
+    <sys:String x:Key="BtnPrintReceipt">Print 58mm/80mm Receipt</sys:String>
+
+    <!-- Calibration -->
+    <sys:String x:Key="CalibHeader">Hardware Millimeter Alignment &amp; Tray Calibration</sys:String>
+    <sys:String x:Key="CalibInstructions">Print the calibration sheet on your tray. Measure any gap with a millimeter ruler or digital caliper, then adjust the X and Y offsets below.</sys:String>
+    <sys:String x:Key="BtnPrintCalibSheet">Print Test Calibration Sheet</sys:String>
+    <sys:String x:Key="BtnSaveCalibration">Save Calibration Profile</sys:String>
+
+    <!-- Photo Studio -->
+    <sys:String x:Key="PhotoHeader">Passport Photo Studio</sys:String>
+    <sys:String x:Key="BtnOpenPhoto">Load Photo</sys:String>
+    <sys:String x:Key="ChkRemoveBg">Remove Background (Local AI)</sys:String>
+    <sys:String x:Key="LblGridSize">Photo Sheet Layout:</sys:String>
+    <sys:String x:Key="BtnPrintPhotos">Print Photo Sheet (4x6 / A4)</sys:String>
+
+</ResourceDictionary>
