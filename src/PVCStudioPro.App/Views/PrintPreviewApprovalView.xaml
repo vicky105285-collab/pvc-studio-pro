@@ -42,7 +42,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- LEFT: Virtual Media Tray Simulation Canvas -->
-            <Border Grid.Column="0" Background="#1E232A" BorderBrush="#374151" BorderThickness="1" CornerRadius="8" Padding="14">
+            <Border Grid.Column="0" Background="{DynamicResource PreviewCanvasBgBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -51,19 +51,19 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" Margin="0,0,0,10">
-                        <TextBlock Text="VIRTUAL PRINT TRAY SIMULATOR" FontWeight="Bold" FontSize="12" Foreground="#9CA3AF"/>
-                        <TextBlock Text="{Binding CanvasDimensionText}" FontSize="11" Foreground="#60A5FA" HorizontalAlignment="Right"/>
+                        <TextBlock Text="VIRTUAL PRINT TRAY SIMULATOR" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <TextBlock Text="{Binding CanvasDimensionText}" FontSize="11" Foreground="{DynamicResource PrimaryAccentBrush}" FontWeight="SemiBold" HorizontalAlignment="Right"/>
                     </Grid>
 
                     <!-- Tray Preview Render -->
-                    <Border Grid.Row="1" Background="#111827" BorderBrush="#374151" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+                    <Border Grid.Row="1" Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
                         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                             <Image Source="{Binding VirtualTrayPreview}" Stretch="Uniform" Margin="12"/>
                         </ScrollViewer>
                     </Border>
 
                     <!-- Calibration Indicator & Nudge Shortcuts -->
-                    <Border Grid.Row="2" Background="#1F2937" CornerRadius="6" Padding="12,8" Margin="0,10,0,0">
+                    <Border Grid.Row="2" Background="{DynamicResource CardSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,10,0,0">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -71,8 +71,8 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="PHYSICAL CALIBRATION OFFSET" FontWeight="Bold" FontSize="11" Foreground="#F59E0B"/>
-                                <TextBlock Text="Compensates for feed-roller tolerance on Epson/Canon trays." FontSize="10" Foreground="#9CA3AF"/>
+                                <TextBlock Text="PHYSICAL CALIBRATION OFFSET" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource StatusWarningFgBrush}"/>
+                                <TextBlock Text="Compensates for feed-roller tolerance on Epson/Canon trays." FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -164,9 +164,9 @@
                         </Grid>
 
                         <!-- Pre-Flight Verification Checklist -->
-                        <Border Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,16">
+                        <Border Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,16">
                             <StackPanel>
-                                <TextBlock Text="Pre-Print Quality &amp; Compliance Checklist" FontWeight="Bold" FontSize="11" Foreground="#374151" Margin="0,0,0,6"/>
+                                <TextBlock Text="Pre-Print Quality &amp; Compliance Checklist" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
                                 <CheckBox IsChecked="{Binding IsApprovedByOperator}" Content="Card dimensions verified to ISO/IEC 7810 CR80 standard" FontSize="11" Margin="0,0,0,4"/>
                                 <CheckBox IsChecked="True" Content="Physical tray media inserted along feed arrow direction" FontSize="11" Margin="0,0,0,4" IsEnabled="False"/>
                                 <CheckBox IsChecked="True" Content="Zero-Citizen-PII: No citizen identity numbers saved in log" FontSize="11" IsEnabled="False"/>
@@ -174,7 +174,7 @@
                         </Border>
 
                         <!-- Approval & Spool Button -->
-                        <ui:Button Command="{Binding ApproveAndSpoolCommand}" Height="50" CornerRadius="6" Background="#059669" Foreground="White" FontWeight="Bold" FontSize="14" Margin="0,0,0,8">
+                        <ui:Button Command="{Binding ApproveAndSpoolCommand}" Height="50" CornerRadius="6" Background="{DynamicResource PrimaryAccentBrush}" Foreground="{DynamicResource AccentTextBrush}" FontWeight="Bold" FontSize="14" Margin="0,0,0,8">
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon Symbol="Print24" Margin="0,0,8,0"/>
                                 <TextBlock Text="APPROVE &amp; SPOOL PRINT JOB"/>
@@ -182,10 +182,10 @@
                         </ui:Button>
 
                         <!-- Success Alert Banner -->
-                        <Border Background="#ECFDF5" BorderBrush="#10B981" BorderThickness="1" CornerRadius="6" Padding="12,8" Visibility="{Binding PrintSuccessful, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Border Background="{DynamicResource StatusSuccessBgBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Visibility="{Binding PrintSuccessful, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="✓" FontWeight="Bold" Foreground="#059669" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Job spooled successfully. Transaction recorded in local ledger." FontWeight="SemiBold" Foreground="#047857" VerticalAlignment="Center" FontSize="11"/>
+                                <TextBlock Text="✓" FontWeight="Bold" Foreground="{DynamicResource StatusSuccessFgBrush}" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Job spooled successfully. Transaction recorded in local ledger." FontWeight="SemiBold" Foreground="{DynamicResource StatusSuccessFgBrush}" VerticalAlignment="Center" FontSize="11"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>

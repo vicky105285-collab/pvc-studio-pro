@@ -147,6 +147,60 @@ namespace PVCStudioPro.Core.Services.Implementations
             return flipped;
         }
 
+        public SKBitmap ApplyAdjustments(SKBitmap source, float brightness, float contrast, float saturation, float sharpness)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+
+            // Fast path if all parameters are default
+            if (Math.Abs(brightness) < 0.001f && Math.Abs(contrast - 1.0f) < 0.001f &&
+                Math.Abs(saturation - 1.0f) < 0.001f && sharpness < 0.001f)
+            {
+                return source.Copy();
+            }
+
+            using var srcMat = SkBitmapToMat(source);
+            using var adjustedMat = new Mat();
+
+            // 1. Brightness & Contrast (Convert to BGR for OpenCV color ops)
+            using var bgrMat = new Mat();
+            Cv2.CvtColor(srcMat, bgrMat, ColorConversionCodes.BGRA2BGR);
+
+            // Contrast (alpha) and Brightness (beta)
+            bgrMat.ConvertTo(adjustedMat, -1, alpha: contrast, beta: brightness);
+
+            // 2. Saturation
+            if (Math.Abs(saturation - 1.0f) > 0.001f)
+            {
+                using var hsvMat = new Mat();
+                Cv2.CvtColor(adjustedMat, hsvMat, ColorConversionCodes.BGR2HSV);
+                Mat[] hsvChannels = Cv2.Split(hsvMat);
+                try
+                {
+                    hsvChannels[1].ConvertTo(hsvChannels[1], -1, alpha: saturation);
+                    Cv2.Merge(hsvChannels, hsvMat);
+                    Cv2.CvtColor(hsvMat, adjustedMat, ColorConversionCodes.HSV2BGR);
+                }
+                finally
+                {
+                    foreach (var ch in hsvChannels) ch.Dispose();
+                }
+            }
+
+            // 3. Sharpness (Unsharp Mask)
+            if (sharpness > 0.01f)
+            {
+                using var blurred = new Mat();
+                Cv2.GaussianBlur(adjustedMat, blurred, new Size(0, 0), sigmaX: 3.0);
+                Cv2.AddWeighted(adjustedMat, 1.0 + sharpness, blurred, -sharpness, 0, adjustedMat);
+            }
+
+            // Convert back to BGRA
+            using var finalBgra = new Mat();
+            Cv2.CvtColor(adjustedMat, finalBgra, ColorConversionCodes.BGR2BGRA);
+
+            return MatToSkBitmap(finalBgra);
+        }
+
         private static Mat SkBitmapToMat(SKBitmap bitmap)
         {
             var mat = new Mat(bitmap.Height, bitmap.Width, MatType.CV_8UC4);

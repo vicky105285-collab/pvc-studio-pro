@@ -9,5 +9,6 @@ namespace PVCStudioPro.Core.Services
         QuadrilateralPoints GetInitialCropBox(int imageWidth, int imageHeight, CropAspectRatio ratio);
         SKBitmap RotateBitmap(SKBitmap source, int degrees);
         SKBitmap FlipHorizontal(SKBitmap source);
+        SKBitmap ApplyAdjustments(SKBitmap source, float brightness, float contrast, float saturation, float sharpness);
     }
 }

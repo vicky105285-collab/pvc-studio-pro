@@ -240,19 +240,39 @@ namespace PVCStudioPro.App.ViewModels
         public void SetTheme(string theme)
         {
             CurrentTheme = theme;
-            string themeFile = theme == "Dark" ? "DarkTheme.xaml" : "LightTheme.xaml";
-            var dictUri = new Uri($"pack://application:,,,/Themes/{themeFile}", UriKind.Absolute);
-            var newDict = new ResourceDictionary { Source = dictUri };
+            bool isDark = theme == "Dark";
+            string themeFile = isDark ? "DarkTheme.xaml" : "LightTheme.xaml";
+            string wpfUiThemeFile = isDark ? "dark.xaml" : "light.xaml";
 
             var appResources = Application.Current.Resources.MergedDictionaries;
+
+            // 1. Update Wpf.Ui framework theme dictionary (light.xaml vs dark.xaml)
             for (int i = appResources.Count - 1; i >= 0; i--)
             {
-                if (appResources[i].Source != null && appResources[i].Source.OriginalString.Contains("/Themes/"))
+                var src = appResources[i].Source?.OriginalString;
+                if (src != null && src.Contains("/resources/theme/"))
                 {
                     appResources.RemoveAt(i);
                 }
             }
-            appResources.Add(newDict);
+            appResources.Add(new ResourceDictionary
+            {
+                Source = new Uri($"pack://application:,,,/Wpf.Ui;component/resources/theme/{wpfUiThemeFile}", UriKind.Absolute)
+            });
+
+            // 2. Update app semantic theme tokens (LightTheme.xaml vs DarkTheme.xaml, preserving ThemeTokens.xaml!)
+            for (int i = appResources.Count - 1; i >= 0; i--)
+            {
+                var src = appResources[i].Source?.OriginalString;
+                if (src != null && (src.Contains("LightTheme.xaml") || src.Contains("DarkTheme.xaml")))
+                {
+                    appResources.RemoveAt(i);
+                }
+            }
+            appResources.Add(new ResourceDictionary
+            {
+                Source = new Uri($"pack://application:,,,/Themes/{themeFile}", UriKind.Absolute)
+            });
         }
 
         private static void ApplyLanguageDictionary(string dictFile)

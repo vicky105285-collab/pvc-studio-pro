@@ -47,11 +47,10 @@ namespace PVCStudioPro.App.ViewModels
         public ICommand RefreshCommand { get; }
         public ICommand NavigateToCommand { get; }
 
-        public DashboardViewModel(IJobLedgerService ledgerService, IPrinterTrayService trayService, Action<string>? navigateAction = null)
+        public DashboardViewModel(IJobLedgerService ledgerService, IPrinterTrayService trayService)
         {
             _ledgerService = ledgerService ?? throw new ArgumentNullException(nameof(ledgerService));
             _trayService = trayService ?? throw new ArgumentNullException(nameof(trayService));
-            NavigateAction = navigateAction;
 
             RefreshCommand = new AsyncRelayCommand(LoadDashboardDataAsync);
             NavigateToCommand = new RelayCommand<string>(dest =>

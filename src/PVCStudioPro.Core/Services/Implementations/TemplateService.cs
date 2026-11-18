@@ -210,7 +210,7 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Front = new FaceDefinition
                     {
                         SourcePage = 0,
-                        CropRectMm = new MillimeterRect { X = 17.5, Y = 212.0, Width = 85.60, Height = 53.98 },
+                        CropRectMm = new MillimeterRect { X = 17.78, Y = 219.71, Width = 88.48, Height = 56.30 },
                         MaskZones = new List<MaskZone>
                         {
                             new MaskZone
@@ -227,7 +227,7 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Back = new FaceDefinition
                     {
                         SourcePage = 0,
-                        CropRectMm = new MillimeterRect { X = 107.0, Y = 212.0, Width = 85.60, Height = 53.98 }
+                        CropRectMm = new MillimeterRect { X = 110.06, Y = 219.71, Width = 88.48, Height = 56.30 }
                     }
                 }
             };
@@ -258,12 +258,12 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Front = new FaceDefinition
                     {
                         SourcePage = 0,
-                        CropRectMm = new MillimeterRect { X = 18.0, Y = 70.0, Width = 85.60, Height = 53.98 }
+                        CropRectMm = new MillimeterRect { X = 24.55, Y = 229.79, Width = 82.13, Height = 51.22 }
                     },
                     Back = new FaceDefinition
                     {
                         SourcePage = 0,
-                        CropRectMm = new MillimeterRect { X = 108.0, Y = 70.0, Width = 85.60, Height = 53.98 }
+                        CropRectMm = new MillimeterRect { X = 108.80, Y = 229.79, Width = 82.55, Height = 51.22 }
                     }
                 }
             };
@@ -294,12 +294,12 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Front = new FaceDefinition
                     {
                         SourcePage = 0,
-                        CropRectMm = new MillimeterRect { X = 15.0, Y = 65.0, Width = 85.60, Height = 53.98 }
+                        CropRectMm = new MillimeterRect { X = 12.70, Y = 232.75, Width = 86.36, Height = 53.34 }
                     },
                     Back = new FaceDefinition
                     {
                         SourcePage = 0,
-                        CropRectMm = new MillimeterRect { X = 105.0, Y = 65.0, Width = 85.60, Height = 53.98 }
+                        CropRectMm = new MillimeterRect { X = 111.35, Y = 232.75, Width = 85.51, Height = 53.34 }
                     }
                 }
             };
@@ -366,12 +366,12 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Front = new FaceDefinition
                     {
                         SourcePage = 0,
-                        CropRectMm = new MillimeterRect { X = 20.0, Y = 100.0, Width = 85.60, Height = 53.98 }
+                        CropRectMm = new MillimeterRect { X = 10.16, Y = 22.86, Width = 88.05, Height = 56.30 }
                     },
                     Back = new FaceDefinition
                     {
                         SourcePage = 0,
-                        CropRectMm = new MillimeterRect { X = 110.0, Y = 100.0, Width = 85.60, Height = 53.98 }
+                        CropRectMm = new MillimeterRect { X = 114.30, Y = 22.86, Width = 88.05, Height = 56.30 }
                     }
                 }
             };
@@ -513,12 +513,12 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Front = new FaceDefinition
                     {
                         SourcePage = 0,
-                        CropRectMm = new MillimeterRect { X = 20.0, Y = 110.0, Width = 85.60, Height = 53.98 }
+                        CropRectMm = new MillimeterRect { X = 40.64, Y = 35.13, Width = 80.43, Height = 51.22 }
                     },
                     Back = new FaceDefinition
                     {
                         SourcePage = 0,
-                        CropRectMm = new MillimeterRect { X = 110.0, Y = 110.0, Width = 85.60, Height = 53.98 }
+                        CropRectMm = new MillimeterRect { X = 40.64, Y = 87.63, Width = 80.43, Height = 50.80 }
                     }
                 }
             };

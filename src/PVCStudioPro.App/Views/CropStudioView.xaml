@@ -7,7 +7,8 @@
              xmlns:vm="clr-namespace:PVCStudioPro.App.ViewModels"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:CropStudioViewModel}"
-             d:DesignHeight="850" d:DesignWidth="1200">
+             d:DesignHeight="900" d:DesignWidth="1300"
+             Loaded="UserControl_Loaded">
 
     <Grid Margin="16,8,16,16">
         <Grid.RowDefinitions>
@@ -17,95 +18,115 @@
         </Grid.RowDefinitions>
 
         <!-- ROW 0: Toolbar & Aspect Ratio Presets -->
-        <Border Grid.Row="0" Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,12">
+        <Border Grid.Row="0" Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Title & Presets -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Crop Studio &amp; Perspective Rectifier" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Crop Studio" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,14,0" VerticalAlignment="Center"/>
 
                     <!-- Presets -->
-                    <TextBlock Text="Preset:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    <ui:Button Command="{Binding SetAspectRatioCommand}" CommandParameter="Cr80Card" Content="CR80 Card (85.6 × 54 mm)" Height="32" Padding="10,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,6,0"/>
-                    <ui:Button Command="{Binding SetAspectRatioCommand}" CommandParameter="PassportPhoto" Content="Passport (35 × 45 mm)" Height="32" Padding="10,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,6,0"/>
-                    <ui:Button Command="{Binding SetAspectRatioCommand}" CommandParameter="StampPhoto" Content="Stamp (25 × 30 mm)" Height="32" Padding="10,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,6,0"/>
-                    <ui:Button Command="{Binding SetAspectRatioCommand}" CommandParameter="Freeform" Content="Freeform" Height="32" Padding="10,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4"/>
+                    <TextBlock Text="Preset:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                    <ui:Button Command="{Binding SetAspectRatioCommand}" CommandParameter="Cr80Card" Content="CR80 Card (85.6 × 54 mm)" Height="30" Padding="8,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,4,0"/>
+                    <ui:Button Command="{Binding SetAspectRatioCommand}" CommandParameter="PassportPhoto" Content="Passport (35 × 45 mm)" Height="30" Padding="8,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,4,0"/>
+                    <ui:Button Command="{Binding SetAspectRatioCommand}" CommandParameter="StampPhoto" Content="Stamp (25 × 30 mm)" Height="30" Padding="8,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,4,0"/>
+                    <ui:Button Command="{Binding SetAspectRatioCommand}" CommandParameter="Freeform" Content="Freeform" Height="30" Padding="8,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,12,0"/>
+
+                    <ui:Button Command="{Binding TogglePerspectiveModeCommand}" Content="Perspective Quad Mode" Height="30" Padding="10,0" FontSize="11" FontWeight="Bold" CornerRadius="4" Background="{DynamicResource CardSurfaceBrush}" BorderBrush="{DynamicResource PrimaryAccentBrush}" BorderThickness="1"/>
+                </StackPanel>
+
+                <!-- Zoom Controls -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="Zoom:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                    <ui:Button Command="{Binding ZoomOutCommand}" Content="-" Width="26" Height="26" Padding="0" FontWeight="Bold" CornerRadius="3" Margin="0,0,4,0"/>
+                    <Slider Minimum="0.10" Maximum="3.0" Value="{Binding ZoomFactor, Mode=TwoWay}" Width="110" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <ui:Button Command="{Binding ZoomInCommand}" Content="+" Width="26" Height="26" Padding="0" FontWeight="Bold" CornerRadius="3" Margin="0,0,6,0"/>
+                    <TextBlock Text="{Binding ZoomFactor, StringFormat='{}{0:P0}'}" Width="45" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <ui:Button Command="{Binding FitToWindowCommand}" Content="Fit" Height="26" Padding="8,0" FontSize="11" CornerRadius="3" Margin="0,0,4,0"/>
+                    <ui:Button Command="{Binding ActualSizeCommand}" Content="100%" Height="26" Padding="8,0" FontSize="11" CornerRadius="3"/>
                 </StackPanel>
 
                 <!-- Tools -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <ui:Button Command="{Binding Rotate90Command}" Content="Rotate 90°" Height="32" Padding="10,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,6,0"/>
-                    <ui:Button Command="{Binding FlipHorizontalCommand}" Content="Flip Horizontal" Height="32" Padding="10,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,6,0"/>
-                    <ui:Button Command="{Binding ResetCropCornersCommand}" Content="Reset Box" Height="32" Padding="10,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,6,0"/>
-                    <ui:Button Command="{Binding CancelCommand}" Content="Back to Desk" Height="32" Padding="12,0" FontSize="11" FontWeight="Bold" CornerRadius="4" Background="#E5E7EB" Foreground="#374151"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ui:Button Command="{Binding Rotate90Command}" Content="Rotate 90°" Height="30" Padding="8,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,4,0"/>
+                    <ui:Button Command="{Binding FlipHorizontalCommand}" Content="Flip" Height="30" Padding="8,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,4,0"/>
+                    <ui:Button Command="{Binding ResetCropCornersCommand}" Content="Reset Box" Height="30" Padding="8,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Margin="0,0,10,0"/>
+                    <ui:Button Command="{Binding CancelCommand}" Content="Back to Desk" Height="30" Padding="12,0" FontSize="11" FontWeight="Bold" CornerRadius="4" Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1"/>
                 </StackPanel>
             </Grid>
         </Border>
 
-        <!-- ROW 1: Split View (Source with Corner Controls + Cropped Preview) -->
+        <!-- ROW 1: Split View (Interactive Canvas + Right Tools/Preview) -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="6*"/> <!-- Source View -->
-                <ColumnDefinition Width="12"/> <!-- Splitter -->
-                <ColumnDefinition Width="5*"/> <!-- Cropped Output & Assignment -->
+                <ColumnDefinition Width="7*"/> <!-- Interactive Canvas Viewport -->
+                <ColumnDefinition Width="10"/> <!-- Splitter -->
+                <ColumnDefinition Width="4*"/> <!-- Output, Adjustments & Assignment -->
             </Grid.ColumnDefinitions>
 
-            <!-- LEFT: Source Image & Corner Sliders -->
-            <Border Grid.Column="0" Background="{DynamicResource CardSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+            <!-- LEFT: Interactive Canvas Viewport -->
+            <Border Grid.Column="0" Background="{DynamicResource PreviewCanvasBgBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                <Grid x:Name="ViewportContainer" SizeChanged="ViewportContainer_SizeChanged">
+                    <!-- Zoom & Pan Canvas Container -->
+                    <Canvas x:Name="InteractionCanvas"
+                            Background="Transparent"
+                            ClipToBounds="True"
+                            MouseWheel="Canvas_MouseWheel"
+                            MouseDown="Canvas_MouseDown"
+                            MouseMove="Canvas_MouseMove"
+                            MouseUp="Canvas_MouseUp">
+                        
+                        <!-- Transformed Content: Source Image + Crop Box Overlay -->
+                        <Canvas x:Name="TransformedContent">
+                            <Canvas.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform x:Name="CanvasScale" ScaleX="{Binding ZoomFactor}" ScaleY="{Binding ZoomFactor}"/>
+                                    <TranslateTransform x:Name="CanvasTranslate" X="{Binding PanOffsetX}" Y="{Binding PanOffsetY}"/>
+                                </TransformGroup>
+                            </Canvas.RenderTransform>
 
-                    <TextBlock Grid.Row="0" Text="Source Image &amp; Quadrilateral Corner Points" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                            <!-- The Document/Card Image -->
+                            <Image x:Name="DocImage" Source="{Binding SourceImage}" RenderOptions.BitmapScalingMode="HighQuality"/>
 
-                    <Border Grid.Row="1" Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                            <Image Source="{Binding SourceImage}" Stretch="Uniform" Margin="8"/>
-                        </ScrollViewer>
-                    </Border>
+                            <!-- Dimmed Mask Overlay around crop box (drawn in code-behind) -->
+                            <Path x:Name="DimmedMaskPath" Fill="#90000000"/>
 
-                    <!-- Corner Adjustment Nudges -->
-                    <Border Grid.Row="2" Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,10,0,0">
-                        <StackPanel>
-                            <Grid Margin="0,0,0,4">
-                                <TextBlock Text="Corner Coordinates (Source Space)" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <ui:Button Command="{Binding PerformCropCommand}" Content="Recalculate Crop" Height="24" Padding="8,0" FontSize="10" FontWeight="Bold" CornerRadius="3" HorizontalAlignment="Right"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Margin="2">
-                                    <TextBlock Text="Top-Left (C1)" FontSize="10" FontWeight="SemiBold" Foreground="#3B82F6"/>
-                                    <TextBlock Text="{Binding Corner1X, StringFormat='X: {0:F0}'}" FontSize="10"/>
-                                    <TextBlock Text="{Binding Corner1Y, StringFormat='Y: {0:F0}'}" FontSize="10"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Margin="2">
-                                    <TextBlock Text="Top-Right (C2)" FontSize="10" FontWeight="SemiBold" Foreground="#10B981"/>
-                                    <TextBlock Text="{Binding Corner2X, StringFormat='X: {0:F0}'}" FontSize="10"/>
-                                    <TextBlock Text="{Binding Corner2Y, StringFormat='Y: {0:F0}'}" FontSize="10"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2" Margin="2">
-                                    <TextBlock Text="Bottom-Right (C3)" FontSize="10" FontWeight="SemiBold" Foreground="#F59E0B"/>
-                                    <TextBlock Text="{Binding Corner3X, StringFormat='X: {0:F0}'}" FontSize="10"/>
-                                    <TextBlock Text="{Binding Corner3Y, StringFormat='Y: {0:F0}'}" FontSize="10"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="3" Margin="2">
-                                    <TextBlock Text="Bottom-Left (C4)" FontSize="10" FontWeight="SemiBold" Foreground="#8B5CF6"/>
-                                    <TextBlock Text="{Binding Corner4X, StringFormat='X: {0:F0}'}" FontSize="10"/>
-                                    <TextBlock Text="{Binding Corner4Y, StringFormat='Y: {0:F0}'}" FontSize="10"/>
-                                </StackPanel>
-                            </Grid>
-                        </StackPanel>
+                            <!-- Perspective Connecting Lines (Perspective Mode) -->
+                            <Polygon x:Name="PerspectivePoly" Stroke="#2563EB" StrokeThickness="2" StrokeDashArray="3 1" Fill="#152563EB" Visibility="Collapsed"/>
+
+                            <!-- Crop Box Rectangle & Grid (Standard Mode) -->
+                            <Rectangle x:Name="CropBoxRect" Stroke="#2563EB" StrokeThickness="2" Fill="#102563EB"/>
+                            <Line x:Name="GridLineH1" Stroke="#602563EB" StrokeThickness="1" StrokeDashArray="2 2"/>
+                            <Line x:Name="GridLineH2" Stroke="#602563EB" StrokeThickness="1" StrokeDashArray="2 2"/>
+                            <Line x:Name="GridLineV1" Stroke="#602563EB" StrokeThickness="1" StrokeDashArray="2 2"/>
+                            <Line x:Name="GridLineV2" Stroke="#602563EB" StrokeThickness="1" StrokeDashArray="2 2"/>
+
+                            <!-- Handles (4 Corners + 4 Edges) -->
+                            <!-- Corner 1 (Top-Left) -->
+                            <Ellipse x:Name="HandleC1" Width="14" Height="14" Fill="#3B82F6" Stroke="White" StrokeThickness="2" Cursor="SizeNWSE"/>
+                            <!-- Corner 2 (Top-Right) -->
+                            <Ellipse x:Name="HandleC2" Width="14" Height="14" Fill="#3B82F6" Stroke="White" StrokeThickness="2" Cursor="SizeNESW"/>
+                            <!-- Corner 3 (Bottom-Right) -->
+                            <Ellipse x:Name="HandleC3" Width="14" Height="14" Fill="#3B82F6" Stroke="White" StrokeThickness="2" Cursor="SizeNWSE"/>
+                            <!-- Corner 4 (Bottom-Left) -->
+                            <Ellipse x:Name="HandleC4" Width="14" Height="14" Fill="#3B82F6" Stroke="White" StrokeThickness="2" Cursor="SizeNESW"/>
+
+                            <!-- Edge Handles (Standard Mode) -->
+                            <Rectangle x:Name="HandleTop" Width="12" Height="8" Fill="#3B82F6" Stroke="White" StrokeThickness="1" Cursor="SizeNS"/>
+                            <Rectangle x:Name="HandleBottom" Width="12" Height="8" Fill="#3B82F6" Stroke="White" StrokeThickness="1" Cursor="SizeNS"/>
+                            <Rectangle x:Name="HandleLeft" Width="8" Height="12" Fill="#3B82F6" Stroke="White" StrokeThickness="1" Cursor="SizeWE"/>
+                            <Rectangle x:Name="HandleRight" Width="8" Height="12" Fill="#3B82F6" Stroke="White" StrokeThickness="1" Cursor="SizeWE"/>
+                        </Canvas>
+                    </Canvas>
+
+                    <!-- Viewport Hint Overlay (bottom left) -->
+                    <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" Background="#C0000000" CornerRadius="4" Padding="8,4">
+                        <TextBlock Text="Scroll: Zoom | Drag Center: Move Box | Drag Handles: Resize | Space/Middle-Click: Pan" FontSize="10" Foreground="White"/>
                     </Border>
                 </Grid>
             </Border>
@@ -113,46 +134,102 @@
             <!-- Splitter -->
             <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
 
-            <!-- RIGHT: Cropped Output & Assignment -->
+            <!-- RIGHT: Cropped Output, Image Adjustments & Face Assignment -->
             <Border Grid.Column="2" Background="{DynamicResource CardSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Section: Cropped Output Preview -->
+                        <TextBlock Text="Card Output Preview" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
 
-                    <TextBlock Grid.Row="0" Text="Rectified 600 DPI Card Output" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                        <Border Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10">
+                            <StackPanel HorizontalAlignment="Center">
+                                <Border BorderBrush="#2563EB" BorderThickness="2" CornerRadius="6" Background="White" ClipToBounds="True">
+                                    <Image Source="{Binding PreviewCroppedImage}" MaxHeight="160" Stretch="Uniform" Margin="2"/>
+                                </Border>
+                                <TextBlock Text="{Binding PixelDimensionsText}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                <TextBlock Text="{Binding PhysicalDimensionsText}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                <TextBlock Text="{Binding AspectRatioText, StringFormat='Preset: {0}'}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
 
-                    <!-- Preview of Cropped Card -->
-                    <Border Grid.Row="1" Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12">
-                        <StackPanel VerticalAlignment="Center">
-                            <Border BorderBrush="#2563EB" BorderThickness="2" CornerRadius="8" Background="White" ClipToBounds="True" HorizontalAlignment="Center">
-                                <Image Source="{Binding PreviewCroppedImage}" MaxHeight="220" Stretch="Uniform" Margin="4"/>
-                            </Border>
-                            <TextBlock Text="Standard CR80 85.60 × 53.98 mm (2022 × 1275 px @ 600 DPI)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-                        </StackPanel>
-                    </Border>
+                        <!-- Section: Non-Destructive Image Adjustments -->
+                        <Border Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,6">
+                                    <TextBlock Text="Image Enhancements" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <ui:Button Command="{Binding ResetAdjustmentsCommand}" Content="Reset" Height="20" Padding="6,0" FontSize="9" FontWeight="SemiBold" CornerRadius="3" HorizontalAlignment="Right"/>
+                                </Grid>
 
-                    <!-- Face Assignment Buttons -->
-                    <StackPanel Grid.Row="2" Margin="0,14,0,0">
-                        <ui:Button Command="{Binding AssignToFrontFaceCommand}" Height="44" CornerRadius="6" Background="#2563EB" Foreground="White" FontWeight="Bold" FontSize="13" Margin="0,0,0,8" IsEnabled="{Binding HasCroppedResult}">
+                                <!-- Brightness -->
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="65"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="35"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Brightness" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                    <Slider Grid.Column="1" Minimum="-100" Maximum="100" Value="{Binding Brightness, Mode=TwoWay}" TickFrequency="5" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Brightness, StringFormat='{}{0:F0}'}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <!-- Contrast -->
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="65"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="35"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Contrast" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                    <Slider Grid.Column="1" Minimum="0.5" Maximum="2.0" Value="{Binding Contrast, Mode=TwoWay}" TickFrequency="0.05" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Contrast, StringFormat='{}{0:F2}'}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <!-- Saturation -->
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="65"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="35"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Saturation" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                    <Slider Grid.Column="1" Minimum="0.0" Maximum="2.0" Value="{Binding Saturation, Mode=TwoWay}" TickFrequency="0.05" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Saturation, StringFormat='{}{0:F2}'}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <!-- Sharpness -->
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="65"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="35"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Sharpen" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                    <Slider Grid.Column="1" Minimum="0.0" Maximum="2.0" Value="{Binding Sharpness, Mode=TwoWay}" TickFrequency="0.05" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Sharpness, StringFormat='{}{0:F2}'}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Section: Card Face Assignment -->
+                        <TextBlock Text="Card Assignment" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+
+                        <ui:Button Command="{Binding AssignToFrontFaceCommand}" Height="40" CornerRadius="6" Background="{DynamicResource PrimaryAccentBrush}" Foreground="{DynamicResource AccentTextBrush}" FontWeight="Bold" FontSize="12" Margin="0,0,0,8" IsEnabled="{Binding HasCroppedResult}">
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon Symbol="Checkmark24" Margin="0,0,8,0"/>
                                 <TextBlock Text="SET AS FRONT CARD FACE"/>
                             </StackPanel>
                         </ui:Button>
 
-                        <ui:Button Command="{Binding AssignToBackFaceCommand}" Height="44" CornerRadius="6" Background="#7C3AED" Foreground="White" FontWeight="Bold" FontSize="13" Margin="0,0,0,8" IsEnabled="{Binding HasCroppedResult}">
+                        <ui:Button Command="{Binding AssignToBackFaceCommand}" Height="40" CornerRadius="6" Background="#7C3AED" Foreground="White" FontWeight="Bold" FontSize="12" Margin="0,0,0,10" IsEnabled="{Binding HasCroppedResult}">
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon Symbol="Checkmark24" Margin="0,0,8,0"/>
                                 <TextBlock Text="SET AS BACK CARD FACE"/>
                             </StackPanel>
                         </ui:Button>
 
-                        <ui:Button Command="{Binding CancelCommand}" Content="Return to Document Desk" Height="36" CornerRadius="6" Background="Transparent" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1"/>
+                        <ui:Button Command="{Binding CancelCommand}" Content="Return to Document Desk" Height="34" CornerRadius="6" Background="Transparent" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" FontSize="11"/>
                     </StackPanel>
-                </Grid>
+                </ScrollViewer>
             </Border>
         </Grid>
 

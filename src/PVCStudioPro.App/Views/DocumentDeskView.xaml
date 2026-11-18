@@ -32,8 +32,8 @@
                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                         <TextBlock Text="Universal Document Desk" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0"/>
-                        <Border Background="#E0F2FE" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="4" Padding="8,2">
-                            <TextBlock Text="{Binding MagicFormatBadge}" FontSize="11" FontWeight="Bold" Foreground="#0284C7"/>
+                        <Border Background="{DynamicResource StatusInfoBgBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8,2">
+                            <TextBlock Text="{Binding MagicFormatBadge}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource StatusInfoFgBrush}"/>
                         </Border>
                     </StackPanel>
                     <TextBlock Text="Import official citizen PDFs, mobile camera photos, scanned certificates &amp; office documents (Zero-Citizen-PII Pipeline)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
@@ -83,8 +83,8 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                         <TextBlock Text="Detected: " FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         <TextBlock Text="{Binding DetectedDocumentTitle}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource PrimaryAccentBrush}" Margin="0,0,8,0"/>
-                        <Border Background="#F3F4F6" CornerRadius="4" Padding="6,1">
-                            <TextBlock Text="{Binding DetectionConfidenceText}" FontSize="10" FontWeight="Bold" Foreground="#374151"/>
+                        <Border Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1">
+                            <TextBlock Text="{Binding DetectionConfidenceText}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </Border>
                     </StackPanel>
                     <TextBlock Text="{Binding DetectionNotes}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
@@ -98,7 +98,7 @@
         </Border>
 
         <!-- ROW 2: Decryption & Password Handling Bar -->
-        <Border Grid.Row="2" Background="#FEF3C7" BorderBrush="#F59E0B" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,0,0,12" Visibility="{Binding IsPasswordRequired, Converter={StaticResource BooleanToVisibilityConverter}}">
+        <Border Grid.Row="2" Background="{DynamicResource StatusWarningBgBrush}" BorderBrush="{DynamicResource StatusWarningFgBrush}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,0,0,12" Visibility="{Binding IsPasswordRequired, Converter={StaticResource BooleanToVisibilityConverter}}">
             <StackPanel>
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -110,19 +110,19 @@
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,14,0">
                         <TextBlock Text="🔒" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Document is Password Protected:" FontWeight="Bold" Foreground="#92400E" VerticalAlignment="Center"/>
+                        <TextBlock Text="Document is Password Protected:" FontWeight="Bold" Foreground="{DynamicResource StatusWarningFgBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
 
                     <!-- Password input -->
                     <TextBox Grid.Column="1" Text="{Binding PasswordInput, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Padding="8,0" Margin="0,0,8,0" FontFamily="Consolas" FontSize="13"/>
 
-                    <ui:Button Grid.Column="2" Command="{Binding TogglePasswordMaskCommand}" Content="Show/Hide" Height="34" Padding="10,0" CornerRadius="4" Margin="0,0,8,0" Background="#FDE68A" Foreground="#78350F"/>
-                    <ui:Button Grid.Column="3" Command="{Binding UnlockPasswordCommand}" Content="Unlock Document" Height="34" Padding="16,0" FontWeight="Bold" CornerRadius="4" Background="#D97706" Foreground="White"/>
+                    <ui:Button Grid.Column="2" Command="{Binding TogglePasswordMaskCommand}" Content="Show/Hide" Height="34" Padding="10,0" CornerRadius="4" Margin="0,0,8,0" Background="{DynamicResource NeutralSurfaceBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <ui:Button Grid.Column="3" Command="{Binding UnlockPasswordCommand}" Content="Unlock Document" Height="34" Padding="16,0" FontWeight="Bold" CornerRadius="4" Background="{DynamicResource PrimaryAccentBrush}" Foreground="{DynamicResource AccentTextBrush}"/>
                 </Grid>
 
-                <TextBlock Text="💡 UIDAI e-Aadhaar Standard Format: First 4 letters of Name in CAPITAL LETTERS + Year of Birth (YYYY), e.g. SURE1985" FontSize="11" Foreground="#B45309" Margin="32,4,0,0"/>
+                <TextBlock Text="💡 UIDAI e-Aadhaar Standard Format: First 4 letters of Name in CAPITAL LETTERS + Year of Birth (YYYY), e.g. SURE1985" FontSize="11" Foreground="{DynamicResource StatusWarningFgBrush}" Margin="32,4,0,0"/>
 
-                <TextBlock Text="{Binding PasswordErrorMessage}" FontWeight="SemiBold" FontSize="11" Foreground="#DC2626" Margin="32,2,0,0" Visibility="{Binding HasPasswordError, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <TextBlock Text="{Binding PasswordErrorMessage}" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource StatusErrorFgBrush}" Margin="32,2,0,0" Visibility="{Binding HasPasswordError, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             </StackPanel>
         </Border>
 
@@ -152,7 +152,7 @@
                     </Grid>
 
                     <!-- Image Display or Empty Drag/Drop Zone -->
-                    <Border Grid.Row="1" Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
+                    <Border Grid.Row="1" Background="{DynamicResource PreviewCanvasBgBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" ClipToBounds="True">
                         <Grid>
                             <!-- Empty State Callout -->
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding IsFileLoaded, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=Inverse}">
@@ -193,7 +193,7 @@
                         <TextBlock Grid.Column="0" Text="Extracted Identity Cards (Standard CR80 85.60 × 53.98 mm)" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal">
                             <ui:Button Command="{Binding SwapFacesCommand}" Content="Swap Front/Back" Height="26" Padding="8,0" FontSize="11" CornerRadius="3" Margin="0,0,6,0" Visibility="{Binding HasBackCard, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            <ui:Button Command="{Binding ToggleMaskAadhaarCommand}" Content="Mask Aadhaar (UIDAI)" Height="26" Padding="8,0" FontSize="11" CornerRadius="3" Background="#FEF3C7" Foreground="#92400E"/>
+                            <ui:Button Command="{Binding ToggleMaskAadhaarCommand}" Content="Mask Aadhaar (UIDAI)" Height="26" Padding="8,0" FontSize="11" CornerRadius="3" Background="{DynamicResource StatusWarningBgBrush}" Foreground="{DynamicResource StatusWarningFgBrush}"/>
                         </StackPanel>
                     </Grid>
 
@@ -207,7 +207,7 @@
                                         <TextBlock Text="FRONT FACE (Slot 1)" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <TextBlock Text="CR80 • 2022 × 1275 px @ 600 DPI" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <Border BorderBrush="#3B82F6" BorderThickness="2" CornerRadius="6" Background="White" ClipToBounds="True">
+                                    <Border BorderBrush="{DynamicResource PrimaryAccentBrush}" BorderThickness="2" CornerRadius="6" Background="White" ClipToBounds="True">
                                         <Image Source="{Binding FrontCardImage}" Height="165" Stretch="Uniform" Margin="4"/>
                                     </Border>
                                 </StackPanel>
@@ -229,22 +229,22 @@
                     </ScrollViewer>
 
                     <!-- Manual Crop Studio Quick Trigger -->
-                    <Border Grid.Row="2" Background="#F0FDF4" BorderBrush="#BBF7D0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,10">
+                    <Border Grid.Row="2" Background="{DynamicResource StatusSuccessBgBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Need custom crop or camera deskew?" FontWeight="Bold" FontSize="12" Foreground="#166534"/>
-                                <TextBlock Text="Open Crop Studio to place 4-corner perspective handles and rectify." FontSize="11" Foreground="#15803D"/>
+                                <TextBlock Text="Need custom crop, zoom/pan or camera deskew?" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource StatusSuccessFgBrush}"/>
+                                <TextBlock Text="Open Crop Studio to adjust zoom, drag crop handles, or apply image enhancements." FontSize="11" Foreground="{DynamicResource StatusSuccessFgBrush}"/>
                             </StackPanel>
-                            <ui:Button Grid.Column="1" Command="{Binding OpenCropStudioCommand}" Content="Open in Crop Studio" Height="30" Padding="12,0" FontWeight="SemiBold" CornerRadius="4" Background="#16A34A" Foreground="White"/>
+                            <ui:Button Grid.Column="1" Command="{Binding OpenCropStudioCommand}" Content="Open Crop Studio" Height="30" Padding="12,0" FontWeight="SemiBold" CornerRadius="4" Background="{DynamicResource PrimaryAccentBrush}" Foreground="{DynamicResource AccentTextBrush}"/>
                         </Grid>
                     </Border>
 
                     <!-- Big Hero Print Preview & Approval Gate Button -->
-                    <ui:Button Grid.Row="3" Command="{Binding ApproveAndPrintCommand}" Height="48" CornerRadius="6" Background="{DynamicResource PrimaryAccentBrush}" Foreground="White" FontWeight="Bold" FontSize="14" IsEnabled="{Binding HasCardsExtracted}">
+                    <ui:Button Grid.Row="3" Command="{Binding ApproveAndPrintCommand}" Height="48" CornerRadius="6" Background="{DynamicResource PrimaryAccentBrush}" Foreground="{DynamicResource AccentTextBrush}" FontWeight="Bold" FontSize="14" IsEnabled="{Binding HasCardsExtracted}">
                         <StackPanel Orientation="Horizontal">
                             <ui:SymbolIcon Symbol="Print24" Margin="0,0,8,0"/>
                             <TextBlock Text="PRINT PREVIEW &amp; OPERATOR APPROVAL GATE"/>
@@ -262,7 +262,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="Local Processing • Zero Citizen PII Retention" FontSize="11" FontWeight="SemiBold" Foreground="#10B981" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="Local Processing • Zero Citizen PII Retention" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource StatusSuccessFgBrush}" VerticalAlignment="Center"/>
             </Grid>
         </Border>
     </Grid>
