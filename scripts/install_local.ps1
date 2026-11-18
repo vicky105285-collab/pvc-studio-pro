@@ -1,15 +1,33 @@
 ﻿# PVC Studio Pro — Local Windows Installation & Distribution Packager
+param(
+    [switch]$Rebuild
+)
 $ErrorActionPreference = "Stop"
 
 $appName = "PVC Studio Pro"
-$sourceDir = "d:\pvc card pro\publish\PVCStudioPro_win-x64"
+$projectRoot = "d:\pvc card pro"
+$sourceDir = Join-Path $projectRoot "publish\PVCStudioPro_win-x64"
 $installDir = Join-Path $env:LOCALAPPDATA "Programs\PVC Studio Pro"
 $exePath = Join-Path $installDir "PVCStudioPro.App.exe"
-$distZip = "d:\pvc card pro\publish\PVCStudioPro_Portable_win-x64.zip"
+$distZip = Join-Path $projectRoot "publish\PVCStudioPro_Portable_win-x64.zip"
 
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host " Installing $appName (Fluent 2 Redesign) on this Laptop" -ForegroundColor Cyan
+Write-Host " Installing $appName (100% Self-Contained) on this Laptop" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
+
+# 0. Publish self-contained if requested or missing
+if ($Rebuild -or (-not (Test-Path (Join-Path $sourceDir "coreclr.dll")))) {
+    Write-Host "[0/6] Publishing self-contained release package (Zero .NET prerequisites required)..." -ForegroundColor Yellow
+    $dotnetExe = if (Test-Path "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe") {
+        "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe"
+    } else {
+        "dotnet"
+    }
+    & $dotnetExe publish "$projectRoot\src\PVCStudioPro.App\PVCStudioPro.App.csproj" -c Release -r win-x64 --self-contained true -o $sourceDir
+    if ($LASTEXITCODE -ne 0) {
+        throw "Self-contained publish failed with code $LASTEXITCODE"
+    }
+}
 
 # 1. Ensure source exists and kill any running instance
 if (-not (Test-Path (Join-Path $sourceDir "PVCStudioPro.App.exe"))) {
