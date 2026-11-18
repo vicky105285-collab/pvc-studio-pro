@@ -28,5 +28,7 @@ namespace PVCStudioPro.Core.Models
         public int VoterCount { get; set; }
         public int PhotoSheetCount { get; set; }
         public int OtherCount { get; set; }
+        public int CashPaymentCount { get; set; }
+        public int UpiPaymentCount { get; set; }
     }
 }

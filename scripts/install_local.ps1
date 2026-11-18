@@ -1,13 +1,14 @@
-﻿# PVC Studio Pro — Local Windows Installation Script
+﻿# PVC Studio Pro — Local Windows Installation & Distribution Packager
 $ErrorActionPreference = "Stop"
 
 $appName = "PVC Studio Pro"
 $sourceDir = "d:\pvc card pro\publish\PVCStudioPro_win-x64"
 $installDir = Join-Path $env:LOCALAPPDATA "Programs\PVC Studio Pro"
 $exePath = Join-Path $installDir "PVCStudioPro.App.exe"
+$distZip = "d:\pvc card pro\publish\PVCStudioPro_Portable_win-x64.zip"
 
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host " Installing $appName on this Laptop" -ForegroundColor Cyan
+Write-Host " Installing $appName (Fluent 2 Redesign) on this Laptop" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 # 1. Ensure source exists
@@ -16,14 +17,17 @@ if (-not (Test-Path (Join-Path $sourceDir "PVCStudioPro.App.exe"))) {
 }
 
 # 2. Create Target Directory
-Write-Host "[1/5] Creating application directory: $installDir" -ForegroundColor Yellow
+Write-Host "[1/6] Creating application directory: $installDir" -ForegroundColor Yellow
 if (-not (Test-Path $installDir)) {
     New-Item -ItemType Directory -Path $installDir -Force | Out-Null
 }
 
 # 3. Copy Application Files
-Write-Host "[2/5] Copying binaries and dependencies..." -ForegroundColor Yellow
+Write-Host "[2/6] Copying binaries and dependencies..." -ForegroundColor Yellow
 robocopy $sourceDir $installDir /E /IS /IT /NP /NDL /NFL | Out-Null
+if ($LASTEXITCODE -gt 7) {
+    throw "Robocopy failed with exit code $LASTEXITCODE"
+}
 
 if (-not (Test-Path $exePath)) {
     throw "Installation failed: $exePath not found after copy."
@@ -31,7 +35,7 @@ if (-not (Test-Path $exePath)) {
 Write-Host "      Binaries deployed successfully." -ForegroundColor Green
 
 # 4. Create Desktop & Start Menu Shortcuts via WScript.Shell
-Write-Host "[3/5] Creating Windows Desktop and Start Menu shortcuts..." -ForegroundColor Yellow
+Write-Host "[3/6] Creating Windows Desktop and Start Menu shortcuts..." -ForegroundColor Yellow
 $wsh = New-Object -ComObject WScript.Shell
 
 # Desktop Shortcut
@@ -57,7 +61,7 @@ $startShortcut.Save()
 Write-Host "      Created Start Menu shortcut: $startMenuLnkPath" -ForegroundColor Green
 
 # 5. Create Clean Uninstaller Script
-Write-Host "[4/5] Generating uninstaller..." -ForegroundColor Yellow
+Write-Host "[4/6] Generating uninstaller..." -ForegroundColor Yellow
 $uninstallerPath = Join-Path $installDir "uninstall.cmd"
 $uninstallCmdContent = @"
 @echo off
@@ -74,7 +78,7 @@ pause
 [System.IO.File]::WriteAllText($uninstallerPath, $uninstallCmdContent)
 
 # 6. Register in Windows Settings / Installed Apps (Registry)
-Write-Host "[5/5] Registering in Windows Installed Apps registry..." -ForegroundColor Yellow
+Write-Host "[5/6] Registering in Windows Installed Apps registry..." -ForegroundColor Yellow
 $regKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\PVCStudioPro"
 if (-not (Test-Path $regKey)) {
     New-Item -Path $regKey -Force | Out-Null
@@ -83,7 +87,7 @@ if (-not (Test-Path $regKey)) {
 $installSizeKB = [int]((Get-ChildItem $installDir -Recurse | Measure-Object -Property Length -Sum).Sum / 1KB)
 
 Set-ItemProperty -Path $regKey -Name "DisplayName" -Value "PVC Studio Pro"
-Set-ItemProperty -Path $regKey -Name "DisplayVersion" -Value "1.0.0"
+Set-ItemProperty -Path $regKey -Name "DisplayVersion" -Value "2.0.0-RC"
 Set-ItemProperty -Path $regKey -Name "Publisher" -Value "PVC Studio Pro Team"
 Set-ItemProperty -Path $regKey -Name "InstallLocation" -Value $installDir
 Set-ItemProperty -Path $regKey -Name "DisplayIcon" -Value "$exePath,0"
@@ -92,10 +96,19 @@ Set-ItemProperty -Path $regKey -Name "EstimatedSize" -Value $installSizeKB
 Set-ItemProperty -Path $regKey -Name "NoModify" -Value 1 -Type DWord
 Set-ItemProperty -Path $regKey -Name "NoRepair" -Value 1 -Type DWord
 
+# 7. Package Portable Transferable Distribution ZIP
+Write-Host "[6/6] Generating portable distribution package: $distZip" -ForegroundColor Yellow
+if (Test-Path $distZip) {
+    Remove-Item $distZip -Force
+}
+Compress-Archive -Path "$sourceDir\*" -DestinationPath $distZip -CompressionLevel Optimal
+Write-Host "      Portable package created successfully: $([math]::Round((Get-Item $distZip).Length / 1MB, 2)) MB" -ForegroundColor Green
+
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host " Installation Complete!" -ForegroundColor Green
+Write-Host " Installation & Packaging Complete!" -ForegroundColor Green
 Write-Host " Application Location: $exePath" -ForegroundColor White
 Write-Host " Installed Size: $([math]::Round($installSizeKB / 1024, 2)) MB" -ForegroundColor White
 Write-Host " Desktop Shortcut: $desktopLnkPath" -ForegroundColor White
 Write-Host " Start Menu Shortcut: $startMenuLnkPath" -ForegroundColor White
+Write-Host " Portable Archive: $distZip" -ForegroundColor White
 Write-Host "==========================================" -ForegroundColor Cyan

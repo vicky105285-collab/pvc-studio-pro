@@ -72,6 +72,18 @@ namespace PVCStudioPro.App.ViewModels
         [ObservableProperty]
         private bool _hasLoadedCards = false;
 
+        [ObservableProperty]
+        private bool _isPasswordPromptVisible = false;
+
+        [ObservableProperty]
+        private string _passwordInput = string.Empty;
+
+        [ObservableProperty]
+        private string _selectedPaymentMode = "CASH";
+
+        [ObservableProperty]
+        private ObservableCollection<string> _paymentModes = new() { "CASH", "UPI", "CARD" };
+
         private SKBitmap? _cachedFrontBitmap;
         private SKBitmap? _cachedBackBitmap;
         private CardTemplate? _activeTemplate;
@@ -90,13 +102,75 @@ namespace PVCStudioPro.App.ViewModels
             _printService = printService;
             _jobLedger = jobLedger;
 
-            TrayList.Add("EPSON_2CARD_TRAY");
+            TrayList.Add("EPSON_L805_TRAY");
+            TrayList.Add("EPSON_L8050_TRAY");
             TrayList.Add("CANON_MULTI_TRAY");
             TrayList.Add("DRAGON_SHEET_A4");
             TrayList.Add("CR80_DIRECT");
-            SelectedTray = "EPSON_2CARD_TRAY";
+            SelectedTray = "EPSON_L805_TRAY";
 
             _ = InitializePrintersAsync();
+        }
+
+        [RelayCommand]
+        public async Task UnlockPasswordProtectedAsync()
+        {
+            if (string.IsNullOrEmpty(DocumentPath) || string.IsNullOrEmpty(PasswordInput)) return;
+            IsPasswordPromptVisible = false;
+            await LoadDocumentFileAsync(DocumentPath, PasswordInput);
+        }
+
+        [RelayCommand]
+        public void Rotate90()
+        {
+            if (_cachedFrontBitmap == null) return;
+
+            try
+            {
+                var rotatedFront = new SKBitmap(_cachedFrontBitmap.Height, _cachedFrontBitmap.Width, _cachedFrontBitmap.ColorType, _cachedFrontBitmap.AlphaType);
+                using (var canvas = new SKCanvas(rotatedFront))
+                {
+                    canvas.Translate(rotatedFront.Width, 0);
+                    canvas.RotateDegrees(90);
+                    canvas.DrawBitmap(_cachedFrontBitmap, 0, 0, SKSamplingOptions.Default, null);
+                }
+                _cachedFrontBitmap.Dispose();
+                _cachedFrontBitmap = rotatedFront;
+                FrontCardImage = _cachedFrontBitmap.ToBitmapSource();
+
+                if (_cachedBackBitmap != null)
+                {
+                    var rotatedBack = new SKBitmap(_cachedBackBitmap.Height, _cachedBackBitmap.Width, _cachedBackBitmap.ColorType, _cachedBackBitmap.AlphaType);
+                    using (var canvas = new SKCanvas(rotatedBack))
+                    {
+                        canvas.Translate(rotatedBack.Width, 0);
+                        canvas.RotateDegrees(90);
+                        canvas.DrawBitmap(_cachedBackBitmap, 0, 0, SKSamplingOptions.Default, null);
+                    }
+                    _cachedBackBitmap.Dispose();
+                    _cachedBackBitmap = rotatedBack;
+                    BackCardImage = _cachedBackBitmap.ToBitmapSource();
+                }
+                StatusMessage = "Rotated cards by 90 degrees.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Rotation error: {ex.Message}";
+            }
+        }
+
+        [RelayCommand]
+        public void FlipFaces()
+        {
+            if (_cachedFrontBitmap == null) return;
+
+            var tempBmp = _cachedFrontBitmap;
+            _cachedFrontBitmap = _cachedBackBitmap ?? _cachedFrontBitmap;
+            _cachedBackBitmap = tempBmp;
+
+            FrontCardImage = _cachedFrontBitmap?.ToBitmapSource();
+            BackCardImage = _cachedBackBitmap?.ToBitmapSource();
+            StatusMessage = "Swapped Front and Back card faces.";
         }
 
         private async Task InitializePrintersAsync()
@@ -162,7 +236,8 @@ namespace PVCStudioPro.App.ViewModels
                 var docInfo = await _pdfService.InspectDocumentAsync(stream, password);
                 if (docInfo.IsEncrypted && string.IsNullOrEmpty(password))
                 {
-                    StatusMessage = "Password-protected PDF detected. Enter password.";
+                    IsPasswordPromptVisible = true;
+                    StatusMessage = "Password-protected PDF detected. Enter password to unlock.";
                     return;
                 }
 

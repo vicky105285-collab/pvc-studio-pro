@@ -137,7 +137,9 @@ namespace PVCStudioPro.Core.Services.Implementations
                     SUM(CASE WHEN document_type = 'PAN' THEN 1 ELSE 0 END) as PanCount,
                     SUM(CASE WHEN document_type = 'VOTER' THEN 1 ELSE 0 END) as VoterCount,
                     SUM(CASE WHEN document_type = 'PHOTO_STUDIO' THEN 1 ELSE 0 END) as PhotoSheetCount,
-                    SUM(CASE WHEN document_type NOT IN ('AADHAAR', 'PAN', 'VOTER', 'PHOTO_STUDIO') THEN 1 ELSE 0 END) as OtherCount
+                    SUM(CASE WHEN document_type NOT IN ('AADHAAR', 'PAN', 'VOTER', 'PHOTO_STUDIO') THEN 1 ELSE 0 END) as OtherCount,
+                    COALESCE(SUM(CASE WHEN payment_mode = 'CASH' THEN 1 ELSE 0 END), 0) as CashPaymentCount,
+                    COALESCE(SUM(CASE WHEN payment_mode = 'UPI' THEN 1 ELSE 0 END), 0) as UpiPaymentCount
                 FROM print_jobs
                 WHERE date(created_at) = date(@TargetDate);
             ";

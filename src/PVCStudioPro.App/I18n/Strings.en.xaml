@@ -2,56 +2,167 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <!-- Application Shell -->
-    <sys:String x:Key="AppTitle">PVC Studio Pro - Professional PVC Card Suite</sys:String>
+    <!-- Application Shell & Navigation -->
+    <sys:String x:Key="AppTitle">PVC Studio Pro - Commercial PVC Card &amp; Photo Production Suite</sys:String>
+    <sys:String x:Key="NavGroupProduction">PRODUCTION</sys:String>
+    <sys:String x:Key="NavGroupHardware">PRINTING &amp; HARDWARE</sys:String>
+    <sys:String x:Key="NavGroupBusiness">BUSINESS &amp; AUDIT</sys:String>
+    <sys:String x:Key="NavGroupSystem">SYSTEM</sys:String>
+
     <sys:String x:Key="NavDashboard">Dashboard</sys:String>
-    <sys:String x:Key="NavCardPrint">Card Printing</sys:String>
+    <sys:String x:Key="NavCardPrint">Card Studio</sys:String>
     <sys:String x:Key="NavPhotoStudio">Photo Studio</sys:String>
-    <sys:String x:Key="NavLedger">Business Ledger</sys:String>
-    <sys:String x:Key="NavCalibration">Printer Setup &amp; Calibration</sys:String>
-    <sys:String x:Key="NavSettings">Settings</sys:String>
+    <sys:String x:Key="NavDocProcessing">Document Processing</sys:String>
+    <sys:String x:Key="NavBatch">Batch Processing</sys:String>
+    <sys:String x:Key="NavPrintCenter">Print Center</sys:String>
+    <sys:String x:Key="NavPrinterTray">Printer &amp; Tray Manager</sys:String>
+    <sys:String x:Key="NavCalibration">Calibration Studio</sys:String>
+    <sys:String x:Key="NavTemplates">Template Manager</sys:String>
+    <sys:String x:Key="NavBusinessProfile">Business Profile</sys:String>
+    <sys:String x:Key="NavLedger">Transactions &amp; Ledger</sys:String>
+    <sys:String x:Key="NavReports">Reports &amp; Analytics</sys:String>
+    <sys:String x:Key="NavBackup">Backup &amp; Restore</sys:String>
+    <sys:String x:Key="NavSettings">Settings &amp; Preferences</sys:String>
+
     <sys:String x:Key="LangToggle">தமிழ் (Tamil)</sys:String>
+    <sys:String x:Key="ThemeToggle">Toggle Theme</sys:String>
+    <sys:String x:Key="StatusReady">System Ready | Local Offline Engine | Zero Citizen PII Retention</sys:String>
+
+    <!-- Dashboard -->
+    <sys:String x:Key="DashHeader">e-Sevai Operations Command Center</sys:String>
+    <sys:String x:Key="DashSubHeader">Daily production metrics, quick workflows, and hardware readiness</sys:String>
+    <sys:String x:Key="DashCardsPrintedToday">Cards Printed Today</sys:String>
+    <sys:String x:Key="DashPhotoSheetsToday">Photo Sheets Today</sys:String>
+    <sys:String x:Key="DashRevenueToday">Total Revenue Today</sys:String>
+    <sys:String x:Key="DashPaymentSplit">Cash vs. UPI Split</sys:String>
+    <sys:String x:Key="DashQuickActions">Quick Production Actions</sys:String>
+    <sys:String x:Key="DashActionPrintCard">Print PVC Card</sys:String>
+    <sys:String x:Key="DashActionPhotoStudio">Passport Photos</sys:String>
+    <sys:String x:Key="DashActionBatch">Batch Queue</sys:String>
+    <sys:String x:Key="DashActionCalibrate">Calibrate Tray</sys:String>
+    <sys:String x:Key="DashRecentJobs">Recent Production Transactions</sys:String>
+    <sys:String x:Key="DashPrinterStatus">Active Printer Readiness</sys:String>
 
     <!-- Card Print Studio -->
     <sys:String x:Key="BtnOpenDocument">Open Document (Ctrl+O)</sys:String>
-    <sys:String x:Key="BtnPrintNow">PRINT NOW (Ctrl+P)</sys:String>
-    <sys:String x:Key="ChkMaskAadhaar">Mask Aadhaar (XXXX-XXXX-1234)</sys:String>
+    <sys:String x:Key="BtnPrintNow">PRINT PVC CARD (Ctrl+P)</sys:String>
+    <sys:String x:Key="ChkMaskAadhaar">Mask First 8 Digits (UIDAI Directive)</sys:String>
     <sys:String x:Key="LblFrontFace">FRONT FACE (Slot 1)</sys:String>
     <sys:String x:Key="LblBackFace">BACK FACE (Slot 2)</sys:String>
-    <sys:String x:Key="LblPrinterDevice">Target Printer:</sys:String>
-    <sys:String x:Key="LblMediaTray">Media Tray:</sys:String>
+    <sys:String x:Key="LblPrinterDevice">Target Printer Device:</sys:String>
+    <sys:String x:Key="LblMediaTray">Media Tray / Attachment:</sys:String>
     <sys:String x:Key="LblCopies">Copies:</sys:String>
-    <sys:String x:Key="LblCardPrice">Price (₹):</sys:String>
-    <sys:String x:Key="LblOffsetX">Offset X (mm):</sys:String>
-    <sys:String x:Key="LblOffsetY">Offset Y (mm):</sys:String>
-    <sys:String x:Key="LblMirrorMode">Mirror Mode (Dragon Sheet)</sys:String>
-    <sys:String x:Key="LblPreflightStatus">Pre-Flight Check:</sys:String>
-    <sys:String x:Key="StatusReady">System Ready | Local Offline Engine | Zero Citizen PII Retention</sys:String>
-    <sys:String x:Key="LblDocumentType">Detected Document:</sys:String>
+    <sys:String x:Key="LblCardPrice">Unit Price (₹):</sys:String>
+    <sys:String x:Key="LblOffsetX">Fine Offset X (mm):</sys:String>
+    <sys:String x:Key="LblOffsetY">Fine Offset Y (mm):</sys:String>
+    <sys:String x:Key="LblMirrorMode">Mirror Mode (Dragon Sheet PVC)</sys:String>
+    <sys:String x:Key="LblPreflightStatus">Pre-Flight Hardware Check:</sys:String>
+    <sys:String x:Key="LblDocumentType">Detected Document Format:</sys:String>
+    <sys:String x:Key="BtnRotate90">Rotate 90°</sys:String>
+    <sys:String x:Key="BtnFlipFaces">Swap Front / Back</sys:String>
 
-    <!-- Business Ledger -->
+    <!-- Photo Studio -->
+    <sys:String x:Key="PhotoHeader">Passport &amp; Visa Photo Studio</sys:String>
+    <sys:String x:Key="PhotoSubHeader">ICAO biometric framing, classical GrabCut segmentation, and 4x6 / A4 layouts</sys:String>
+    <sys:String x:Key="BtnOpenPhoto">Load Portrait Photo</sys:String>
+    <sys:String x:Key="ChkRemoveBg">Remove Background (GrabCut Offline)</sys:String>
+    <sys:String x:Key="LblStudioColor">Studio Background Color:</sys:String>
+    <sys:String x:Key="LblGridSize">Photo Sheet Layout:</sys:String>
+    <sys:String x:Key="BtnPrintPhotos">Print Photo Sheet (Ctrl+P)</sys:String>
+    <sys:String x:Key="BtnExportPhoto">Export Image (PNG)</sys:String>
+    <sys:String x:Key="LblBrightness">Brightness:</sys:String>
+    <sys:String x:Key="LblContrast">Contrast:</sys:String>
+
+    <!-- Document Processing / Scan -->
+    <sys:String x:Key="ScanHeader">Document Perspective Rectification</sys:String>
+    <sys:String x:Key="ScanSubHeader">Auto corner detection, deskewing, and CR80 geometry correction</sys:String>
+    <sys:String x:Key="BtnAutoDetectCorners">Auto-Detect Corners</sys:String>
+    <sys:String x:Key="BtnRectifyCard">Rectify &amp; Send to Card Studio</sys:String>
+
+    <!-- Batch Processing -->
+    <sys:String x:Key="BatchHeader">High-Volume Batch Production</sys:String>
+    <sys:String x:Key="BatchSubHeader">Queue multiple customer documents, auto-detect templates, and spool in batch</sys:String>
+    <sys:String x:Key="BtnAddFiles">Add Documents...</sys:String>
+    <sys:String x:Key="BtnAddFolder">Import Folder...</sys:String>
+    <sys:String x:Key="BtnStartBatch">Start Batch Processing</sys:String>
+    <sys:String x:Key="BtnClearBatch">Clear Queue</sys:String>
+
+    <!-- Printer & Tray Manager -->
+    <sys:String x:Key="PrinterManagerHeader">Printer &amp; Tray Attachment Manager</sys:String>
+    <sys:String x:Key="PrinterManagerSubHeader">Configure independent profiles for aftermarket trays and manufacturer attachments</sys:String>
+    <sys:String x:Key="BtnRefreshPrinters">Scan Installed Printers</sys:String>
+    <sys:String x:Key="BtnNewProfile">New Tray Profile</sys:String>
+    <sys:String x:Key="BtnDuplicateProfile">Duplicate Profile</sys:String>
+    <sys:String x:Key="BtnSaveProfile">Save Profile Changes</sys:String>
+    <sys:String x:Key="BtnDeleteProfile">Delete Profile</sys:String>
+
+    <!-- Calibration Studio -->
+    <sys:String x:Key="CalibHeader">Hardware Millimeter Alignment &amp; Tray Calibration</sys:String>
+    <sys:String x:Key="CalibInstructions">Print the calibration sheet on your tray. Measure edge discrepancies with a caliper, then enter the offsets below.</sys:String>
+    <sys:String x:Key="BtnPrintCalibSheet">Print Test Calibration Sheet</sys:String>
+    <sys:String x:Key="BtnSaveCalibration">Save Calibration Profile</sys:String>
+    <sys:String x:Key="BtnResetDefaults">Reset to Factory Offsets</sys:String>
+
+    <!-- Template Manager -->
+    <sys:String x:Key="TemplateHeader">Identity Document Template Manager</sys:String>
+    <sys:String x:Key="TemplateSubHeader">Manage coordinate definitions and keyword anchors for all 10 Indian ID formats</sys:String>
+    <sys:String x:Key="BtnExportTemplates">Export Template JSON</sys:String>
+    <sys:String x:Key="BtnImportTemplate">Import Custom Template</sys:String>
+
+    <!-- Business Profile -->
+    <sys:String x:Key="BusinessProfileHeader">Business Profile &amp; Billing Setup</sys:String>
+    <sys:String x:Key="BusinessProfileSubHeader">Configure shop identity, receipt headers, default pricing, and billing preferences</sys:String>
+    <sys:String x:Key="TabIdentity">Business Identity</sys:String>
+    <sys:String x:Key="TabBilling">Billing &amp; Invoicing</sys:String>
+    <sys:String x:Key="TabHardwareDefaults">Hardware Defaults</sys:String>
+    <sys:String x:Key="TabDataPrivacy">Data &amp; Privacy</sys:String>
+    <sys:String x:Key="LblShopName">Business / Shop Name:</sys:String>
+    <sys:String x:Key="LblOperatorName">Owner / Operator Name:</sys:String>
+    <sys:String x:Key="LblBusinessType">Business Type:</sys:String>
+    <sys:String x:Key="LblAddressLine1">Address Line 1:</sys:String>
+    <sys:String x:Key="LblAddressLine2">Address Line 2 (Optional):</sys:String>
+    <sys:String x:Key="LblDistrict">District:</sys:String>
+    <sys:String x:Key="LblState">State:</sys:String>
+    <sys:String x:Key="LblPinCode">PIN Code:</sys:String>
+    <sys:String x:Key="LblPhone">Contact Phone:</sys:String>
+    <sys:String x:Key="LblEmail">Email Address:</sys:String>
+    <sys:String x:Key="LblCurrency">Currency Symbol:</sys:String>
+    <sys:String x:Key="LblInvoicePrefix">Receipt Prefix:</sys:String>
+    <sys:String x:Key="LblNextInvoice">Next Invoice Number:</sys:String>
+    <sys:String x:Key="LblReceiptPaperSize">Receipt Paper Size:</sys:String>
+    <sys:String x:Key="LblReceiptFooter">Receipt Footer Message:</sys:String>
+    <sys:String x:Key="BtnSaveProfileSettings">Save Business Profile</sys:String>
+
+    <!-- Transactions & Ledger -->
     <sys:String x:Key="LedgerHeader">Daily Business Transaction Ledger</sys:String>
+    <sys:String x:Key="LedgerSubHeader">Operational audit log, financial reconciliation, and thermal receipts</sys:String>
     <sys:String x:Key="LblTodayCards">Total Cards Printed Today</sys:String>
     <sys:String x:Key="LblTodayRevenue">Total Revenue Today</sys:String>
-    <sys:String x:Key="LblRecentJobs">Recent Print Transactions</sys:String>
+    <sys:String x:Key="ColJobNo">Invoice No</sys:String>
     <sys:String x:Key="ColTime">Time</sys:String>
     <sys:String x:Key="ColDocType">Document Type</sys:String>
     <sys:String x:Key="ColQty">Quantity</sys:String>
     <sys:String x:Key="ColAmount">Amount (₹)</sys:String>
     <sys:String x:Key="ColPayment">Payment</sys:String>
-    <sys:String x:Key="BtnPrintReceipt">Print 58mm/80mm Receipt</sys:String>
+    <sys:String x:Key="ColPrinter">Printer</sys:String>
+    <sys:String x:Key="BtnPrintReceipt">Print Thermal Receipt</sys:String>
+    <sys:String x:Key="BtnExportCsv">Export CSV Spreadsheet</sys:String>
 
-    <!-- Calibration -->
-    <sys:String x:Key="CalibHeader">Hardware Millimeter Alignment &amp; Tray Calibration</sys:String>
-    <sys:String x:Key="CalibInstructions">Print the calibration sheet on your tray. Measure any gap with a millimeter ruler or digital caliper, then adjust the X and Y offsets below.</sys:String>
-    <sys:String x:Key="BtnPrintCalibSheet">Print Test Calibration Sheet</sys:String>
-    <sys:String x:Key="BtnSaveCalibration">Save Calibration Profile</sys:String>
+    <!-- Reports & Analytics -->
+    <sys:String x:Key="ReportsHeader">Business Reports &amp; Financial Analytics</sys:String>
+    <sys:String x:Key="ReportsSubHeader">Historical trends, payment distribution, and popular card formats</sys:String>
 
-    <!-- Photo Studio -->
-    <sys:String x:Key="PhotoHeader">Passport Photo Studio</sys:String>
-    <sys:String x:Key="BtnOpenPhoto">Load Photo</sys:String>
-    <sys:String x:Key="ChkRemoveBg">Remove Background (Local AI)</sys:String>
-    <sys:String x:Key="LblGridSize">Photo Sheet Layout:</sys:String>
-    <sys:String x:Key="BtnPrintPhotos">Print Photo Sheet (4x6 / A4)</sys:String>
+    <!-- Backup & Restore -->
+    <sys:String x:Key="BackupHeader">Disaster Recovery &amp; Local Backup</sys:String>
+    <sys:String x:Key="BackupSubHeader">Safeguard business ledger records and custom hardware profiles</sys:String>
+    <sys:String x:Key="BtnCreateBackup">Create Instant Backup Now</sys:String>
+    <sys:String x:Key="BtnRestoreBackup">Restore from Archive</sys:String>
+
+    <!-- Settings -->
+    <sys:String x:Key="SettingsHeader">Application Settings &amp; Preferences</sys:String>
+    <sys:String x:Key="SettingsSubHeader">Theme appearance, language toggle, and display scaling</sys:String>
+    <sys:String x:Key="LblTheme">Theme Appearance:</sys:String>
+    <sys:String x:Key="LblLanguage">Primary Language:</sys:String>
+    <sys:String x:Key="LblUiScale">Interface Scaling:</sys:String>
 
 </ResourceDictionary>

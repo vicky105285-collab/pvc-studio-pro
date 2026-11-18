@@ -31,7 +31,7 @@ namespace PVCStudioPro.App.ViewModels
         private bool _isRemoveBackground = true;
 
         [ObservableProperty]
-        private string _selectedBackground = "WHITE"; // WHITE, BLUE, GREY
+        private string _selectedBackground = "WHITE"; // WHITE, BLUE, GREY, CREAM
 
         [ObservableProperty]
         private int _photoCount = 8; // 8 (4x6"), 16 (A4), 32 (A4)
@@ -40,7 +40,13 @@ namespace PVCStudioPro.App.ViewModels
         private string _selectedPaper = "4x6_PHOTO_PAPER"; // 4x6_PHOTO_PAPER, A4_PAPER
 
         [ObservableProperty]
+        private bool _showBiometricGuide = true;
+
+        [ObservableProperty]
         private decimal _sheetPrice = 50.00m;
+
+        [ObservableProperty]
+        private string _paymentMode = "CASH";
 
         [ObservableProperty]
         private string _statusMessage = "Ready | Load customer portrait photograph to generate passport photo sheet";
@@ -103,7 +109,7 @@ namespace PVCStudioPro.App.ViewModels
                 await RegeneratePassportPhotosAsync();
 
                 HasLoadedPhoto = true;
-                StatusMessage = "Passport photo processed (35x45 mm, 600 DPI, 8-up sheet ready).";
+                StatusMessage = $"Passport photo processed (35x45 mm, 600 DPI, {PhotoCount}-up sheet ready).";
             }
             catch (Exception ex)
             {
@@ -122,7 +128,8 @@ namespace PVCStudioPro.App.ViewModels
             SKColor bgColor = SelectedBackground switch
             {
                 "BLUE" => new SKColor(74, 144, 226),  // Studio Passport Blue
-                "GREY" => new SKColor(240, 240, 240), // Off-White Studio Grey
+                "GREY" => new SKColor(230, 230, 230), // Off-White Studio Grey
+                "CREAM" => new SKColor(254, 252, 232), // Studio Warm Cream
                 _ => SKColors.White                   // Studio Pure White
             };
 
@@ -170,6 +177,76 @@ namespace PVCStudioPro.App.ViewModels
         }
 
         [RelayCommand]
+        public async Task SetLayoutAsync(string layout)
+        {
+            switch (layout)
+            {
+                case "4x6_8":
+                    PhotoCount = 8;
+                    SelectedPaper = "4x6_PHOTO_PAPER";
+                    SheetPrice = 50.00m;
+                    break;
+                case "A4_16":
+                    PhotoCount = 16;
+                    SelectedPaper = "A4_PAPER";
+                    SheetPrice = 80.00m;
+                    break;
+                case "A4_32":
+                    PhotoCount = 32;
+                    SelectedPaper = "A4_PAPER";
+                    SheetPrice = 120.00m;
+                    break;
+            }
+
+            if (_originalPhoto != null)
+            {
+                IsProcessing = true;
+                try
+                {
+                    await RegeneratePassportPhotosAsync();
+                    StatusMessage = $"Updated sheet to {PhotoCount}-up layout ({SelectedPaper}).";
+                }
+                finally
+                {
+                    IsProcessing = false;
+                }
+            }
+        }
+
+        [RelayCommand]
+        public void ToggleBiometricGuide()
+        {
+            ShowBiometricGuide = !ShowBiometricGuide;
+        }
+
+        [RelayCommand]
+        public async Task ExportSinglePhotoAsync()
+        {
+            if (_processedSinglePhoto == null)
+            {
+                StatusMessage = "No photo available to export.";
+                return;
+            }
+
+            var dlg = new SaveFileDialog
+            {
+                Filter = "PNG Image (*.png)|*.png|JPEG Image (*.jpg)|*.jpg",
+                FileName = "Passport_Photo_35x45mm.png",
+                Title = "Save Single 35x45 mm Passport Photo"
+            };
+
+            if (dlg.ShowDialog() == true)
+            {
+                using var image = SKImage.FromBitmap(_processedSinglePhoto);
+                using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+                using var stream = File.OpenWrite(dlg.FileName);
+                data.SaveTo(stream);
+                await stream.FlushAsync();
+                StatusMessage = $"Photo exported successfully: {dlg.FileName}";
+            }
+        }
+
+        [RelayCommand]
         public async Task PrintPhotoSheetAsync()
         {
             if (_composedSheet == null)
@@ -181,20 +258,20 @@ namespace PVCStudioPro.App.ViewModels
             try
             {
                 IsProcessing = true;
-                StatusMessage = "Spooled 4x6\" photo sheet to printer queue...";
+                StatusMessage = $"Spooled {PhotoCount}-up photo sheet to printer queue...";
 
                 // Record transaction in ledger
                 await _jobLedger.RecordJobAsync(new PrintJobRecord
                 {
-                    DocumentType = "PHOTO_STUDIO",
+                    DocumentType = $"PHOTO_STUDIO_{PhotoCount}UP",
                     Quantity = 1,
                     TotalAmount = SheetPrice,
-                    PaymentMode = "CASH",
+                    PaymentMode = PaymentMode,
                     PrinterName = "Default Photo Printer",
                     Status = "COMPLETED"
                 });
 
-                StatusMessage = "Passport photo sheet successfully spooled! (Logged in Ledger)";
+                StatusMessage = $"Passport photo sheet ({PhotoCount}-up) successfully spooled! (Logged in Ledger: ₹{SheetPrice})";
             }
             catch (Exception ex)
             {

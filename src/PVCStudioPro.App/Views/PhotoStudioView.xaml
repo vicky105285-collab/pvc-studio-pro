@@ -5,16 +5,16 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
-             d:DesignHeight="700" d:DesignWidth="1100">
-    <Grid Margin="16">
+             d:DesignHeight="760" d:DesignWidth="1180">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Top Action Bar -->
-        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,16">
+        <!-- Top Studio Action Bar -->
+        <Border Grid.Row="0" Style="{DynamicResource SurfaceCardStyle}" Margin="0,0,0,16">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -24,61 +24,52 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <ui:Button Grid.Column="0" Command="{Binding LoadPhotoCommand}" Height="44" Padding="16,0" Background="#0067B8" Foreground="White" FontWeight="SemiBold" CornerRadius="4">
+                <!-- Load Portrait -->
+                <ui:Button Grid.Column="0" Command="{Binding LoadPhotoCommand}" Height="40" Padding="16,0" Style="{DynamicResource PrimaryActionButtonStyle}">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="Image24" Margin="0,0,8,0"/>
                         <TextBlock Text="{DynamicResource BtnOpenPhoto}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </ui:Button>
 
-                <CheckBox Grid.Column="1" IsChecked="{Binding IsRemoveBackground}" Command="{Binding ToggleBackgroundRemovalCommand}" Margin="20,0,0,0" VerticalAlignment="Center" FontWeight="Medium">
+                <!-- AI / CV Background Removal Toggle -->
+                <CheckBox Grid.Column="1" IsChecked="{Binding IsRemoveBackground}" Command="{Binding ToggleBackgroundRemovalCommand}" Margin="20,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold">
                     <TextBlock Text="{DynamicResource ChkRemoveBg}"/>
                 </CheckBox>
 
-                <!-- Background Color Selection -->
+                <!-- Studio Backdrop Color Selector -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
-                    <TextBlock Text="Background:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#5C5C5C" Margin="0,0,8,0"/>
-                    <ui:Button Command="{Binding ChangeBackgroundCommand}" CommandParameter="WHITE" Content="White" Height="32" Padding="10,0" Margin="0,0,4,0" Background="#FFFFFF" BorderBrush="#D1D1D1" BorderThickness="1"/>
-                    <ui:Button Command="{Binding ChangeBackgroundCommand}" CommandParameter="BLUE" Content="Blue" Height="32" Padding="10,0" Margin="0,0,4,0" Background="#4A90E2" Foreground="White"/>
-                    <ui:Button Command="{Binding ChangeBackgroundCommand}" CommandParameter="GREY" Content="Grey" Height="32" Padding="10,0" Background="#E0E0E0"/>
+                    <TextBlock Text="Backdrop:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0"/>
+                    <ui:Button Command="{Binding ChangeBackgroundCommand}" CommandParameter="WHITE" Content="Pure White" Height="32" Padding="10,0" Margin="0,0,4,0" Background="#FFFFFF" BorderBrush="#D1D5DB" BorderThickness="1" Foreground="#111827"/>
+                    <ui:Button Command="{Binding ChangeBackgroundCommand}" CommandParameter="BLUE" Content="Studio Blue" Height="32" Padding="10,0" Margin="0,0,4,0" Background="#4A90E2" Foreground="White"/>
+                    <ui:Button Command="{Binding ChangeBackgroundCommand}" CommandParameter="GREY" Content="Neutral Grey" Height="32" Padding="10,0" Margin="0,0,4,0" Background="#E5E7EB" Foreground="#1F2937"/>
+                    <ui:Button Command="{Binding ChangeBackgroundCommand}" CommandParameter="CREAM" Content="Warm Cream" Height="32" Padding="10,0" Background="#FEFCE8" Foreground="#854D0E" BorderBrush="#FEF08A" BorderThickness="1"/>
                 </StackPanel>
 
-                <ProgressBar Grid.Column="4" IsIndeterminate="True" Width="100" Height="6" Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}" VerticalAlignment="Center"/>
+                <!-- Sheet Layout Switcher -->
+                <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Grid Layout:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0"/>
+                    <ui:Button Command="{Binding SetLayoutCommand}" CommandParameter="4x6_8" Content="4x6&quot; (8-up)" Height="32" Padding="12,0" Margin="0,0,4,0" Background="{DynamicResource NeutralSurfaceBrush}"/>
+                    <ui:Button Command="{Binding SetLayoutCommand}" CommandParameter="A4_16" Content="A4 (16-up)" Height="32" Padding="12,0" Margin="0,0,4,0" Background="{DynamicResource NeutralSurfaceBrush}"/>
+                    <ui:Button Command="{Binding SetLayoutCommand}" CommandParameter="A4_32" Content="A4 (32-up)" Height="32" Padding="12,0" Background="{DynamicResource NeutralSurfaceBrush}"/>
+                </StackPanel>
             </Grid>
         </Border>
 
-        <!-- Main Visual Stage (Single Photo + Sheet Preview) -->
+        <!-- Main Visual Workstage -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="340"/>
+                <ColumnDefinition Width="380"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Left: Single 35x45 mm Passport Photo Frame -->
-            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,16,0">
+            <!-- Left: Single 35x45mm Frame & Biometric Guidelines -->
+            <Border Grid.Column="0" Style="{DynamicResource SurfaceCardStyle}" Margin="0,0,16,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Grid.Row="0" Text="35 x 45 mm PASSPORT FRAME" FontWeight="Bold" Foreground="#0067B8" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-
-                    <Border Grid.Row="1" Background="White" BorderBrush="#D1D1D1" BorderThickness="1" CornerRadius="4" Padding="4" HorizontalAlignment="Center" VerticalAlignment="Center" Width="220" Height="282">
-                        <Image Source="{Binding SinglePhotoPreview}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
-                    </Border>
-
-                    <TextBlock Grid.Row="2" Text="Indian Standard 35 x 45 mm (600 DPI: 827 x 1063 px)" Foreground="#7A7A7A" FontSize="11" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-                </Grid>
-            </Border>
-
-            <!-- Right: 4x6" Photo Sheet Layout -->
-            <Border Grid.Column="1" Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
@@ -87,31 +78,126 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="4 x 6 INCH GLOSSY PHOTO SHEET (8-UP WITH CUT GUIDES)" FontWeight="Bold" Foreground="#1A1A1A"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <TextBlock Text="Price: " VerticalAlignment="Center" FontWeight="SemiBold"/>
-                            <TextBox Text="{Binding SheetPrice, StringFormat=F2}" Width="70" Height="32" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
-                            <ui:Button Command="{Binding PrintPhotoSheetCommand}" Height="40" Padding="16,0" Background="#0067B8" Foreground="White" FontWeight="Bold" CornerRadius="4">
+                        <TextBlock Grid.Column="0" Text="35 x 45 mm PASSPORT FRAME" FontWeight="Bold" Foreground="{DynamicResource BrandPrimaryBrush}" VerticalAlignment="Center"/>
+                        <CheckBox Grid.Column="1" IsChecked="{Binding ShowBiometricGuide}" Command="{Binding ToggleBiometricGuideCommand}" Content="ICAO Guide" VerticalAlignment="Center" FontSize="11"/>
+                    </Grid>
+
+                    <!-- Preview Frame with Biometric Overlay -->
+                    <Border Grid.Row="1" Background="{DynamicResource CanvasBackgroundBrush}" BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="1" CornerRadius="6" HorizontalAlignment="Center" VerticalAlignment="Center" Width="260" Height="334" ClipToBounds="True">
+                        <Grid>
+                            <Image Source="{Binding SinglePhotoPreview}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+
+                            <!-- ICAO Biometric Guide Overlay -->
+                            <Canvas Visibility="{Binding ShowBiometricGuide, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <!-- Top Head Clearance Limit (Crown margin ~ 3-5mm) -->
+                                <Line X1="10" Y1="40" X2="250" Y2="40" Stroke="#EF4444" StrokeThickness="1" StrokeDashArray="3 3"/>
+                                <TextBlock Text="Crown Limit" Foreground="#EF4444" FontSize="9" Canvas.Left="12" Canvas.Top="26"/>
+
+                                <!-- Eye Level Centerline (~ 28-31mm from bottom) -->
+                                <Line X1="10" Y1="130" X2="250" Y2="130" Stroke="#3B82F6" StrokeThickness="1" StrokeDashArray="3 3"/>
+                                <TextBlock Text="Eye Level" Foreground="#3B82F6" FontSize="9" Canvas.Left="12" Canvas.Top="116"/>
+
+                                <!-- Chin Base Line (~ 10-14mm from bottom) -->
+                                <Line X1="10" Y1="260" X2="250" Y2="260" Stroke="#10B981" StrokeThickness="1" StrokeDashArray="3 3"/>
+                                <TextBlock Text="Chin Base" Foreground="#10B981" FontSize="9" Canvas.Left="12" Canvas.Top="246"/>
+
+                                <!-- Vertical Symmetry Axis -->
+                                <Line X1="130" Y1="10" X2="130" Y2="324" Stroke="#9CA3AF" StrokeThickness="0.8" StrokeDashArray="2 2"/>
+
+                                <!-- Head Oval Indicator -->
+                                <Ellipse Canvas.Left="50" Canvas.Top="45" Width="160" Height="215" Stroke="#3B82F6" StrokeThickness="1" StrokeDashArray="4 4" Fill="Transparent"/>
+                            </Canvas>
+                        </Grid>
+                    </Border>
+
+                    <!-- Compliance Specifications -->
+                    <Border Grid.Row="2" Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="6" Padding="12" Margin="0,14,0,12">
+                        <StackPanel>
+                            <TextBlock Text="ICAO 9303 / Indian Passport Spec" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="• Dimension: 35 x 45 mm (600 DPI: 827 x 1063 px)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="• Face coverage: 70% to 80% (31 to 36 mm)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="• Natural expression, mouth closed, eyes open" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Export Single Photo Button -->
+                    <ui:Button Grid.Row="3" Command="{Binding ExportSinglePhotoCommand}" Height="36" Background="{DynamicResource NeutralSurfaceBrush}" HorizontalAlignment="Stretch">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,8,0"/>
+                            <TextBlock Text="Export 35x45 mm Photo (PNG/JPG)" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ui:Button>
+                </Grid>
+            </Border>
+
+            <!-- Right: Composed Photo Sheet Preview & Billing -->
+            <Border Grid.Column="1" Style="{DynamicResource SurfaceCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Sheet Header & Controls -->
+                    <Grid Grid.Row="0" Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="GLOSSY PHOTO PRINT SHEET (WITH CUT GUIDES)" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13"/>
+                            <TextBlock Text="Sub-millimeter dashed cut guides | High resolution 600 DPI rasterization" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0"/>
+                        </StackPanel>
+
+                        <!-- Price & Payment & Spool -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Rate: ₹" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,4,0"/>
+                            <TextBox Text="{Binding SheetPrice, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="70" Height="36" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
+
+                            <ComboBox SelectedValue="{Binding PaymentMode}" SelectedValuePath="Content" Width="85" Height="36" Margin="0,0,10,0">
+                                <ComboBoxItem Content="CASH" IsSelected="True"/>
+                                <ComboBoxItem Content="UPI"/>
+                            </ComboBox>
+
+                            <ui:Button Command="{Binding PrintPhotoSheetCommand}" Height="40" Padding="18,0" Style="{DynamicResource PrimaryActionButtonStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <ui:SymbolIcon Symbol="Print24" Margin="0,0,8,0"/>
-                                    <TextBlock Text="Print Sheet" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Print Sheet" VerticalAlignment="Center" FontWeight="Bold"/>
                                 </StackPanel>
                             </ui:Button>
                         </StackPanel>
                     </Grid>
 
-                    <Border Grid.Row="1" Background="#F0F0F0" BorderBrush="#D1D1D1" BorderThickness="1" CornerRadius="6" ClipToBounds="True" Padding="8">
+                    <!-- Sheet Canvas Preview -->
+                    <Border Grid.Row="1" Background="{DynamicResource CanvasBackgroundBrush}" BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="1" CornerRadius="6" ClipToBounds="True" Padding="10">
                         <Image Source="{Binding SheetPreview}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
 
-                    <TextBlock Grid.Row="2" Text="Grid: 4 columns x 2 rows (8 photos) | Includes 0.2mm dashed cut lines | Paper: 4x6 inch (102 x 152 mm)" Foreground="#7A7A7A" FontSize="11" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                    <!-- Sheet Metadata Banner -->
+                    <Grid Grid.Row="2" Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Media: 4x6&quot; Photo Paper (102 x 152 mm) / A4 Glossy (210 x 297 mm) | 600 DPI Continuous Tone" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="Zero Citizen PII Retained in Memory" Foreground="{DynamicResource BrandSuccessBrush}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>
 
         <!-- Bottom Status Bar -->
-        <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="12,8" Margin="0,16,0,0">
-            <TextBlock Text="{Binding StatusMessage}" Foreground="#1A1A1A" FontWeight="Medium"/>
+        <Border Grid.Row="2" Style="{DynamicResource SurfaceCardStyle}" Padding="12,8" Margin="0,16,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Medium" VerticalAlignment="Center"/>
+                <ProgressBar Grid.Column="1" IsIndeterminate="True" Width="100" Height="6" Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}" VerticalAlignment="Center"/>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

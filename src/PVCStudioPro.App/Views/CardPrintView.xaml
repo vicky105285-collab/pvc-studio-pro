@@ -5,183 +5,223 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
-             d:DesignHeight="700" d:DesignWidth="1100">
-    <Grid Margin="16">
+             d:DesignHeight="800" d:DesignWidth="1150">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Top Action Bar -->
-        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,16">
+        <!-- Top Action & Tools Bar -->
+        <Border Grid.Row="0" Style="{StaticResource SurfaceCardStyle}" Padding="12,10" Margin="0,0,0,14">
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <ui:Button Grid.Column="0" Command="{Binding OpenDocumentCommand}" Height="44" Padding="16,0" Background="#0067B8" Foreground="White" FontWeight="SemiBold" CornerRadius="4">
+                <!-- Open Document Button -->
+                <ui:Button Grid.Column="0" Command="{Binding OpenDocumentCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Margin="0,0,12,0">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="DocumentPdf24" Margin="0,0,8,0"/>
                         <TextBlock Text="{DynamicResource BtnOpenDocument}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </ui:Button>
 
-                <CheckBox Grid.Column="1" IsChecked="{Binding IsMaskAadhaar}" Command="{Binding ToggleMaskCommand}" Margin="20,0,0,0" VerticalAlignment="Center" FontWeight="Medium">
-                    <TextBlock Text="{DynamicResource ChkMaskAadhaar}"/>
+                <!-- Mask Aadhaar CheckBox -->
+                <CheckBox Grid.Column="1" IsChecked="{Binding IsMaskAadhaar}" Command="{Binding ToggleMaskCommand}" Margin="0,0,16,0" VerticalAlignment="Center" FontWeight="SemiBold">
+                    <TextBlock Text="{DynamicResource ChkMaskAadhaar}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                 </CheckBox>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
-                    <TextBlock Text="{DynamicResource LblDocumentType}" FontWeight="SemiBold" Foreground="#5C5C5C" Margin="0,0,8,0"/>
-                    <Border Background="#EBF3FC" CornerRadius="4" Padding="8,4">
-                        <TextBlock Text="{Binding DetectedTemplateName}" Foreground="#0067B8" FontWeight="Bold"/>
+                <!-- Rotate 90° -->
+                <ui:Button Grid.Column="2" Command="{Binding Rotate90Command}" Style="{StaticResource SecondaryActionButtonStyle}" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="ArrowRotateClockwise24" Margin="0,0,6,0"/>
+                        <TextBlock Text="{DynamicResource BtnRotate90}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ui:Button>
+
+                <!-- Swap Front / Back -->
+                <ui:Button Grid.Column="3" Command="{Binding FlipFacesCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Margin="0,0,16,0">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="ArrowSwap24" Margin="0,0,6,0"/>
+                        <TextBlock Text="{DynamicResource BtnFlipFaces}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ui:Button>
+
+                <!-- Detected Template Badge -->
+                <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource LblDocumentType}" Style="{StaticResource FormLabelStyle}" Margin="0,0,8,0"/>
+                    <Border Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="10,4">
+                        <TextBlock Text="{Binding DetectedTemplateName}" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Bold" FontSize="12.5"/>
                     </Border>
                 </StackPanel>
 
-                <ProgressBar Grid.Column="3" IsIndeterminate="True" Width="100" Height="6" Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}" VerticalAlignment="Center"/>
+                <!-- Loading Bar -->
+                <ProgressBar Grid.Column="5" IsIndeterminate="True" Width="100" Height="6" Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}" VerticalAlignment="Center"/>
             </Grid>
         </Border>
 
-        <!-- Main Workspace (Center Previews + Right Config Panel) -->
-        <Grid Grid.Row="1">
+        <!-- Password Prompt Bar (Conditional) -->
+        <Border Grid.Row="1" Background="#FEF3C7" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,14" Visibility="{Binding IsPasswordPromptVisible, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="🔒 Document is Password-Protected. Enter Decryption Password:" FontWeight="SemiBold" Foreground="#92400E" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <TextBox Grid.Column="1" Text="{Binding PasswordInput, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Margin="0,0,12,0"/>
+                <ui:Button Grid.Column="2" Command="{Binding UnlockPasswordProtectedCommand}" Content="Unlock Document" Height="34" Padding="14,0" Background="#B45309" Foreground="White" FontWeight="Bold" CornerRadius="4"/>
+            </Grid>
+        </Border>
+
+        <!-- Main Workspace (Center Visual Stage + Right Config Inspector) -->
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="340"/>
+                <ColumnDefinition Width="380"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Card Visual Stage (CR80 Previews) -->
-            <Border Grid.Column="0" Background="#F9F9F9" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,16,0">
+            <!-- Card Visual Stage (CR80 Canvas) -->
+            <Border Grid.Column="0" Style="{StaticResource SurfaceCardStyle}" Margin="0,0,16,0" Padding="18">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="CR80 PHYSICAL CARD PREVIEW (85.60 mm x 53.98 mm)" FontWeight="Bold" Foreground="#5C5C5C" Margin="0,0,0,12"/>
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="CR80 PHYSICAL CARD PRODUCTION CANVAS (85.60 mm x 53.98 mm)" Style="{StaticResource SectionHeaderStyle}"/>
+                        <TextBlock Grid.Column="1" Text="Vector 600 DPI | Full Bleed (+1.0 mm)" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11.5"/>
+                    </Grid>
 
                     <!-- Side-by-Side CR80 Cards -->
-                    <UniformGrid Grid.Row="1" Columns="2" Margin="10">
-                        <!-- Front Card -->
-                        <Border Background="White" BorderBrush="#0067B8" BorderThickness="2" CornerRadius="12" Margin="8" Padding="8" SnapsToDevicePixels="True">
+                    <UniformGrid Grid.Row="1" Columns="2" Margin="8">
+                        <!-- Front Card (Slot 1) -->
+                        <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="2" CornerRadius="{StaticResource RadiusLarge}" Margin="8" Padding="10" SnapsToDevicePixels="True">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="{DynamicResource LblFrontFace}" FontWeight="Bold" Foreground="#0067B8" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                <Border Grid.Row="1" CornerRadius="8" ClipToBounds="True" Background="#F0F0F0">
+                                <Border Grid.Row="0" Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="4" Padding="8,4" HorizontalAlignment="Center" Margin="0,0,0,8">
+                                    <TextBlock Text="{DynamicResource LblFrontFace}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="12"/>
+                                </Border>
+                                <Border Grid.Row="1" CornerRadius="8" ClipToBounds="True" Background="{DynamicResource CardSubtleBackgroundBrush}">
                                     <Image Source="{Binding FrontCardImage}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
                                 </Border>
-                                <TextBlock Grid.Row="2" Text="85.60 mm × 53.98 mm | 600 DPI Vector" Foreground="#7A7A7A" FontSize="11" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                <TextBlock Grid.Row="2" Text="85.60 mm × 53.98 mm | Die-Cut Nominal" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,8,0,0"/>
                             </Grid>
                         </Border>
 
-                        <!-- Back Card -->
-                        <Border Background="White" BorderBrush="#0067B8" BorderThickness="2" CornerRadius="12" Margin="8" Padding="8" SnapsToDevicePixels="True">
+                        <!-- Back Card (Slot 2) -->
+                        <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="2" CornerRadius="{StaticResource RadiusLarge}" Margin="8" Padding="10" SnapsToDevicePixels="True">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="{DynamicResource LblBackFace}" FontWeight="Bold" Foreground="#0067B8" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                <Border Grid.Row="1" CornerRadius="8" ClipToBounds="True" Background="#F0F0F0">
+                                <Border Grid.Row="0" Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="4" Padding="8,4" HorizontalAlignment="Center" Margin="0,0,0,8">
+                                    <TextBlock Text="{DynamicResource LblBackFace}" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="12"/>
+                                </Border>
+                                <Border Grid.Row="1" CornerRadius="8" ClipToBounds="True" Background="{DynamicResource CardSubtleBackgroundBrush}">
                                     <Image Source="{Binding BackCardImage}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
                                 </Border>
-                                <TextBlock Grid.Row="2" Text="85.60 mm × 53.98 mm | 600 DPI Vector" Foreground="#7A7A7A" FontSize="11" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                <TextBlock Grid.Row="2" Text="85.60 mm × 53.98 mm | Die-Cut Nominal" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,8,0,0"/>
                             </Grid>
                         </Border>
                     </UniformGrid>
                 </Grid>
             </Border>
 
-            <!-- Right Configuration Panel -->
-            <Border Grid.Column="1" Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <!-- Right Configuration Panel (Fully Responsive, Zero Clipping) -->
+            <Border Grid.Column="1" Style="{StaticResource SurfaceCardStyle}" Padding="18">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
-                        <TextBlock Text="PRINTER CONFIGURATION" FontWeight="Bold" FontSize="14" Foreground="#1A1A1A" Margin="0,0,0,16"/>
+                        <TextBlock Text="PRODUCTION HARDWARE SETUP" Style="{StaticResource SectionHeaderStyle}"/>
 
                         <!-- Printer Selection -->
-                        <TextBlock Text="{DynamicResource LblPrinterDevice}" FontWeight="SemiBold" Foreground="#5C5C5C" Margin="0,0,0,4"/>
-                        <ComboBox ItemsSource="{Binding PrinterList}" SelectedItem="{Binding SelectedPrinter}" Height="40" Margin="0,0,0,12"/>
+                        <StackPanel Margin="0,0,0,14">
+                            <TextBlock Text="{DynamicResource LblPrinterDevice}" Style="{StaticResource FormLabelStyle}"/>
+                            <ComboBox ItemsSource="{Binding PrinterList}" SelectedItem="{Binding SelectedPrinter}" Height="38"/>
+                            <TextBlock Text="Target hardware output device" Style="{StaticResource FormHelpStyle}"/>
+                        </StackPanel>
 
                         <!-- Tray Selection -->
-                        <TextBlock Text="{DynamicResource LblMediaTray}" FontWeight="SemiBold" Foreground="#5C5C5C" Margin="0,0,0,4"/>
-                        <ComboBox ItemsSource="{Binding TrayList}" SelectedItem="{Binding SelectedTray}" Height="40" Margin="0,0,0,12"/>
+                        <StackPanel Margin="0,0,0,14">
+                            <TextBlock Text="{DynamicResource LblMediaTray}" Style="{StaticResource FormLabelStyle}"/>
+                            <ComboBox ItemsSource="{Binding TrayList}" SelectedItem="{Binding SelectedTray}" Height="38"/>
+                            <TextBlock Text="Epson classic vs. EcoTank L8050 vs. Canon tray profile" Style="{StaticResource FormHelpStyle}"/>
+                        </StackPanel>
 
                         <!-- Copies & Price -->
-                        <Grid Margin="0,0,0,12">
+                        <Grid Margin="0,0,0,14">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,6,0">
-                                <TextBlock Text="{DynamicResource LblCopies}" FontWeight="SemiBold" Foreground="#5C5C5C" Margin="0,0,0,4"/>
-                                <TextBox Text="{Binding Copies}" Height="40" VerticalContentAlignment="Center"/>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource LblCopies}" Style="{StaticResource FormLabelStyle}"/>
+                                <TextBox Text="{Binding Copies}" Height="38" VerticalContentAlignment="Center" FontSize="13"/>
                             </StackPanel>
-                            <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                <TextBlock Text="{DynamicResource LblCardPrice}" FontWeight="SemiBold" Foreground="#5C5C5C" Margin="0,0,0,4"/>
-                                <TextBox Text="{Binding CardPrice, StringFormat=F2}" Height="40" VerticalContentAlignment="Center"/>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="{DynamicResource LblCardPrice}" Style="{StaticResource FormLabelStyle}"/>
+                                <TextBox Text="{Binding CardPrice, StringFormat='F2'}" Height="38" VerticalContentAlignment="Center" FontSize="13"/>
                             </StackPanel>
                         </Grid>
 
-                        <!-- Millimeter Calibration Offsets -->
-                        <Grid Margin="0,0,0,12">
+                        <!-- Payment Mode Selector -->
+                        <StackPanel Margin="0,0,0,14">
+                            <TextBlock Text="Payment Mode:" Style="{StaticResource FormLabelStyle}"/>
+                            <ComboBox ItemsSource="{Binding PaymentModes}" SelectedItem="{Binding SelectedPaymentMode}" Height="38"/>
+                        </StackPanel>
+
+                        <!-- Fine Offsets (X & Y) -->
+                        <Grid Margin="0,0,0,14">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,6,0">
-                                <TextBlock Text="{DynamicResource LblOffsetX}" FontWeight="SemiBold" Foreground="#5C5C5C" Margin="0,0,0,4"/>
-                                <TextBox Text="{Binding OffsetX, StringFormat=F2}" Height="40" VerticalContentAlignment="Center"/>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource LblOffsetX}" Style="{StaticResource FormLabelStyle}"/>
+                                <TextBox Text="{Binding OffsetX, StringFormat='F2'}" Height="38" VerticalContentAlignment="Center"/>
                             </StackPanel>
-                            <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                <TextBlock Text="{DynamicResource LblOffsetY}" FontWeight="SemiBold" Foreground="#5C5C5C" Margin="0,0,0,4"/>
-                                <TextBox Text="{Binding OffsetY, StringFormat=F2}" Height="40" VerticalContentAlignment="Center"/>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="{DynamicResource LblOffsetY}" Style="{StaticResource FormLabelStyle}"/>
+                                <TextBox Text="{Binding OffsetY, StringFormat='F2'}" Height="38" VerticalContentAlignment="Center"/>
                             </StackPanel>
                         </Grid>
 
-                        <!-- Mirror Mode (Dragon Sheet) -->
-                        <CheckBox IsChecked="{Binding IsMirrorMode}" Margin="0,0,0,16">
-                            <TextBlock Text="{DynamicResource LblMirrorMode}"/>
+                        <!-- Mirror Mode -->
+                        <CheckBox IsChecked="{Binding IsMirrorMode}" Margin="0,0,0,18" FontWeight="SemiBold">
+                            <TextBlock Text="{DynamicResource LblMirrorMode}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </CheckBox>
 
-                        <Separator Margin="0,0,0,16"/>
-
-                        <!-- Preflight Box -->
-                        <Border Background="#E6F4EA" BorderBrush="#34A853" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,20">
-                            <StackPanel>
-                                <TextBlock Text="PRE-FLIGHT VERIFIED" FontWeight="Bold" Foreground="#137333" FontSize="12"/>
-                                <TextBlock Text="Output: 600 DPI Uncompressed Native Spooler" Foreground="#137333" FontSize="11" Margin="0,2,0,0"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Primary Print Action Button (56px) -->
-                        <ui:Button Command="{Binding PrintCardCommand}" Height="56" Background="#0067B8" Foreground="White" FontWeight="Bold" FontSize="16" CornerRadius="6">
-                            <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Print24" Margin="0,0,10,0"/>
-                                <TextBlock Text="{DynamicResource BtnPrintNow}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </ui:Button>
+                        <!-- Primary Print Action Button -->
+                        <ui:Button Command="{Binding PrintCardCommand}" Content="{DynamicResource BtnPrintNow}" Height="50" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" FontWeight="Bold" FontSize="14" CornerRadius="6" HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </ScrollViewer>
             </Border>
         </Grid>
 
         <!-- Bottom Status Bar -->
-        <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="12,8" Margin="0,16,0,0">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" Foreground="#1A1A1A" FontWeight="Medium" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="{DynamicResource StatusReady}" Foreground="#7A7A7A" FontSize="11" VerticalAlignment="Center"/>
-            </Grid>
+        <Border Grid.Row="3" Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,14,0,0">
+            <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Medium"/>
         </Border>
     </Grid>
 </UserControl>
