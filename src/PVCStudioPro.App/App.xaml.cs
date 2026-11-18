@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using PVCStudioPro.App.ViewModels;
@@ -11,70 +12,174 @@ namespace PVCStudioPro.App
     public partial class App : Application
     {
         public static IServiceProvider ServiceProvider { get; private set; } = null!;
+        private static string _logPath = string.Empty;
+        private static readonly object _logLock = new object();
+
+        public static void Log(string message)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_logPath))
+                {
+                    string appData = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "PVCStudioPro");
+                    Directory.CreateDirectory(appData);
+                    _logPath = Path.Combine(appData, "app_trace.log");
+                }
+
+                lock (_logLock)
+                {
+                    File.AppendAllText(_logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {message}\r\n");
+                }
+            }
+            catch { }
+        }
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            Log("=== PVC Studio Pro Starting ===");
+
+            AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+            {
+                Log($"CRITICAL AppDomain UnhandledException: {args.ExceptionObject}");
+            };
+
+            DispatcherUnhandledException += (s, args) =>
+            {
+                Log($"CRITICAL DispatcherUnhandledException: {args.Exception}");
+                args.Handled = true;
+                MessageBox.Show($"Startup Error:\n{args.Exception.Message}\n\n{args.Exception.StackTrace}", "PVC Studio Pro");
+            };
+
+            TaskScheduler.UnobservedTaskException += (s, args) =>
+            {
+                Log($"TaskScheduler UnobservedTaskException: {args.Exception}");
+            };
+
+            this.Exit += (s, args) =>
+            {
+                Log($"Application.Exit event fired with ExitCode: {args.ApplicationExitCode}");
+            };
+
             base.OnStartup(e);
+            Log("base.OnStartup executed.");
 
-            var services = new ServiceCollection();
+            this.ShutdownMode = ShutdownMode.OnMainWindowClose;
 
-            // Directory paths
-            string appDataDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "PVCStudioPro");
-            Directory.CreateDirectory(appDataDir);
+            try
+            {
+                string appDataDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "PVCStudioPro");
+                string dbPath = Path.Combine(appDataDir, "pvc_ledger.db");
+                string configDir = Path.Combine(appDataDir, "config");
+                Directory.CreateDirectory(configDir);
 
-            string dbPath = Path.Combine(appDataDir, "pvc_ledger.db");
-            string configDir = Path.Combine(appDataDir, "config");
-            Directory.CreateDirectory(configDir);
+                Log("Configuring DI container...");
+                var services = new ServiceCollection();
 
-            // Core Hardware & Processing Services
-            services.AddSingleton<IPdfService, PdfService>();
-            services.AddSingleton<ITemplateService, TemplateService>();
-            services.AddSingleton<IPrinterDiscoveryService, PrinterDiscoveryService>();
-            services.AddSingleton<IPrintService, PrintService>();
-            services.AddSingleton<ISecurityService, SecurityService>();
-            services.AddSingleton<IVisionService, VisionService>();
-            services.AddSingleton<IJobLedgerService>(sp => new JobLedgerService(dbPath));
+                services.AddSingleton<IPdfService, PdfService>();
+                services.AddSingleton<ITemplateService, TemplateService>();
+                services.AddSingleton<IPrinterDiscoveryService, PrinterDiscoveryService>();
+                services.AddSingleton<IPrintService, PrintService>();
+                services.AddSingleton<ISecurityService, SecurityService>();
+                services.AddSingleton<IVisionService, VisionService>();
+                services.AddSingleton<IJobLedgerService>(sp => new JobLedgerService(dbPath));
 
-            // Business & Management Services
-            string profileConfigPath = Path.Combine(configDir, "business_profile.json");
-            services.AddSingleton<IBusinessProfileService>(sp => new BusinessProfileService(profileConfigPath));
+                string profileConfigPath = Path.Combine(configDir, "business_profile.json");
+                services.AddSingleton<IBusinessProfileService>(sp => new BusinessProfileService(profileConfigPath));
 
-            string traysConfigPath = Path.Combine(configDir, "printer_profiles.json");
-            services.AddSingleton<IPrinterTrayService>(sp => new PrinterTrayService(sp.GetRequiredService<IPrinterDiscoveryService>(), traysConfigPath));
+                string traysConfigPath = Path.Combine(configDir, "printer_profiles.json");
+                services.AddSingleton<IPrinterTrayService>(sp => new PrinterTrayService(sp.GetRequiredService<IPrinterDiscoveryService>(), traysConfigPath));
 
-            services.AddSingleton<IBackupService>(sp => new BackupService(dbPath, configDir));
-            services.AddSingleton<IBatchProcessingService, BatchProcessingService>();
+                services.AddSingleton<IBackupService>(sp => new BackupService(dbPath, configDir));
+                services.AddSingleton<IBatchProcessingService, BatchProcessingService>();
 
-            // ViewModels (14 Core Workspaces)
-            services.AddSingleton<DashboardViewModel>();
-            services.AddSingleton<CardPrintViewModel>();
-            services.AddSingleton<PhotoStudioViewModel>();
-            services.AddSingleton<DocumentProcessingViewModel>();
-            services.AddSingleton<BatchProcessingViewModel>();
-            services.AddSingleton<PrintCenterViewModel>();
-            services.AddSingleton<PrinterTrayManagerViewModel>();
-            services.AddSingleton<CalibrationViewModel>();
-            services.AddSingleton<TemplateManagerViewModel>();
-            services.AddSingleton<BusinessProfileViewModel>();
-            services.AddSingleton<BusinessLedgerViewModel>();
-            services.AddSingleton<ReportsAnalyticsViewModel>();
-            services.AddSingleton<BackupRestoreViewModel>();
-            services.AddSingleton<SettingsViewModel>();
-            services.AddSingleton<MainViewModel>();
+                services.AddSingleton<DashboardViewModel>();
+                services.AddSingleton<CardPrintViewModel>();
+                services.AddSingleton<PhotoStudioViewModel>();
+                services.AddSingleton<DocumentProcessingViewModel>();
+                services.AddSingleton<BatchProcessingViewModel>();
+                services.AddSingleton<PrintCenterViewModel>();
+                services.AddSingleton<PrinterTrayManagerViewModel>();
+                services.AddSingleton<CalibrationViewModel>();
+                services.AddSingleton<TemplateManagerViewModel>();
+                services.AddSingleton<BusinessProfileViewModel>();
+                services.AddSingleton<BusinessLedgerViewModel>();
+                services.AddSingleton<ReportsAnalyticsViewModel>();
+                services.AddSingleton<BackupRestoreViewModel>();
+                services.AddSingleton<SettingsViewModel>();
+                services.AddSingleton<MainViewModel>();
 
-            // Main Window
-            services.AddSingleton<MainWindow>();
+                services.AddSingleton<MainWindow>();
 
-            ServiceProvider = services.BuildServiceProvider();
+                ServiceProvider = services.BuildServiceProvider();
+                Log("DI container built successfully.");
 
-            // Asynchronously initialize database and configuration services
-            _ = ServiceProvider.GetRequiredService<IJobLedgerService>().InitializeDatabaseAsync();
-            _ = ServiceProvider.GetRequiredService<IPrinterTrayService>().InitializeAsync();
+                try
+                {
+                    Log("Initializing JobLedger database...");
+                    var ledger = ServiceProvider.GetRequiredService<IJobLedgerService>();
+                    _ = ledger.InitializeDatabaseAsync();
+                    Log("JobLedger database initialized.");
+                }
+                catch (Exception ex)
+                {
+                    Log($"Warning: JobLedger init error: {ex.Message}");
+                }
 
-            var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
-            mainWindow.Show();
+                try
+                {
+                    Log("Initializing PrinterTray service...");
+                    var trayService = ServiceProvider.GetRequiredService<IPrinterTrayService>();
+                    _ = trayService.InitializeAsync();
+                    Log("PrinterTray service initialized.");
+                }
+                catch (Exception ex)
+                {
+                    Log($"Warning: PrinterTray init error: {ex.Message}");
+                }
+
+                Log("Resolving MainWindow...");
+                MainWindow mainWindow;
+                try
+                {
+                    mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+                    Log("MainWindow resolved successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Log($"FATAL: Failed to resolve MainWindow: {ex}");
+                    MessageBox.Show($"Failed to resolve MainWindow: {ex.Message}\n\n{ex.InnerException?.Message}", "PVC Studio Pro");
+                    return;
+                }
+
+                this.MainWindow = mainWindow;
+                mainWindow.SourceInitialized += (s, args) => Log("mainWindow.SourceInitialized fired.");
+                mainWindow.Loaded += (s, args) => Log("mainWindow.Loaded fired.");
+                mainWindow.Closed += (s, args) =>
+                {
+                    Log("MainWindow.Closed event fired.");
+                };
+
+                try
+                {
+                    Log("Calling mainWindow.Show()...");
+                    mainWindow.Show();
+                    Log("mainWindow.Show() completed successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Log($"EXCEPTION in mainWindow.Show(): {ex}");
+                    MessageBox.Show($"Error in Show: {ex.Message}\n\n{ex.StackTrace}", "PVC Studio Pro");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"FATAL in OnStartup try block: {ex}");
+                MessageBox.Show($"Startup Exception:\n{ex.Message}\n\n{ex.StackTrace}", "PVC Studio Pro");
+            }
         }
     }
 }

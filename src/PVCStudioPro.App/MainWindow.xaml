@@ -83,10 +83,10 @@
                     </Border>
 
                     <!-- Theme Toggle -->
-                    <ui:Button Grid.Column="1" Command="{Binding ToggleThemeCommand}" Content="{Binding CurrentTheme, StringFormat='Theme: {0}'}" Height="28" Padding="10,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Background="{DynamicResource NeutralSurfaceBrush}" Margin="0,0,8,0"/>
+                    <ui:Button Grid.Column="1" Command="{Binding ToggleThemeCommand}" Content="{Binding CurrentTheme}" Height="28" Padding="10,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Background="{DynamicResource NeutralSurfaceBrush}" Margin="0,0,8,0"/>
 
                     <!-- Language Switcher -->
-                    <ui:Button Grid.Column="3" Command="{Binding ToggleLanguageCommand}" Content="{Binding LanguageButtonText}" Height="28" Padding="12,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Style="{DynamicResource PrimaryActionButtonStyle}"/>
+                    <ui:Button Grid.Column="3" Command="{Binding ToggleLanguageCommand}" Content="{Binding LanguageButtonText}" Height="28" Padding="12,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Background="#EBF3FC" Foreground="#0067B8" BorderBrush="#C2DCF7" BorderThickness="1"/>
                 </Grid>
             </ui:TitleBar.Header>
         </ui:TitleBar>
@@ -98,100 +98,98 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Fluent Navigation View (14 Workspaces Organized in 4 Core Modules) -->
+            <!-- Fluent Navigation View (14 Workspaces) -->
             <ui:NavigationView Grid.Column="0" PaneDisplayMode="Left" OpenPaneLength="250" IsBackButtonVisible="Collapsed">
                 <ui:NavigationView.MenuItems>
                     <!-- SECTION 1: PRODUCTION -->
-                    <ui:NavigationViewItemHeader Text="PRODUCTION WORKFLOW" Margin="4,8,4,4"/>
-
-                    <ui:NavigationViewItem Content="{DynamicResource NavDashboard}" TargetPageType="{x:Type views:DashboardView}" Command="{Binding NavigateCommand}" CommandParameter="Dashboard">
+                    <ui:NavigationViewItem Content="{DynamicResource NavDashboard}" Command="{Binding NavigateCommand}" CommandParameter="Dashboard">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="AppGeneric24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavCardPrint}" TargetPageType="{x:Type views:CardPrintView}" Command="{Binding NavigateCommand}" CommandParameter="Cards">
+                    <ui:NavigationViewItem Content="{DynamicResource NavCardPrint}" Command="{Binding NavigateCommand}" CommandParameter="Cards">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Document24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavPhotoStudio}" TargetPageType="{x:Type views:PhotoStudioView}" Command="{Binding NavigateCommand}" CommandParameter="Photo">
+                    <ui:NavigationViewItem Content="{DynamicResource NavPhotoStudio}" Command="{Binding NavigateCommand}" CommandParameter="Photo">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Image24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavDocProcessing}" TargetPageType="{x:Type views:DocumentProcessingView}" Command="{Binding NavigateCommand}" CommandParameter="DocProcessing">
+                    <ui:NavigationViewItem Content="{DynamicResource NavDocProcessing}" Command="{Binding NavigateCommand}" CommandParameter="DocProcessing">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Crop24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavBatchProcessing}" TargetPageType="{x:Type views:BatchProcessingView}" Command="{Binding NavigateCommand}" CommandParameter="Batch">
+                    <ui:NavigationViewItem Content="{DynamicResource NavBatchProcessing}" Command="{Binding NavigateCommand}" CommandParameter="Batch">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="FolderZip24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
                     <!-- SECTION 2: HARDWARE & PRINTING -->
-                    <ui:NavigationViewItemHeader Text="HARDWARE &amp; PRINTING" Margin="4,12,4,4"/>
+                    <ui:NavigationViewItemSeparator Margin="4,8,4,8"/>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavPrintCenter}" TargetPageType="{x:Type views:PrintCenterView}" Command="{Binding NavigateCommand}" CommandParameter="PrintCenter">
+                    <ui:NavigationViewItem Content="{DynamicResource NavPrintCenter}" Command="{Binding NavigateCommand}" CommandParameter="PrintCenter">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Print24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavPrinterTrayManager}" TargetPageType="{x:Type views:PrinterTrayManagerView}" Command="{Binding NavigateCommand}" CommandParameter="PrinterTray">
+                    <ui:NavigationViewItem Content="{DynamicResource NavPrinterTrayManager}" Command="{Binding NavigateCommand}" CommandParameter="PrinterTray">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Board24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavCalibration}" TargetPageType="{x:Type views:CalibrationView}" Command="{Binding NavigateCommand}" CommandParameter="Calibration">
+                    <ui:NavigationViewItem Content="{DynamicResource NavCalibration}" Command="{Binding NavigateCommand}" CommandParameter="Calibration">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Wrench24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
                     <!-- SECTION 3: BUSINESS & TEMPLATES -->
-                    <ui:NavigationViewItemHeader Text="BUSINESS &amp; TEMPLATES" Margin="4,12,4,4"/>
+                    <ui:NavigationViewItemSeparator Margin="4,8,4,8"/>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavTemplateManager}" TargetPageType="{x:Type views:TemplateManagerView}" Command="{Binding NavigateCommand}" CommandParameter="Templates">
+                    <ui:NavigationViewItem Content="{DynamicResource NavTemplateManager}" Command="{Binding NavigateCommand}" CommandParameter="Templates">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="DocumentTable24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavBusinessProfile}" TargetPageType="{x:Type views:BusinessProfileView}" Command="{Binding NavigateCommand}" CommandParameter="BusinessProfile">
+                    <ui:NavigationViewItem Content="{DynamicResource NavBusinessProfile}" Command="{Binding NavigateCommand}" CommandParameter="BusinessProfile">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Building24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavLedger}" TargetPageType="{x:Type views:BusinessLedgerView}" Command="{Binding NavigateCommand}" CommandParameter="Ledger">
+                    <ui:NavigationViewItem Content="{DynamicResource NavLedger}" Command="{Binding NavigateCommand}" CommandParameter="Ledger">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Receipt24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavReportsAnalytics}" TargetPageType="{x:Type views:ReportsAnalyticsView}" Command="{Binding NavigateCommand}" CommandParameter="Reports">
+                    <ui:NavigationViewItem Content="{DynamicResource NavReportsAnalytics}" Command="{Binding NavigateCommand}" CommandParameter="Reports">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="DataUsage24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
                     <!-- SECTION 4: SYSTEM & PREFERENCES -->
-                    <ui:NavigationViewItemHeader Text="SYSTEM &amp; STORAGE" Margin="4,12,4,4"/>
+                    <ui:NavigationViewItemSeparator Margin="4,8,4,8"/>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavBackupRestore}" TargetPageType="{x:Type views:BackupRestoreView}" Command="{Binding NavigateCommand}" CommandParameter="Backup">
+                    <ui:NavigationViewItem Content="{DynamicResource NavBackupRestore}" Command="{Binding NavigateCommand}" CommandParameter="Backup">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="ArrowCounterclockwise24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavSettings}" TargetPageType="{x:Type views:SettingsView}" Command="{Binding NavigateCommand}" CommandParameter="Settings">
+                    <ui:NavigationViewItem Content="{DynamicResource NavSettings}" Command="{Binding NavigateCommand}" CommandParameter="Settings">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Settings24" />
                         </ui:NavigationViewItem.Icon>

@@ -70,7 +70,7 @@
     </Style>
 
     <!-- Standard Primary Action Button -->
-    <Style x:Key="PrimaryActionButtonStyle" TargetType="Button">
+    <Style x:Key="PrimaryActionButtonStyle" TargetType="{x:Type ButtonBase}">
         <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
         <Setter Property="FontSize" Value="12.5"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -82,7 +82,7 @@
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="Button">
+                <ControlTemplate TargetType="{x:Type ButtonBase}">
                     <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="{StaticResource RadiusSmall}" Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
@@ -100,7 +100,7 @@
     </Style>
 
     <!-- Standard Secondary Button -->
-    <Style x:Key="SecondaryActionButtonStyle" TargetType="Button">
+    <Style x:Key="SecondaryActionButtonStyle" TargetType="{x:Type ButtonBase}">
         <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="FontWeight" Value="Medium"/>
@@ -113,7 +113,7 @@
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="Button">
+                <ControlTemplate TargetType="{x:Type ButtonBase}">
                     <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{StaticResource RadiusSmall}" Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>

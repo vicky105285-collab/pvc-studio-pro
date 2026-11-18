@@ -69,6 +69,17 @@ namespace PVCStudioPro.App.ViewModels
             BackupVM = backupVM;
             SettingsVM = settingsVM;
 
+            // Wire cross-workspace callbacks
+            DashboardVM.NavigateAction = dest => Navigate(dest);
+            SettingsVM.ToggleLanguageAction = lang =>
+            {
+                if (lang != CurrentLanguage)
+                {
+                    ToggleLanguage();
+                }
+            };
+            SettingsVM.ToggleThemeAction = theme => SetTheme(theme);
+
             CurrentView = DashboardVM;
             ActiveWorkspaceTitle = "Dashboard";
         }

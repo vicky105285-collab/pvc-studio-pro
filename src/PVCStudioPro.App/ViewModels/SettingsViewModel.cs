@@ -14,8 +14,8 @@ namespace PVCStudioPro.App.ViewModels
     public partial class SettingsViewModel : ObservableObject
     {
         private readonly IBusinessProfileService _profileService;
-        private readonly Action<string> _toggleLanguageAction;
-        private readonly Action<string> _toggleThemeAction;
+        public Action<string>? ToggleLanguageAction { get; set; }
+        public Action<string>? ToggleThemeAction { get; set; }
 
         [ObservableProperty]
         private string _selectedTheme = "System";
@@ -30,7 +30,7 @@ namespace PVCStudioPro.App.ViewModels
         private string _storagePath = string.Empty;
 
         [ObservableProperty]
-        private string _appVersion = "1.0.0-rc1 (Windows 11 x64)";
+        private string _appVersion = "2.0.0-RC (Windows 11 x64)";
 
         [ObservableProperty]
         private string _statusMessage = "Ready";
@@ -43,11 +43,11 @@ namespace PVCStudioPro.App.ViewModels
         public ICommand SwitchThemeCommand { get; }
         public ICommand SwitchLanguageCommand { get; }
 
-        public SettingsViewModel(IBusinessProfileService profileService, Action<string> toggleLanguageAction, Action<string> toggleThemeAction)
+        public SettingsViewModel(IBusinessProfileService profileService, Action<string>? toggleLanguageAction = null, Action<string>? toggleThemeAction = null)
         {
             _profileService = profileService ?? throw new ArgumentNullException(nameof(profileService));
-            _toggleLanguageAction = toggleLanguageAction ?? throw new ArgumentNullException(nameof(toggleLanguageAction));
-            _toggleThemeAction = toggleThemeAction ?? throw new ArgumentNullException(nameof(toggleThemeAction));
+            ToggleLanguageAction = toggleLanguageAction;
+            ToggleThemeAction = toggleThemeAction;
 
             SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
             SwitchThemeCommand = new RelayCommand<string>(SwitchTheme);
@@ -78,7 +78,7 @@ namespace PVCStudioPro.App.ViewModels
         {
             if (string.IsNullOrEmpty(theme)) return;
             SelectedTheme = theme;
-            _toggleThemeAction(theme);
+            ToggleThemeAction?.Invoke(theme);
             StatusMessage = $"Switched theme to {theme}.";
         }
 
@@ -87,7 +87,7 @@ namespace PVCStudioPro.App.ViewModels
             if (string.IsNullOrEmpty(lang)) return;
             string code = lang.Contains("தமிழ்") ? "ta" : "en";
             SelectedLanguage = code;
-            _toggleLanguageAction(code);
+            ToggleLanguageAction?.Invoke(code);
             StatusMessage = $"Language switched to {lang}.";
         }
 

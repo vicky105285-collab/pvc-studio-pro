@@ -13,7 +13,7 @@ namespace PVCStudioPro.App.ViewModels
     {
         private readonly IJobLedgerService _ledgerService;
         private readonly IPrinterTrayService _trayService;
-        private readonly Action<string> _navigateAction;
+        public Action<string>? NavigateAction { get; set; }
 
         [ObservableProperty]
         private int _todayCards;
@@ -47,17 +47,17 @@ namespace PVCStudioPro.App.ViewModels
         public ICommand RefreshCommand { get; }
         public ICommand NavigateToCommand { get; }
 
-        public DashboardViewModel(IJobLedgerService ledgerService, IPrinterTrayService trayService, Action<string> navigateAction)
+        public DashboardViewModel(IJobLedgerService ledgerService, IPrinterTrayService trayService, Action<string>? navigateAction = null)
         {
             _ledgerService = ledgerService ?? throw new ArgumentNullException(nameof(ledgerService));
             _trayService = trayService ?? throw new ArgumentNullException(nameof(trayService));
-            _navigateAction = navigateAction ?? throw new ArgumentNullException(nameof(navigateAction));
+            NavigateAction = navigateAction;
 
             RefreshCommand = new AsyncRelayCommand(LoadDashboardDataAsync);
             NavigateToCommand = new RelayCommand<string>(dest =>
             {
                 if (!string.IsNullOrEmpty(dest))
-                    _navigateAction(dest);
+                    NavigateAction?.Invoke(dest);
             });
 
             _ = LoadDashboardDataAsync();
