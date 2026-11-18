@@ -53,9 +53,15 @@
                         </ui:Button.Icon>
                     </ui:Button>
 
-                    <ui:Button Command="{Binding OpenCropStudioCommand}" Content="Crop Studio" Height="36" Padding="14,0" FontWeight="SemiBold" CornerRadius="4" Background="{DynamicResource CardSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1">
+                    <ui:Button Command="{Binding OpenCropStudioCommand}" Content="Crop Studio" Height="36" Padding="14,0" FontWeight="SemiBold" CornerRadius="4" Background="{DynamicResource CardSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" Margin="0,0,8,0">
                         <ui:Button.Icon>
                             <ui:SymbolIcon Symbol="Crop24"/>
+                        </ui:Button.Icon>
+                    </ui:Button>
+
+                    <ui:Button Command="{Binding OpenPageDesignerCommand}" Content="Page Designer" Height="36" Padding="14,0" FontWeight="SemiBold" CornerRadius="4" Background="{DynamicResource CardSurfaceBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon Symbol="DesignIdeas24"/>
                         </ui:Button.Icon>
                     </ui:Button>
                 </StackPanel>
@@ -243,13 +249,26 @@
                         </Grid>
                     </Border>
 
-                    <!-- Big Hero Print Preview & Approval Gate Button -->
-                    <ui:Button Grid.Row="3" Command="{Binding ApproveAndPrintCommand}" Height="48" CornerRadius="6" Background="{DynamicResource PrimaryAccentBrush}" Foreground="{DynamicResource AccentTextBrush}" FontWeight="Bold" FontSize="14" IsEnabled="{Binding HasCardsExtracted}">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Print24" Margin="0,0,8,0"/>
-                            <TextBlock Text="PRINT PREVIEW &amp; OPERATOR APPROVAL GATE"/>
-                        </StackPanel>
-                    </ui:Button>
+                    <!-- Dual Action Buttons: Page Designer + Hero Print Preview Gate -->
+                    <Grid Grid.Row="3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="2*"/>
+                        </Grid.ColumnDefinitions>
+                        <ui:Button Grid.Column="0" Command="{Binding OpenPageDesignerCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="48" IsEnabled="{Binding HasCardsExtracted}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="DesignIdeas24" Margin="0,0,8,0"/>
+                                <TextBlock Text="PAGE DESIGNER"/>
+                            </StackPanel>
+                        </ui:Button>
+                        <ui:Button Grid.Column="2" Command="{Binding ApproveAndPrintCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Height="48" FontWeight="Bold" FontSize="13" IsEnabled="{Binding HasCardsExtracted}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Print24" Margin="0,0,8,0"/>
+                                <TextBlock Text="PRINT PREVIEW &amp; APPROVAL GATE"/>
+                            </StackPanel>
+                        </ui:Button>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

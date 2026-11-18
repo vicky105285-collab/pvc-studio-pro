@@ -24,6 +24,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Open Document Button -->
@@ -48,15 +49,37 @@
                 </ui:Button>
 
                 <!-- Swap Front / Back -->
-                <ui:Button Grid.Column="3" Command="{Binding FlipFacesCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Margin="0,0,16,0">
+                <ui:Button Grid.Column="3" Command="{Binding FlipFacesCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Margin="0,0,8,0">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="ArrowSwap24" Margin="0,0,6,0"/>
                         <TextBlock Text="{DynamicResource BtnFlipFaces}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </ui:Button>
 
-                <!-- Detected Template Badge -->
+                <!-- Action Extensions (Crop Studio, Page Designer, Print Preview) -->
                 <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ui:Button Command="{Binding EditInCropStudioCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Margin="0,0,6,0" ToolTip="Fine-tune perspective homography, aspect ratio or crop borders">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Crop24" Margin="0,0,4,0"/>
+                            <TextBlock Text="Edit in Crop Studio" VerticalAlignment="Center" FontSize="11.5"/>
+                        </StackPanel>
+                    </ui:Button>
+                    <ui:Button Command="{Binding SendToPageDesignerCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Margin="0,0,6,0" ToolTip="Open full millimeter page layout designer">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="DesignIdeas24" Margin="0,0,4,0"/>
+                            <TextBlock Text="Page Designer" VerticalAlignment="Center" FontSize="11.5"/>
+                        </StackPanel>
+                    </ui:Button>
+                    <ui:Button Command="{Binding SendToPrintPreviewCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Margin="0,0,12,0" ToolTip="Open physical True Print Preview with hardware driver checks">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Print24" Margin="0,0,4,0"/>
+                            <TextBlock Text="Print Preview" VerticalAlignment="Center" FontSize="11.5"/>
+                        </StackPanel>
+                    </ui:Button>
+                </StackPanel>
+
+                <!-- Detected Template Badge -->
+                <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="{DynamicResource LblDocumentType}" Style="{StaticResource FormLabelStyle}" Margin="0,0,8,0"/>
                     <Border Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="10,4">
                         <TextBlock Text="{Binding DetectedTemplateName}" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Bold" FontSize="12.5"/>
@@ -64,7 +87,7 @@
                 </StackPanel>
 
                 <!-- Loading Bar -->
-                <ProgressBar Grid.Column="5" IsIndeterminate="True" Width="100" Height="6" Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}" VerticalAlignment="Center"/>
+                <ProgressBar Grid.Column="6" IsIndeterminate="True" Width="80" Height="6" Margin="12,0,0,0" Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}" VerticalAlignment="Center"/>
             </Grid>
         </Border>
 
@@ -213,7 +236,7 @@
                         </CheckBox>
 
                         <!-- Primary Print Action Button -->
-                        <ui:Button Command="{Binding PrintCardCommand}" Content="{DynamicResource BtnPrintNow}" Height="50" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" FontWeight="Bold" FontSize="14" CornerRadius="6" HorizontalAlignment="Stretch"/>
+                        <ui:Button Command="{Binding PrintCardCommand}" Content="{DynamicResource BtnPrintNow}" Style="{StaticResource PrimaryActionButtonStyle}" Height="50" FontSize="14" HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </ScrollViewer>
             </Border>

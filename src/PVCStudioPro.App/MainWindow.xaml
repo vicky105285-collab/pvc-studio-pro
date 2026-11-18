@@ -22,6 +22,9 @@
         <DataTemplate DataType="{x:Type vm:CropStudioViewModel}">
             <views:CropStudioView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:DocumentPageDesignerViewModel}">
+            <views:DocumentPageDesignerView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:PrintPreviewApprovalViewModel}">
             <views:PrintPreviewApprovalView/>
         </DataTemplate>
@@ -127,6 +130,12 @@
                     <ui:NavigationViewItem Content="{DynamicResource NavCardPrint}" Command="{Binding NavigateCommand}" CommandParameter="Cards">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Document24" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+
+                    <ui:NavigationViewItem Content="{DynamicResource NavPageDesigner}" Command="{Binding NavigateCommand}" CommandParameter="PageDesigner">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:SymbolIcon Symbol="DesignIdeas24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 

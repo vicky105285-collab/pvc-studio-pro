@@ -26,6 +26,7 @@ namespace PVCStudioPro.App.ViewModels
         public DashboardViewModel DashboardVM { get; }
         public DocumentDeskViewModel DocumentDeskVM { get; }
         public CropStudioViewModel CropStudioVM { get; }
+        public DocumentPageDesignerViewModel PageDesignerVM { get; }
         public PrintPreviewApprovalViewModel PrintPreviewApprovalVM { get; }
         public CardPrintViewModel CardPrintVM { get; }
         public PhotoStudioViewModel PhotoStudioVM { get; }
@@ -45,6 +46,7 @@ namespace PVCStudioPro.App.ViewModels
             DashboardViewModel dashboardVM,
             DocumentDeskViewModel documentDeskVM,
             CropStudioViewModel cropStudioVM,
+            DocumentPageDesignerViewModel pageDesignerVM,
             PrintPreviewApprovalViewModel printPreviewApprovalVM,
             CardPrintViewModel cardPrintVM,
             PhotoStudioViewModel photoStudioVM,
@@ -63,6 +65,7 @@ namespace PVCStudioPro.App.ViewModels
             DashboardVM = dashboardVM;
             DocumentDeskVM = documentDeskVM;
             CropStudioVM = cropStudioVM;
+            PageDesignerVM = pageDesignerVM;
             PrintPreviewApprovalVM = printPreviewApprovalVM;
             CardPrintVM = cardPrintVM;
             PhotoStudioVM = photoStudioVM;
@@ -91,6 +94,41 @@ namespace PVCStudioPro.App.ViewModels
             {
                 _ = PrintPreviewApprovalVM.LoadCardsAsync(front, back, kind);
                 Navigate("PrintPreviewApproval");
+            };
+
+            DocumentDeskVM.OpenInPageDesignerAction = (front, back, title) =>
+            {
+                PageDesignerVM.LoadCardsIntoDesigner(front, back, title);
+                Navigate("PageDesigner");
+            };
+
+            CardPrintVM.OpenInCropStudioAction = (bmp, title) =>
+            {
+                CropStudioVM.LoadImage(bmp, title);
+                Navigate("CropStudio");
+            };
+
+            CardPrintVM.OpenInPrintPreviewAction = (front, back, kind) =>
+            {
+                _ = PrintPreviewApprovalVM.LoadCardsAsync(front, back, kind);
+                Navigate("PrintPreviewApproval");
+            };
+
+            CardPrintVM.OpenInPageDesignerAction = (front, back, title) =>
+            {
+                PageDesignerVM.LoadCardsIntoDesigner(front, back, title);
+                Navigate("PageDesigner");
+            };
+
+            PageDesignerVM.OpenInPrintPreviewAction = layout =>
+            {
+                PrintPreviewApprovalVM.InitializeWithLayout(layout);
+                Navigate("PrintPreviewApproval");
+            };
+
+            PageDesignerVM.CloseAction = () =>
+            {
+                Navigate("DocumentDesk");
             };
 
             CropStudioVM.ReturnToDeskAction = (bmp, isFront) =>
@@ -133,6 +171,10 @@ namespace PVCStudioPro.App.ViewModels
                 case "CropStudio":
                     CurrentView = CropStudioVM;
                     ActiveWorkspaceTitle = "Crop Studio";
+                    break;
+                case "PageDesigner":
+                    CurrentView = PageDesignerVM;
+                    ActiveWorkspaceTitle = "Page Designer";
                     break;
                 case "PrintPreviewApproval":
                     CurrentView = PrintPreviewApprovalVM;

@@ -12,6 +12,7 @@
     <sys:String x:Key="NavDocumentDesk">Document Desk</sys:String>
     <sys:String x:Key="NavDashboard">Dashboard</sys:String>
     <sys:String x:Key="NavCardPrint">Card Studio</sys:String>
+    <sys:String x:Key="NavPageDesigner">Page Designer</sys:String>
     <sys:String x:Key="NavPhotoStudio">Photo Studio</sys:String>
     <sys:String x:Key="NavDocProcessing">Document Processing</sys:String>
     <sys:String x:Key="NavBatch">Batch Processing</sys:String>

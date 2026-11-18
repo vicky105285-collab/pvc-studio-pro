@@ -24,6 +24,7 @@ namespace PVCStudioPro.App.ViewModels
 
         public Action<SKBitmap, string>? OpenInCropStudioAction { get; set; }
         public Action<SKBitmap?, SKBitmap?, DocumentKind>? OpenInPrintPreviewAction { get; set; }
+        public Action<SKBitmap?, SKBitmap?, string>? OpenInPageDesignerAction { get; set; }
 
         [ObservableProperty]
         private string _documentPath = string.Empty;
@@ -487,6 +488,19 @@ namespace PVCStudioPro.App.ViewModels
             if (_activePageBitmap != null)
             {
                 OpenInCropStudioAction?.Invoke(_activePageBitmap, FileName);
+            }
+        }
+
+        [RelayCommand]
+        public void OpenPageDesigner()
+        {
+            if (_cachedFrontBitmap != null)
+            {
+                OpenInPageDesignerAction?.Invoke(_cachedFrontBitmap, _cachedBackBitmap, DetectedDocumentTitle);
+            }
+            else
+            {
+                StatusMessage = "Extract or load cards before opening Document Page Designer.";
             }
         }
 

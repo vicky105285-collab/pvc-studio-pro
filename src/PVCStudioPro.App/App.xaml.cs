@@ -87,6 +87,7 @@ namespace PVCStudioPro.App
                 services.AddSingleton<ICardDetectionService, CardDetectionService>();
                 services.AddSingleton<IManualCropService, ManualCropService>();
                 services.AddSingleton<IPrintPreviewService, PrintPreviewService>();
+                services.AddSingleton<IPhysicalPageRenderService, PhysicalPageRenderService>();
                 services.AddSingleton<ITemplateService, TemplateService>();
                 services.AddSingleton<IPrinterDiscoveryService, PrinterDiscoveryService>();
                 services.AddSingleton<IPrintService, PrintService>();
@@ -106,6 +107,7 @@ namespace PVCStudioPro.App
                 services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<DocumentDeskViewModel>();
                 services.AddSingleton<CropStudioViewModel>();
+                services.AddSingleton<DocumentPageDesignerViewModel>();
                 services.AddSingleton<PrintPreviewApprovalViewModel>();
                 services.AddSingleton<CardPrintViewModel>();
                 services.AddSingleton<PhotoStudioViewModel>();

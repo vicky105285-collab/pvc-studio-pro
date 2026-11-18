@@ -77,7 +77,7 @@
         <Setter Property="Height" Value="42"/>
         <Setter Property="Padding" Value="18,0"/>
         <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
@@ -89,6 +89,11 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource AccentPrimaryHoverBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource PrimaryAccentPressedBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="border" Property="Opacity" Value="0.5"/>
@@ -120,12 +125,25 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource CardSubtleBackgroundBrush}"/>
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource PreviewCanvasBgBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="border" Property="Opacity" Value="0.5"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!-- Implicit Default Button Styles (Global High Contrast on Hover) -->
+    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource SecondaryActionButtonStyle}"/>
+    <Style TargetType="{x:Type ui:Button}" BasedOn="{StaticResource SecondaryActionButtonStyle}"/>
 
     <!-- Metric / KPI Value Block Style -->
     <Style x:Key="MetricValueStyle" TargetType="TextBlock">
