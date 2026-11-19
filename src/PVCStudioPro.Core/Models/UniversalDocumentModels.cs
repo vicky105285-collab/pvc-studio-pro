@@ -181,4 +181,71 @@ namespace PVCStudioPro.Core.Models
             CanvasHeightMm = hMm;
         }
     }
+
+    public class DetectionConfidenceScore
+    {
+        public double OverallConfidence { get; set; }
+        public double GeometryScore { get; set; }
+        public double KeywordScore { get; set; }
+        public double TemplateSeedScore { get; set; }
+        public double EdgeContourScore { get; set; }
+
+        public int ConfidencePercent => (int)Math.Clamp(Math.Round(OverallConfidence * 100.0), 0, 100);
+        public bool IsHighConfidence => OverallConfidence >= 0.85;
+
+        public string Summary => IsHighConfidence
+            ? $"{ConfidencePercent}% High Confidence"
+            : $"{ConfidencePercent}% Low Confidence";
+
+        public DetectionConfidenceScore() { }
+
+        public DetectionConfidenceScore(
+            double overall,
+            double geometry = 1.0,
+            double keyword = 1.0,
+            double template = 1.0,
+            double edge = 1.0)
+        {
+            OverallConfidence = Math.Clamp(overall, 0.0, 1.0);
+            GeometryScore = Math.Clamp(geometry, 0.0, 1.0);
+            KeywordScore = Math.Clamp(keyword, 0.0, 1.0);
+            TemplateSeedScore = Math.Clamp(template, 0.0, 1.0);
+            EdgeContourScore = Math.Clamp(edge, 0.0, 1.0);
+        }
+    }
+
+    public class CardExtractionResult
+    {
+        public SKBitmap? FrontCard { get; set; }
+        public SKBitmap? BackCard { get; set; }
+        public SKRectI? FrontRect { get; set; }
+        public SKRectI? BackRect { get; set; }
+        public QuadrilateralPoints? FrontQuad { get; set; }
+        public QuadrilateralPoints? BackQuad { get; set; }
+        public DocumentKind DetectedKind { get; set; } = DocumentKind.Unknown;
+        public AadhaarGeneration AadhaarGen { get; set; } = AadhaarGeneration.Unknown;
+        public CardTemplate? MatchedTemplate { get; set; }
+        public DetectionConfidenceScore Confidence { get; set; } = new();
+        public bool RequiresManualConfirmation => !Confidence.IsHighConfidence;
+        public string DetectionNotes { get; set; } = string.Empty;
+        public bool HasBackFace => BackCard != null;
+    }
+
+    public interface ICardDetectionEngine
+    {
+        Task<CardExtractionResult> DetectAndExtractAdaptiveAsync(
+            SKBitmap pageBitmap,
+            string extractedText = "",
+            double pageWidthMm = 210.0,
+            double pageHeightMm = 297.0,
+            string? preferredTemplateId = null,
+            DocumentKind preferredKind = DocumentKind.Unknown,
+            AadhaarGeneration preferredAadhaarGen = AadhaarGeneration.Unknown);
+
+        Task<SKRectI> RefineCropBoundsWithOpenCvAsync(
+            SKBitmap pageBitmap,
+            SKRectI seedRect,
+            double searchWindowMm = 15.0,
+            double dpi = 300.0);
+    }
 }

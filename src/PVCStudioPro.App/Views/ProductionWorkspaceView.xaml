@@ -16,73 +16,100 @@
             <RowDefinition Height="Auto"/> <!-- Status Bar -->
         </Grid.RowDefinitions>
 
-        <!-- ROW 0: TOP ACTION BAR (Clean, high-density, commercial desktop) -->
-        <Border Grid.Row="0" Style="{StaticResource SurfaceCardStyle}" Padding="12,8" Margin="0,0,0,10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+        <!-- ROW 0: TOP ACTION BAR, PASSWORD PROMPT & LOW-CONFIDENCE AMBER ALERT -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <!-- Action Toolbar (Clean, high-density, commercial desktop) -->
+            <Border Style="{StaticResource SurfaceCardStyle}" Padding="12,8" Margin="0,0,0,6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <!-- Primary Document Actions -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                    <ui:Button Command="{Binding OpenDocumentFileDialogCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Height="36" Padding="16,0" Margin="0,0,8,0" ToolTip="Open Aadhaar PDF, PAN, Voter, or Scanned Image (Ctrl+O)">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="FolderOpen24" Margin="0,0,8,0"/>
-                            <TextBlock Text="Open Document" FontWeight="Bold" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ui:Button>
+                    <!-- Primary Document Actions -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <ui:Button Command="{Binding OpenDocumentFileDialogCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Height="36" Padding="16,0" Margin="0,0,8,0" ToolTip="Open Aadhaar PDF, PAN, Voter, or Scanned Image (Ctrl+O)">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="FolderOpen24" Margin="0,0,8,0"/>
+                                <TextBlock Text="Open Document" FontWeight="Bold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ui:Button>
 
-                    <ui:Button Command="{Binding SaveProjectCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="36" Margin="0,0,6,0" ToolTip="Save current layout to .pvcproj project file">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Save24" Margin="0,0,6,0"/>
-                            <TextBlock Text="Save Project" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ui:Button>
+                        <ui:Button Command="{Binding SaveProjectCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="36" Margin="0,0,6,0" ToolTip="Save current layout to .pvcproj project file">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Save24" Margin="0,0,6,0"/>
+                                <TextBlock Text="Save Project" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ui:Button>
 
-                    <ui:Button Command="{Binding ExportPdfCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="36" Margin="0,0,6,0" ToolTip="Export 600 DPI vector print-ready PDF">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="DocumentPdf24" Margin="0,0,6,0"/>
-                            <TextBlock Text="Export PDF" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ui:Button>
-                </StackPanel>
+                        <ui:Button Command="{Binding ExportPdfCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="36" Margin="0,0,6,0" ToolTip="Export 600 DPI vector print-ready PDF">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="DocumentPdf24" Margin="0,0,6,0"/>
+                                <TextBlock Text="Export PDF" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ui:Button>
+                    </StackPanel>
 
-                <!-- Document Recognition & Security Status Badge -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                    <Border Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="10,4" Margin="0,0,8,0">
-                        <TextBlock Text="{Binding DetectedBadge}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center"/>
-                    </Border>
-                    <TextBlock Text="{Binding DetectedDocTitle}" FontWeight="SemiBold" FontSize="12.5" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="350"/>
-                </StackPanel>
+                    <!-- Document Recognition & Security Status Badge -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <Border Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="10,4" Margin="0,0,8,0">
+                            <TextBlock Text="{Binding DetectedBadge}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Background="{Binding ConfidenceBadgeBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,0" Visibility="{Binding HasLoadedDocument, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="{Binding DetectionConfidenceSummary}" FontWeight="Bold" FontSize="10.5" Foreground="{Binding ConfidenceTextBrush}" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="{Binding DetectedDocTitle}" FontWeight="SemiBold" FontSize="12.5" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="320"/>
+                    </StackPanel>
 
-                <!-- Quick Workspace Switcher for Secondary Tools -->
-                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                    <ui:Button Command="{Binding OpenCropDrawerCommand}" CommandParameter="Front Card" Style="{StaticResource SecondaryActionButtonStyle}" Height="34" Margin="0,0,6,0" ToolTip="Open fine-tuned interactive crop adjustment drawer">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Crop24" Margin="0,0,6,0"/>
-                            <TextBlock Text="Adjust Crop" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ui:Button>
-                </StackPanel>
-            </Grid>
-        </Border>
+                    <!-- Quick Workspace Switcher for Secondary Tools -->
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:Button Command="{Binding OpenCropDrawerCommand}" CommandParameter="Front Card" Style="{StaticResource SecondaryActionButtonStyle}" Height="34" Margin="0,0,6,0" ToolTip="Open fine-tuned interactive crop adjustment drawer">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Crop24" Margin="0,0,6,0"/>
+                                <TextBlock Text="Adjust Crop" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ui:Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-        <!-- PASSWORD PROMPT BAR (Conditional - Appears only when required) -->
-        <Border Grid.Row="0" Background="#FEF3C7" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,10" Panel.ZIndex="10" Visibility="{Binding IsPasswordPromptVisible, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="🔒 Document is Password-Protected. Enter PDF Decryption Password:" FontWeight="Bold" Foreground="#92400E" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <TextBox Grid.Column="1" Text="{Binding PasswordInput, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Margin="0,0,12,0"/>
-                <ui:Button Grid.Column="2" Command="{Binding UnlockPasswordCommand}" Content="Unlock &amp; Extract Cards" Height="34" Padding="14,0" Background="#B45309" Foreground="White" FontWeight="Bold" CornerRadius="4"/>
-            </Grid>
-        </Border>
+            <!-- PASSWORD PROMPT BAR (Conditional - Appears only when required) -->
+            <Border Background="#FEF3C7" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,6" Visibility="{Binding IsPasswordPromptVisible, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="🔒 Document is Password-Protected. Enter PDF Decryption Password:" FontWeight="Bold" Foreground="#92400E" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBox Grid.Column="1" Text="{Binding PasswordInput, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Margin="0,0,12,0"/>
+                    <ui:Button Grid.Column="2" Command="{Binding UnlockPasswordCommand}" Content="Unlock &amp; Extract Cards" Height="34" Padding="14,0" Background="#B45309" Foreground="White" FontWeight="Bold" CornerRadius="4"/>
+                </Grid>
+            </Border>
+
+            <!-- LOW CONFIDENCE AMBER BANNER (Conditional - Appears when detection confidence < 85%) -->
+            <Border Background="#FFFBEB" BorderBrush="#F59E0B" BorderThickness="1.5" CornerRadius="6" Padding="12,8" Margin="0,0,0,6"
+                    Visibility="{Binding IsLowConfidenceBannerVisible, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="⚠️" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding LowConfidenceWarningTitle}" FontWeight="Bold" Foreground="#B45309" FontSize="12"/>
+                        <TextBlock Text="{Binding LowConfidenceWarningDetails}" Foreground="#92400E" FontSize="11"/>
+                    </StackPanel>
+                    <ui:Button Grid.Column="2" Command="{Binding OpenCropDrawerCommand}" CommandParameter="Front Card" Content="Review &amp; Adjust Bounds" Height="30" Padding="12,0" Background="#F59E0B" Foreground="White" FontWeight="SemiBold" CornerRadius="4"/>
+                    <ui:Button Grid.Column="4" Command="{Binding DismissLowConfidenceBannerCommand}" Content="Accept Auto Bounds" Height="30" Padding="12,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
+                </Grid>
+            </Border>
+        </StackPanel>
 
         <!-- ROW 1: 3-COLUMN TASK WORKSPACE (Zero scrolling, fully responsive) -->
         <Grid Grid.Row="1">

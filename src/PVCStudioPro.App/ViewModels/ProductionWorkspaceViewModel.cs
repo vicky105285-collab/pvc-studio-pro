@@ -12,6 +12,7 @@ using SkiaSharp;
 using PVCStudioPro.App.Converters;
 using PVCStudioPro.Core.Models;
 using PVCStudioPro.Core.Services;
+using PVCStudioPro.Core.Services.Implementations;
 
 namespace PVCStudioPro.App.ViewModels
 {
@@ -32,6 +33,7 @@ namespace PVCStudioPro.App.ViewModels
         private readonly IPdfDocumentService _pdfDocumentService;
         private readonly IDocumentTypeDetectionService _detectionService;
         private readonly ICardDetectionService _cardDetection;
+        private readonly ICardDetectionEngine _cardDetectionEngine;
         private readonly IManualCropService _cropService;
         private readonly IPhysicalPageRenderService _renderService;
         private readonly IPrinterDiscoveryService _printerDiscovery;
@@ -57,6 +59,27 @@ namespace PVCStudioPro.App.ViewModels
 
         [ObservableProperty]
         private string _detectedBadge = "AWAITING FILE";
+
+        [ObservableProperty]
+        private int _detectionConfidencePercent;
+
+        [ObservableProperty]
+        private string _detectionConfidenceSummary = string.Empty;
+
+        [ObservableProperty]
+        private bool _isLowConfidenceBannerVisible = false;
+
+        [ObservableProperty]
+        private string _lowConfidenceWarningTitle = string.Empty;
+
+        [ObservableProperty]
+        private string _lowConfidenceWarningDetails = string.Empty;
+
+        [ObservableProperty]
+        private System.Windows.Media.Brush _confidenceBadgeBrush = System.Windows.Media.Brushes.Transparent;
+
+        [ObservableProperty]
+        private System.Windows.Media.Brush _confidenceTextBrush = System.Windows.Media.Brushes.Black;
 
         [ObservableProperty]
         private bool _isPasswordPromptVisible = false;
@@ -230,6 +253,7 @@ namespace PVCStudioPro.App.ViewModels
             _pdfDocumentService = pdfDocumentService;
             _detectionService = detectionService;
             _cardDetection = cardDetection;
+            _cardDetectionEngine = cardDetection as ICardDetectionEngine ?? new CardDetectionService(_templateService, _detectionService);
             _cropService = cropService;
             _renderService = renderService;
             _printerDiscovery = printerDiscovery;
@@ -405,15 +429,19 @@ namespace PVCStudioPro.App.ViewModels
                     var docInfo = await _pdfDocumentService.InspectDocumentAsync(stream, password);
                     string textSample = docInfo.ExtractedTextSample;
 
-                    // Multi-factor detection
-                    var detection = await _detectionService.DetectDocumentTypeAsync(_cachedPageBitmap, textSample, docInfo.PageWidthMm, docInfo.PageHeightMm);
-                    _detectedKind = detection.DetectedKind;
-                    DetectedDocTitle = $"{detection.DisplayName}";
-                    DetectedBadge = $"{detection.DetectedKind.ToString().ToUpperInvariant()} • AUTO-DETECTED";
+                    // 5-Stage Adaptive detection and extraction
+                    var extraction = await _cardDetectionEngine.DetectAndExtractAdaptiveAsync(
+                        _cachedPageBitmap,
+                        textSample,
+                        docInfo.PageWidthMm,
+                        docInfo.PageHeightMm);
 
-                    // Auto-extract front and back
-                    var (front, back, _, _) = await _cardDetection.DetectAndExtractDualCardsAsync(_cachedPageBitmap, detection.DetectedKind, detection.AadhaarGen);
-                    SetExtractedCards(front, back);
+                    _detectedKind = extraction.DetectedKind;
+                    DetectedDocTitle = extraction.MatchedTemplate?.DisplayName ?? $"{_detectedKind}";
+                    DetectedBadge = $"{extraction.DetectedKind.ToString().ToUpperInvariant()} • AUTO-DETECTED";
+
+                    ApplyDetectionConfidence(extraction.Confidence, extraction.FrontRect);
+                    SetExtractedCards(extraction.FrontCard, extraction.BackCard);
                 }
                 else
                 {
@@ -426,15 +454,18 @@ namespace PVCStudioPro.App.ViewModels
                         return;
                     }
 
-                    var detection = await _detectionService.DetectDocumentTypeAsync(_cachedPageBitmap, string.Empty);
-                    _detectedKind = detection.DetectedKind;
-                    DetectedDocTitle = $"{detection.DisplayName}";
-                    DetectedBadge = $"{detection.DetectedKind.ToString().ToUpperInvariant()} • IMAGE SCAN";
+                    var extraction = await _cardDetectionEngine.DetectAndExtractAdaptiveAsync(
+                        _cachedPageBitmap,
+                        string.Empty);
 
-                    var (front, back, _, _) = await _cardDetection.DetectAndExtractDualCardsAsync(_cachedPageBitmap, detection.DetectedKind, detection.AadhaarGen);
-                    if (front != null)
+                    _detectedKind = extraction.DetectedKind;
+                    DetectedDocTitle = extraction.MatchedTemplate?.DisplayName ?? $"{_detectedKind}";
+                    DetectedBadge = $"{extraction.DetectedKind.ToString().ToUpperInvariant()} • IMAGE SCAN";
+
+                    ApplyDetectionConfidence(extraction.Confidence, extraction.FrontRect);
+                    if (extraction.FrontCard != null)
                     {
-                        SetExtractedCards(front, back);
+                        SetExtractedCards(extraction.FrontCard, extraction.BackCard);
                     }
                     else
                     {
@@ -444,7 +475,9 @@ namespace PVCStudioPro.App.ViewModels
                 }
 
                 HasLoadedDocument = true;
-                StatusMessage = $"✓ Successfully imported {FileName} | CR80 standard applied automatically.";
+                StatusMessage = DetectionConfidencePercent >= 85
+                    ? $"✓ Successfully imported {FileName} | {DetectionConfidenceSummary} | CR80 standard applied automatically."
+                    : $"⚠️ Imported {FileName} with {DetectionConfidenceSummary}. Crop verification drawer opened.";
                 BuildPhysicalSheetLayout();
             }
             catch (Exception ex)
@@ -580,17 +613,23 @@ namespace PVCStudioPro.App.ViewModels
 
             if (targetFace.Contains("Front", StringComparison.OrdinalIgnoreCase))
             {
-                CropX = 210;
-                CropY = 2595;
-                CropWidth = 1045;
-                CropHeight = 665;
+                if (CropWidth <= 0 || CropHeight <= 0)
+                {
+                    CropX = 210;
+                    CropY = 2595;
+                    CropWidth = 1045;
+                    CropHeight = 665;
+                }
             }
             else
             {
-                CropX = 1300;
-                CropY = 2595;
-                CropWidth = 1045;
-                CropHeight = 665;
+                if (CropWidth <= 0 || CropHeight <= 0)
+                {
+                    CropX = 1300;
+                    CropY = 2595;
+                    CropWidth = 1045;
+                    CropHeight = 665;
+                }
             }
 
             IsCropDrawerOpen = true;
@@ -670,6 +709,49 @@ namespace PVCStudioPro.App.ViewModels
             }
 
             IsCropDrawerOpen = false;
+        }
+
+        [RelayCommand]
+        public void DismissLowConfidenceBanner()
+        {
+            IsLowConfidenceBannerVisible = false;
+            StatusMessage = "Auto-detected card bounds accepted by operator.";
+        }
+
+        private void ApplyDetectionConfidence(DetectionConfidenceScore score, SKRectI? frontRect)
+        {
+            DetectionConfidencePercent = score.ConfidencePercent;
+            DetectionConfidenceSummary = score.Summary;
+
+            if (score.IsHighConfidence)
+            {
+                IsLowConfidenceBannerVisible = false;
+                ConfidenceBadgeBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(220, 252, 231)); // Light green #DCFCE7
+                ConfidenceTextBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(22, 101, 52));    // Dark green #166534
+            }
+            else
+            {
+                IsLowConfidenceBannerVisible = true;
+                ConfidenceBadgeBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(254, 243, 199)); // Amber #FEF3C7
+                ConfidenceTextBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(146, 64, 14));    // Dark amber #92400E
+
+                LowConfidenceWarningTitle = $"⚠️ Low Detection Confidence ({DetectionConfidencePercent}%)";
+                LowConfidenceWarningDetails = "Card borders could not be verified with high certainty. Please review or adjust card bounds.";
+
+                if (frontRect.HasValue)
+                {
+                    CropX = frontRect.Value.Left;
+                    CropY = frontRect.Value.Top;
+                    CropWidth = frontRect.Value.Width;
+                    CropHeight = frontRect.Value.Height;
+                }
+                CropTargetFace = "Front Card";
+                if (_cachedPageBitmap != null || _cachedFrontBitmap != null)
+                {
+                    CropSourceImage = (_cachedPageBitmap ?? _cachedFrontBitmap)?.ToBitmapSource();
+                }
+                IsCropDrawerOpen = true;
+            }
         }
 
         #endregion

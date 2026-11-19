@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using PVCStudioPro.App.ViewModels;
+using PVCStudioPro.Core.Models;
 using PVCStudioPro.Core.Services;
 using PVCStudioPro.Core.Services.Implementations;
 
@@ -84,12 +85,14 @@ namespace PVCStudioPro.App
                 services.AddSingleton<IDocumentImportService, DocumentImportService>();
                 services.AddSingleton<IDocumentSessionManager, DocumentSessionManager>();
                 services.AddSingleton<IOfficeDocumentService, OfficeDocumentService>();
+                services.AddSingleton<ITemplateService, TemplateService>();
                 services.AddSingleton<IDocumentTypeDetectionService, DocumentTypeDetectionService>();
-                services.AddSingleton<ICardDetectionService, CardDetectionService>();
+                services.AddSingleton<CardDetectionService>();
+                services.AddSingleton<ICardDetectionService>(sp => sp.GetRequiredService<CardDetectionService>());
+                services.AddSingleton<ICardDetectionEngine>(sp => sp.GetRequiredService<CardDetectionService>());
                 services.AddSingleton<IManualCropService, ManualCropService>();
                 services.AddSingleton<IPrintPreviewService, PrintPreviewService>();
                 services.AddSingleton<IPhysicalPageRenderService, PhysicalPageRenderService>();
-                services.AddSingleton<ITemplateService, TemplateService>();
                 services.AddSingleton<IPrinterDiscoveryService, PrinterDiscoveryService>();
                 services.AddSingleton<IPrintService, PrintService>();
                 services.AddSingleton<ISecurityService, SecurityService>();
