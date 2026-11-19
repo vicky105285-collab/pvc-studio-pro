@@ -390,27 +390,55 @@ namespace PVCStudioPro.Core.Services.Implementations
                             };
                         }
 
-                        // Prepare DIB for StretchDIBits
-                        var bmi = new BITMAPINFOHEADER
+                        SKBitmap bgraBitmap;
+                        bool disposeBgra = false;
+                        if (trayBitmap.ColorType != SKColorType.Bgra8888)
                         {
-                            biSize = Marshal.SizeOf<BITMAPINFOHEADER>(),
-                            biWidth = trayBitmap.Width,
-                            biHeight = -trayBitmap.Height, // Top-down DIB
-                            biPlanes = 1,
-                            biBitCount = 32,
-                            biCompression = BI_RGB,
-                            biSizeImage = trayBitmap.ByteCount
-                        };
+                            bgraBitmap = new SKBitmap(trayBitmap.Width, trayBitmap.Height, SKColorType.Bgra8888, trayBitmap.AlphaType);
+                            using (var c = new SKCanvas(bgraBitmap))
+                            {
+                                c.DrawBitmap(trayBitmap, 0, 0, SKSamplingOptions.Default, null);
+                                c.Flush();
+                            }
+                            disposeBgra = true;
+                        }
+                        else
+                        {
+                            bgraBitmap = trayBitmap;
+                        }
 
-                        IntPtr pPixels = trayBitmap.GetPixels();
-                        int result = StretchDIBits(
-                            hdc,
-                            0, 0, trayBitmap.Width, trayBitmap.Height,
-                            0, 0, trayBitmap.Width, trayBitmap.Height,
-                            pPixels,
-                            ref bmi,
-                            DIB_RGB_COLORS,
-                            SRCCOPY);
+                        int result;
+                        try
+                        {
+                            // Prepare DIB for StretchDIBits (Windows 32bpp BI_RGB expects BGRA byte layout)
+                            var bmi = new BITMAPINFOHEADER
+                            {
+                                biSize = Marshal.SizeOf<BITMAPINFOHEADER>(),
+                                biWidth = bgraBitmap.Width,
+                                biHeight = -bgraBitmap.Height, // Top-down DIB
+                                biPlanes = 1,
+                                biBitCount = 32,
+                                biCompression = BI_RGB,
+                                biSizeImage = bgraBitmap.ByteCount
+                            };
+
+                            IntPtr pPixels = bgraBitmap.GetPixels();
+                            result = StretchDIBits(
+                                hdc,
+                                0, 0, bgraBitmap.Width, bgraBitmap.Height,
+                                0, 0, bgraBitmap.Width, bgraBitmap.Height,
+                                pPixels,
+                                ref bmi,
+                                DIB_RGB_COLORS,
+                                SRCCOPY);
+                        }
+                        finally
+                        {
+                            if (disposeBgra)
+                            {
+                                bgraBitmap.Dispose();
+                            }
+                        }
 
                         EndPage(hdc);
                         EndDoc(hdc);

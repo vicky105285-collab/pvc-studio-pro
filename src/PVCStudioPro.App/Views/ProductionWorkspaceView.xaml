@@ -75,7 +75,13 @@
 
                     <!-- Quick Workspace Switcher for Secondary Tools -->
                     <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                        <ui:Button Command="{Binding OpenCropDrawerCommand}" CommandParameter="Front Card" Style="{StaticResource SecondaryActionButtonStyle}" Height="34" Margin="0,0,6,0" ToolTip="Open fine-tuned interactive crop adjustment drawer">
+                        <ui:Button Command="{Binding SelectOtherCardOptionCommand}" CommandParameter="other_id_dual" Style="{StaticResource SecondaryActionButtonStyle}" Height="34" Margin="0,0,6,0" ToolTip="Quick switch to Other Cards / Custom Presets">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="ContactCard24" Margin="0,0,6,0"/>
+                                <TextBlock Text="Other Cards" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ui:Button>
+                        <ui:Button Command="{Binding OpenCropDrawerCommand}" CommandParameter="Front Card (Slot 1)" Style="{StaticResource SecondaryActionButtonStyle}" Height="34" Margin="0,0,6,0" ToolTip="Open fine-tuned interactive crop adjustment drawer">
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon Symbol="Crop24" Margin="0,0,6,0"/>
                                 <TextBlock Text="Adjust Crop" VerticalAlignment="Center"/>
@@ -382,69 +388,151 @@
             </Grid>
         </Border>
 
-        <!-- CROP ADJUSTMENT DRAWER OVERLAY (Fit-to-Window, Zero Scroll, Clean In-Place Modal) -->
+        <!-- CROP ADJUSTMENT DRAWER OVERLAY (Fit-to-Window, Advanced Straighten, Free Crop & Multi-Card Options) -->
         <Border Grid.Row="0" Grid.RowSpan="3" Background="#90000000" Panel.ZIndex="100"
                 Visibility="{Binding IsCropDrawerOpen, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
-            <Border Width="820" Height="580" Style="{StaticResource SurfaceCardStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
+            <Border Width="1040" Height="720" Style="{StaticResource SurfaceCardStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/> <!-- Header -->
-                        <RowDefinition Height="*"/>    <!-- Fit-to-window preview & controls -->
-                        <RowDefinition Height="Auto"/> <!-- Action buttons -->
+                        <RowDefinition Height="Auto"/> <!-- Header & Presets -->
+                        <RowDefinition Height="*"/>    <!-- Canvas & Controls -->
+                        <RowDefinition Height="Auto"/> <!-- Action Buttons -->
                     </Grid.RowDefinitions>
 
-                    <!-- Drawer Header -->
+                    <!-- Drawer Header & Quick Aspect Ratio Presets -->
                     <Grid Grid.Row="0" Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="Adjust Card Crop &amp; Alignment" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            <TextBlock Text="Fit-to-window view with ISO/IEC 7810 CR80 automatic normalization" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="Advanced Card Crop &amp; Straighten Studio" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Fine tilt straighten (-45° to +45°), freeform unconstrained crop, ISO CR80, photo presets and perspective alignment" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
-                        <ui:Button Grid.Column="1" Command="{Binding CloseCropDrawerCommand}" Content="✕" Width="30" Height="30" CornerRadius="15" Padding="0"/>
+
+                        <!-- Aspect Ratio Presets & Mode -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock Text="Preset:" VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0"/>
+                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="CR80" Content="CR80 PVC (85.6×54)" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
+                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Free" Content="Free Crop" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
+                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Passport" Content="Passport (35×45)" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
+                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Stamp" Content="Stamp (25×30)" Height="30" Margin="0,0,8,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
+                            <ui:Button Command="{Binding TogglePerspectiveCropModeCommand}" Content="Perspective Quad" Height="30" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
+                        </StackPanel>
+
+                        <ui:Button Grid.Column="2" Command="{Binding CloseCropDrawerCommand}" Content="✕" Width="32" Height="32" CornerRadius="16" Padding="0" Style="{StaticResource SecondaryActionButtonStyle}"/>
                     </Grid>
 
-                    <!-- Preview & Bounds Adjuster -->
+                    <!-- Preview, Straighten Bar & Bounds Adjuster -->
                     <Grid Grid.Row="1" Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="260"/>
+                            <ColumnDefinition Width="280"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Interactive Visual Crop Canvas -->
-                        <Border Grid.Column="0" Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="6" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Margin="0,0,14,0" ClipToBounds="True">
-                            <controls:InteractiveCropCanvas
-                                SourceImage="{Binding CropSourceImage}"
-                                CropX="{Binding CropX, Mode=TwoWay}"
-                                CropY="{Binding CropY, Mode=TwoWay}"
-                                CropWidth="{Binding CropWidth, Mode=TwoWay}"
-                                CropHeight="{Binding CropHeight, Mode=TwoWay}"/>
-                        </Border>
+                        <!-- Interactive Canvas & Straighten Toolbar -->
+                        <Grid Grid.Column="0" Margin="0,0,14,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                        <!-- Controls Column -->
+                            <!-- Interactive Visual Crop Canvas -->
+                            <Border Grid.Row="0" Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="6" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" ClipToBounds="True">
+                                <controls:InteractiveCropCanvas
+                                    SourceImage="{Binding CropSourceImage}"
+                                    CropX="{Binding CropX, Mode=TwoWay}"
+                                    CropY="{Binding CropY, Mode=TwoWay}"
+                                    CropWidth="{Binding CropWidth, Mode=TwoWay}"
+                                    CropHeight="{Binding CropHeight, Mode=TwoWay}"
+                                    RotationAngle="{Binding StraightenAngle, Mode=TwoWay}"
+                                    SelectedAspectRatio="{Binding SelectedCropRatio, Mode=TwoWay}"
+                                    IsPerspectiveMode="{Binding IsPerspectiveCropMode, Mode=TwoWay}"
+                                    Corner1X="{Binding CropCorner1X, Mode=TwoWay}"
+                                    Corner1Y="{Binding CropCorner1Y, Mode=TwoWay}"
+                                    Corner2X="{Binding CropCorner2X, Mode=TwoWay}"
+                                    Corner2Y="{Binding CropCorner2Y, Mode=TwoWay}"
+                                    Corner3X="{Binding CropCorner3X, Mode=TwoWay}"
+                                    Corner3Y="{Binding CropCorner3Y, Mode=TwoWay}"
+                                    Corner4X="{Binding CropCorner4X, Mode=TwoWay}"
+                                    Corner4Y="{Binding CropCorner4Y, Mode=TwoWay}"/>
+                            </Border>
+
+                            <!-- Straighten Tilt Slider & Quick Rotation Controls -->
+                            <Border Grid.Row="1" Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="6" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Margin="0,8,0,0" Padding="12,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                        <ui:SymbolIcon Symbol="ArrowRotateClockwise24" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Straighten Tilt:" FontWeight="SemiBold" FontSize="11.5" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    </StackPanel>
+
+                                    <!-- Fine Slider from -45 to +45 degrees -->
+                                    <Slider Grid.Column="1"
+                                            Minimum="-45" Maximum="45" SmallChange="0.5" LargeChange="5.0"
+                                            Value="{Binding StraightenAngle, Mode=TwoWay}"
+                                            VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding StraightenAngle, StringFormat={}{0:F1}°}"
+                                               FontWeight="Bold" FontSize="12" FontFamily="Consolas" Width="48"
+                                               VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+
+                                    <ui:Button Grid.Column="3" Command="{Binding ResetStraightenAngleCommand}" Content="Reset 0°" Height="28" Padding="8,0" Margin="4,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
+                                    <ui:Button Grid.Column="4" Command="{Binding RotateCropCcwCommand}" Content="⟲ -90°" Height="28" Padding="8,0" Margin="2,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Rotate 90 degrees counter-clockwise"/>
+                                    <ui:Button Grid.Column="5" Command="{Binding RotateCropCwCommand}" Content="⟳ +90°" Height="28" Padding="8,0" Margin="2,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Rotate 90 degrees clockwise"/>
+                                    <ui:Button Grid.Column="6" Command="{Binding FlipCropHorizontalCommand}" Content="⇄ Flip" Height="28" Padding="8,0" Margin="2,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Flip scan horizontally"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <!-- Controls & Target Card Slot Column -->
                         <Border Grid.Column="1" Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="6" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Padding="14">
-                            <StackPanel>
-                                <TextBlock Text="Target Face:" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
-                                <ComboBox ItemsSource="{Binding CropFaceOptions}" SelectedItem="{Binding CropTargetFace}" Height="32" Margin="0,0,0,10"/>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="Target Card Slot:" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                                    <ComboBox ItemsSource="{Binding CropFaceOptions}" SelectedItem="{Binding CropTargetFace}" Height="32" Margin="0,0,0,12"/>
 
-                                <TextBlock Text="Crop Rectangle (300 DPI px):" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                    <TextBlock Text="Crop Geometry (300 DPI px):" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
 
-                                <TextBlock Text="Left (X Offset):" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <TextBox Text="{Binding CropX, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,6"/>
+                                    <TextBlock Text="Left (X Offset):" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    <TextBox Text="{Binding CropX, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,6"/>
 
-                                <TextBlock Text="Top (Y Offset):" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <TextBox Text="{Binding CropY, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,6"/>
+                                    <TextBlock Text="Top (Y Offset):" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    <TextBox Text="{Binding CropY, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,6"/>
 
-                                <TextBlock Text="Width:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <TextBox Text="{Binding CropWidth, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,6"/>
+                                    <TextBlock Text="Width:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    <TextBox Text="{Binding CropWidth, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,6"/>
 
-                                <TextBlock Text="Height:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <TextBox Text="{Binding CropHeight, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,10"/>
+                                    <TextBlock Text="Height:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    <TextBox Text="{Binding CropHeight, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,10"/>
 
-                                <ui:Button Command="{Binding ResetCropToAutoCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Content="Reset to Calibrated Bounds" HorizontalAlignment="Stretch" Margin="0,0,0,6"/>
-                            </StackPanel>
+                                    <!-- Quick Other Cards Presets -->
+                                    <Border Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <TextBlock Text="Card Presets:" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                            <UniformGrid Columns="2" Margin="0,0,0,4">
+                                                <ui:Button Command="{Binding SelectOtherCardOptionCommand}" CommandParameter="other_id_dual" Content="Other Dual ID" Height="26" Margin="1" Style="{StaticResource SecondaryActionButtonStyle}" FontSize="10"/>
+                                                <ui:Button Command="{Binding SelectOtherCardOptionCommand}" CommandParameter="other_id_single" Content="Other Single ID" Height="26" Margin="1" Style="{StaticResource SecondaryActionButtonStyle}" FontSize="10"/>
+                                                <ui:Button Command="{Binding SelectOtherCardOptionCommand}" CommandParameter="student_id" Content="Student ID" Height="26" Margin="1" Style="{StaticResource SecondaryActionButtonStyle}" FontSize="10"/>
+                                                <ui:Button Command="{Binding SelectOtherCardOptionCommand}" CommandParameter="employee_badge" Content="Employee Badge" Height="26" Margin="1" Style="{StaticResource SecondaryActionButtonStyle}" FontSize="10"/>
+                                            </UniformGrid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <ui:Button Command="{Binding ResetCropToAutoCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Content="Reset to Calibrated Bounds" HorizontalAlignment="Stretch" Margin="0,0,0,6"/>
+                                </StackPanel>
+                            </ScrollViewer>
                         </Border>
                     </Grid>
 
@@ -456,9 +544,12 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0" Text="Automatically normalized to CR80 (2022 × 1275 px @ 600 DPI)" FontSize="10.5" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="Physical color invariant: Original native BGRA colors 100% preserved in display, PDF &amp; print." FontSize="10.5" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                            <TextBlock Text="Selected ratio will be applied cleanly without squishing or aspect distortion." FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
                         <ui:Button Grid.Column="1" Command="{Binding CloseCropDrawerCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Content="Cancel" Height="36" Padding="16,0" Margin="0,0,8,0"/>
-                        <ui:Button Grid.Column="2" Command="{Binding ApplyCustomCropCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Content="Apply &amp; Update Layout" Height="36" Padding="16,0"/>
+                        <ui:Button Grid.Column="2" Command="{Binding ApplyCustomCropCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Content="Apply &amp; Update Layout" Height="36" Padding="20,0"/>
                     </Grid>
                 </Grid>
             </Border>

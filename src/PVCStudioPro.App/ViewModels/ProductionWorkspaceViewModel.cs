@@ -223,7 +223,7 @@ namespace PVCStudioPro.App.ViewModels
         private BitmapSource? _cropSourceImage;
 
         [ObservableProperty]
-        private string _cropTargetFace = "Front Card";
+        private string _cropTargetFace = "Front Card (Slot 1)";
 
         [ObservableProperty]
         private double _cropX = 210.0;
@@ -238,7 +238,47 @@ namespace PVCStudioPro.App.ViewModels
         private double _cropHeight = 665.0;
 
         [ObservableProperty]
-        private ObservableCollection<string> _cropFaceOptions = new() { "Front Card", "Back Card" };
+        private double _straightenAngle = 0.0;
+
+        [ObservableProperty]
+        private CropAspectRatio _selectedCropRatio = CropAspectRatio.Cr80Card;
+
+        [ObservableProperty]
+        private bool _isPerspectiveCropMode = false;
+
+        [ObservableProperty]
+        private float _cropCorner1X = 210f;
+        [ObservableProperty]
+        private float _cropCorner1Y = 2595f;
+        [ObservableProperty]
+        private float _cropCorner2X = 1255f;
+        [ObservableProperty]
+        private float _cropCorner2Y = 2595f;
+        [ObservableProperty]
+        private float _cropCorner3X = 1255f;
+        [ObservableProperty]
+        private float _cropCorner3Y = 3260f;
+        [ObservableProperty]
+        private float _cropCorner4X = 210f;
+        [ObservableProperty]
+        private float _cropCorner4Y = 3260f;
+
+        [ObservableProperty]
+        private double _customCardWidthMm = 85.60;
+
+        [ObservableProperty]
+        private double _customCardHeightMm = 53.98;
+
+        [ObservableProperty]
+        private bool _isCustomDimensionsVisible = false;
+
+        [ObservableProperty]
+        private ObservableCollection<string> _cropFaceOptions = new()
+        {
+            "Front Card (Slot 1)",
+            "Back Card (Slot 2)",
+            "Single Card (Both Slots)"
+        };
 
         #endregion
 
@@ -540,15 +580,61 @@ namespace PVCStudioPro.App.ViewModels
 
         private static SKBitmap NormalizeToCr80(SKBitmap source)
         {
-            int targetW = 2022; // 85.60 mm @ 600 DPI
-            int targetH = 1275; // 53.98 mm @ 600 DPI
+            return NormalizeCardBitmap(source, CropAspectRatio.Cr80Card);
+        }
 
-            if (source.Width == targetW && source.Height == targetH)
+        private static SKBitmap NormalizeCardBitmap(
+            SKBitmap source,
+            CropAspectRatio ratio = CropAspectRatio.Cr80Card,
+            double customW = 85.60,
+            double customH = 53.98)
+        {
+            if (ratio == CropAspectRatio.Freeform)
+            {
+                if (source.ColorType == SKColorType.Bgra8888) return source;
+                var bgra = new SKBitmap(source.Width, source.Height, SKColorType.Bgra8888, source.AlphaType);
+                using (var c = new SKCanvas(bgra))
+                {
+                    c.DrawBitmap(source, 0, 0, SKSamplingOptions.Default, null);
+                    c.Flush();
+                }
+                source.Dispose();
+                return bgra;
+            }
+
+            int targetW;
+            int targetH;
+            switch (ratio)
+            {
+                case CropAspectRatio.PassportPhoto:
+                    targetW = (int)Math.Round(35.0 * 600.0 / 25.4); // 827
+                    targetH = (int)Math.Round(45.0 * 600.0 / 25.4); // 1063
+                    break;
+                case CropAspectRatio.StampPhoto:
+                    targetW = (int)Math.Round(25.0 * 600.0 / 25.4); // 591
+                    targetH = (int)Math.Round(30.0 * 600.0 / 25.4); // 709
+                    break;
+                case CropAspectRatio.Cr80Card:
+                default:
+                    if (Math.Abs(customW - 85.60) > 0.05 || Math.Abs(customH - 53.98) > 0.05)
+                    {
+                        targetW = Math.Max(100, (int)Math.Round(customW * 600.0 / 25.4));
+                        targetH = Math.Max(100, (int)Math.Round(customH * 600.0 / 25.4));
+                    }
+                    else
+                    {
+                        targetW = 2022; // 85.60 mm @ 600 DPI
+                        targetH = 1275; // 53.98 mm @ 600 DPI
+                    }
+                    break;
+            }
+
+            if (source.Width == targetW && source.Height == targetH && source.ColorType == SKColorType.Bgra8888)
             {
                 return source;
             }
 
-            var dest = new SKBitmap(targetW, targetH, SKColorType.Rgba8888, SKAlphaType.Premul);
+            var dest = new SKBitmap(targetW, targetH, SKColorType.Bgra8888, SKAlphaType.Premul);
             using var canvas = new SKCanvas(dest);
             canvas.Clear(SKColors.White);
 
@@ -556,6 +642,7 @@ namespace PVCStudioPro.App.ViewModels
             var destRect = new SKRect(0, 0, targetW, targetH);
             using var paint = new SKPaint { IsAntialias = true };
             canvas.DrawBitmap(source, destRect, sampling, paint);
+            canvas.Flush();
 
             source.Dispose();
             return dest;
@@ -658,6 +745,15 @@ namespace PVCStudioPro.App.ViewModels
             }
 
             IsCropDrawerOpen = true;
+            StraightenAngle = 0.0;
+            CropCorner1X = (float)CropX;
+            CropCorner1Y = (float)CropY;
+            CropCorner2X = (float)(CropX + CropWidth);
+            CropCorner2Y = (float)CropY;
+            CropCorner3X = (float)(CropX + CropWidth);
+            CropCorner3Y = (float)(CropY + CropHeight);
+            CropCorner4X = (float)CropX;
+            CropCorner4Y = (float)(CropY + CropHeight);
             StatusMessage = $"Adjusting crop for {targetFace}. Fit-to-window preview active.";
         }
 
@@ -670,6 +766,7 @@ namespace PVCStudioPro.App.ViewModels
         [RelayCommand]
         public void ResetCropToAuto()
         {
+            StraightenAngle = 0.0;
             if (CropTargetFace.Contains("Front", StringComparison.OrdinalIgnoreCase))
             {
                 CropX = 210;
@@ -684,6 +781,14 @@ namespace PVCStudioPro.App.ViewModels
                 CropWidth = 1045;
                 CropHeight = 665;
             }
+            CropCorner1X = (float)CropX;
+            CropCorner1Y = (float)CropY;
+            CropCorner2X = (float)(CropX + CropWidth);
+            CropCorner2Y = (float)CropY;
+            CropCorner3X = (float)(CropX + CropWidth);
+            CropCorner3Y = (float)(CropY + CropHeight);
+            CropCorner4X = (float)CropX;
+            CropCorner4Y = (float)(CropY + CropHeight);
             StatusMessage = $"Reset crop bounds to default {CropTargetFace} coordinates.";
         }
 
@@ -696,44 +801,184 @@ namespace PVCStudioPro.App.ViewModels
                 return;
             }
 
-            int imgW = _cachedPageBitmap.Width;
-            int imgH = _cachedPageBitmap.Height;
+            SKBitmap workingSource = _cachedPageBitmap;
+            bool disposeWorkingSource = false;
 
-            int x = Math.Clamp((int)CropX, 0, imgW - 10);
-            int y = Math.Clamp((int)CropY, 0, imgH - 10);
-            int w = Math.Clamp((int)CropWidth, 10, imgW - x);
-            int h = Math.Clamp((int)CropHeight, 10, imgH - y);
-
-            var rect = new SKRectI(x, y, x + w, y + h);
-            var cropped = new SKBitmap(rect.Width, rect.Height, _cachedPageBitmap.ColorType, _cachedPageBitmap.AlphaType);
-            if (_cachedPageBitmap.ExtractSubset(cropped, rect))
+            if (Math.Abs(StraightenAngle) > 0.001)
             {
-                var cr80 = NormalizeToCr80(cropped);
-                if (CropTargetFace.Contains("Front", StringComparison.OrdinalIgnoreCase))
+                workingSource = _cropService.RotateBitmap(_cachedPageBitmap, StraightenAngle, expandBounds: false);
+                disposeWorkingSource = true;
+            }
+
+            try
+            {
+                SKBitmap extracted;
+                int w = (int)CropWidth;
+                int h = (int)CropHeight;
+
+                if (IsPerspectiveCropMode)
                 {
-                    _cachedFrontBitmap?.Dispose();
-                    _cachedFrontBitmap = cr80;
-                    FrontCardImage = _cachedFrontBitmap.ToBitmapSource();
-                    HasFrontCard = true;
+                    var quad = new QuadrilateralPoints(
+                        new SKPoint(CropCorner1X, CropCorner1Y),
+                        new SKPoint(CropCorner2X, CropCorner2Y),
+                        new SKPoint(CropCorner3X, CropCorner3Y),
+                        new SKPoint(CropCorner4X, CropCorner4Y)
+                    );
+                    extracted = _cropService.CropPerspective(workingSource, quad, SelectedCropRatio, dpi: 600);
                 }
                 else
                 {
+                    int imgW = workingSource.Width;
+                    int imgH = workingSource.Height;
+
+                    int x = Math.Clamp((int)CropX, 0, imgW - 10);
+                    int y = Math.Clamp((int)CropY, 0, imgH - 10);
+                    w = Math.Clamp((int)CropWidth, 10, imgW - x);
+                    h = Math.Clamp((int)CropHeight, 10, imgH - y);
+
+                    var rect = new SKRectI(x, y, x + w, y + h);
+                    extracted = new SKBitmap(rect.Width, rect.Height, workingSource.ColorType, workingSource.AlphaType);
+                    if (!workingSource.ExtractSubset(extracted, rect))
+                    {
+                        using var canvas = new SKCanvas(extracted);
+                        canvas.DrawBitmap(workingSource, rect, new SKRect(0, 0, w, h), SKSamplingOptions.Default);
+                    }
+                }
+
+                var normalized = NormalizeCardBitmap(extracted, SelectedCropRatio, CustomCardWidthMm, CustomCardHeightMm);
+
+                if (CropTargetFace.Contains("Front", StringComparison.OrdinalIgnoreCase))
+                {
+                    _cachedFrontBitmap?.Dispose();
+                    _cachedFrontBitmap = normalized;
+                    FrontCardImage = _cachedFrontBitmap.ToBitmapSource();
+                    HasFrontCard = true;
+                }
+                else if (CropTargetFace.Contains("Back", StringComparison.OrdinalIgnoreCase))
+                {
                     _cachedBackBitmap?.Dispose();
-                    _cachedBackBitmap = cr80;
+                    _cachedBackBitmap = normalized;
                     BackCardImage = _cachedBackBitmap.ToBitmapSource();
                     HasBackCard = true;
                 }
+                else
+                {
+                    // Single card or both slots
+                    _cachedFrontBitmap?.Dispose();
+                    _cachedFrontBitmap = normalized;
+                    FrontCardImage = _cachedFrontBitmap.ToBitmapSource();
+                    HasFrontCard = true;
+                }
 
                 BuildPhysicalSheetLayout();
-                StatusMessage = $"✓ Applied custom crop to {CropTargetFace} ({w}x{h} px -> CR80 standard).";
+                StatusMessage = $"✓ Applied custom crop to {CropTargetFace} ({w}×{h} px, Tilt: {StraightenAngle:F1}°, Ratio: {SelectedCropRatio}).";
             }
-            else
+            finally
             {
-                cropped.Dispose();
-                StatusMessage = "Failed to extract custom crop subset.";
+                if (disposeWorkingSource)
+                {
+                    workingSource.Dispose();
+                }
             }
 
             IsCropDrawerOpen = false;
+        }
+
+        [RelayCommand]
+        public void RotateCropCw()
+        {
+            StraightenAngle = ((StraightenAngle + 90.0) % 360);
+            StatusMessage = $"Straighten tilt: {StraightenAngle:F1}°";
+        }
+
+        [RelayCommand]
+        public void RotateCropCcw()
+        {
+            StraightenAngle = ((StraightenAngle - 90.0) % 360);
+            StatusMessage = $"Straighten tilt: {StraightenAngle:F1}°";
+        }
+
+        [RelayCommand]
+        public void ResetStraightenAngle()
+        {
+            StraightenAngle = 0.0;
+            StatusMessage = "Straighten angle reset to 0.0°";
+        }
+
+        [RelayCommand]
+        public void FlipCropHorizontal()
+        {
+            if (_cachedPageBitmap != null)
+            {
+                var flipped = _cropService.FlipHorizontal(_cachedPageBitmap);
+                _cachedPageBitmap.Dispose();
+                _cachedPageBitmap = flipped;
+                CropSourceImage = _cachedPageBitmap.ToBitmapSource();
+                StatusMessage = "Flipped scan horizontally.";
+            }
+        }
+
+        [RelayCommand]
+        public void SetCropRatio(string ratioName)
+        {
+            switch (ratioName.ToUpperInvariant())
+            {
+                case "FREE":
+                case "FREEFORM":
+                    SelectedCropRatio = CropAspectRatio.Freeform;
+                    break;
+                case "PASSPORT":
+                    SelectedCropRatio = CropAspectRatio.PassportPhoto;
+                    break;
+                case "STAMP":
+                    SelectedCropRatio = CropAspectRatio.StampPhoto;
+                    break;
+                case "CR80":
+                default:
+                    SelectedCropRatio = CropAspectRatio.Cr80Card;
+                    break;
+            }
+            StatusMessage = $"Crop aspect ratio: {SelectedCropRatio}";
+        }
+
+        [RelayCommand]
+        public void TogglePerspectiveCropMode()
+        {
+            IsPerspectiveCropMode = !IsPerspectiveCropMode;
+            if (IsPerspectiveCropMode)
+            {
+                CropCorner1X = (float)CropX;
+                CropCorner1Y = (float)CropY;
+                CropCorner2X = (float)(CropX + CropWidth);
+                CropCorner2Y = (float)CropY;
+                CropCorner3X = (float)(CropX + CropWidth);
+                CropCorner3Y = (float)(CropY + CropHeight);
+                CropCorner4X = (float)CropX;
+                CropCorner4Y = (float)(CropY + CropHeight);
+            }
+            StatusMessage = IsPerspectiveCropMode ? "4-Corner Perspective Mode enabled." : "Standard 8-Handle Rectangular Mode enabled.";
+        }
+
+        [RelayCommand]
+        public void SelectOtherCardOption(string templateId)
+        {
+            var opt = TemplateOptions.FirstOrDefault(o => string.Equals(o.TemplateId, templateId, StringComparison.OrdinalIgnoreCase));
+            if (opt != null)
+            {
+                SelectedTemplateOption = opt;
+                return;
+            }
+
+            var otherTemplates = _templateService.GetOtherCardTemplates();
+            var target = otherTemplates.FirstOrDefault(t => string.Equals(t.TemplateId, templateId, StringComparison.OrdinalIgnoreCase))
+                ?? otherTemplates.FirstOrDefault();
+
+            if (target != null && HasLoadedDocument)
+            {
+                ApplyTemplateCoordinates(target);
+                IsCustomDimensionsVisible = templateId.Contains("custom", StringComparison.OrdinalIgnoreCase);
+                StatusMessage = $"✓ Selected preset: {target.DisplayName}.";
+            }
         }
 
         [RelayCommand]
@@ -839,6 +1084,8 @@ namespace PVCStudioPro.App.ViewModels
 
         partial void OnSelectedTemplateOptionChanged(TemplateOptionItem? value)
         {
+            IsCustomDimensionsVisible = value != null && value.TemplateId.Contains("custom", StringComparison.OrdinalIgnoreCase);
+
             if (value?.Template != null && HasLoadedDocument)
             {
                 ApplyTemplateCoordinates(value.Template);

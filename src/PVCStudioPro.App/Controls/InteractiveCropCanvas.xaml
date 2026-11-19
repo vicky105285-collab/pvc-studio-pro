@@ -21,7 +21,12 @@
             <!-- Source Image -->
             <Image x:Name="SourceImg"
                    RenderOptions.BitmapScalingMode="HighQuality"
-                   Stretch="Fill"/>
+                   Stretch="Fill"
+                   RenderTransformOrigin="0.5,0.5">
+                <Image.RenderTransform>
+                    <RotateTransform x:Name="SourceImgRotateTransform" Angle="0"/>
+                </Image.RenderTransform>
+            </Image>
 
             <!-- Dark Dimming Mask around crop box -->
             <Path x:Name="DimmingMaskPath"

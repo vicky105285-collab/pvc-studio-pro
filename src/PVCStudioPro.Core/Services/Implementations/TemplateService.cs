@@ -168,6 +168,16 @@ namespace PVCStudioPro.Core.Services.Implementations
             return groups.AsReadOnly();
         }
 
+        public IReadOnlyList<CardTemplate> GetOtherCardTemplates() => new List<CardTemplate>
+        {
+            CreateDefaultOtherIdDualTemplate(),
+            CreateDefaultOtherIdSingleTemplate(),
+            CreateDefaultCustomCardTemplate(),
+            CreateDefaultStudentIdTemplate(),
+            CreateDefaultEmployeeBadgeTemplate(),
+            CreateDefaultMembershipCardTemplate()
+        }.AsReadOnly();
+
         public IReadOnlyList<TemplateOptionItem> GetTemplateOptions()
         {
             var options = new List<TemplateOptionItem>();
@@ -1097,6 +1107,137 @@ namespace PVCStudioPro.Core.Services.Implementations
                 {
                     Front = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 19.05, Y = 235.37, Width = 82.55, Height = 49.95 } },
                     Back = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 108.80, Y = 235.37, Width = 83.40, Height = 49.95 } }
+                }
+            };
+        }
+
+        private static CardTemplate CreateDefaultOtherIdSingleTemplate()
+        {
+            return new CardTemplate
+            {
+                TemplateId = "other_id_single",
+                DisplayName = "Other ID Card (Single Side / Front)",
+                Category = "CUSTOM_OTHER",
+                DocumentType = "CARD",
+                Identification = new TemplateIdentification
+                {
+                    AnchorKeywords = new List<string> { "Identity", "ID", "Card", "Member" },
+                    MinKeywordMatches = 1,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 15.0, Y = 60.0, Width = 85.60, Height = 53.98 } }
+                }
+            };
+        }
+
+        private static CardTemplate CreateDefaultOtherIdDualTemplate()
+        {
+            return new CardTemplate
+            {
+                TemplateId = "other_id_dual",
+                DisplayName = "Other ID Card (Front & Back)",
+                Category = "CUSTOM_OTHER",
+                DocumentType = "CARD",
+                Identification = new TemplateIdentification
+                {
+                    AnchorKeywords = new List<string> { "Identity", "ID", "Card", "Name", "Address" },
+                    MinKeywordMatches = 1,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 15.0, Y = 60.0, Width = 85.60, Height = 53.98 } },
+                    Back = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 110.0, Y = 60.0, Width = 85.60, Height = 53.98 } }
+                }
+            };
+        }
+
+        private static CardTemplate CreateDefaultCustomCardTemplate()
+        {
+            return new CardTemplate
+            {
+                TemplateId = "custom_card",
+                DisplayName = "Custom Card (User Defined Dimensions)",
+                Category = "CUSTOM_OTHER",
+                DocumentType = "CUSTOM",
+                Identification = new TemplateIdentification
+                {
+                    AnchorKeywords = new List<string> { "Custom" },
+                    MinKeywordMatches = 1,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 10.0, Y = 50.0, Width = 85.60, Height = 53.98 } },
+                    Back = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 100.0, Y = 50.0, Width = 85.60, Height = 53.98 } }
+                }
+            };
+        }
+
+        private static CardTemplate CreateDefaultStudentIdTemplate()
+        {
+            return new CardTemplate
+            {
+                TemplateId = "student_id",
+                DisplayName = "Student / Campus ID",
+                Category = "CUSTOM_OTHER",
+                DocumentType = "STUDENT",
+                Identification = new TemplateIdentification
+                {
+                    AnchorKeywords = new List<string> { "Student", "School", "College", "University", "Campus", "Roll No", "Admission" },
+                    MinKeywordMatches = 1,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 15.0, Y = 50.0, Width = 85.60, Height = 53.98 } },
+                    Back = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 110.0, Y = 50.0, Width = 85.60, Height = 53.98 } }
+                }
+            };
+        }
+
+        private static CardTemplate CreateDefaultEmployeeBadgeTemplate()
+        {
+            return new CardTemplate
+            {
+                TemplateId = "employee_badge",
+                DisplayName = "Corporate Employee Badge",
+                Category = "CUSTOM_OTHER",
+                DocumentType = "EMPLOYEE",
+                Identification = new TemplateIdentification
+                {
+                    AnchorKeywords = new List<string> { "Employee", "Staff", "Company", "Corporate", "Emp ID", "Designation" },
+                    MinKeywordMatches = 1,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 15.0, Y = 50.0, Width = 85.60, Height = 53.98 } },
+                    Back = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 110.0, Y = 50.0, Width = 85.60, Height = 53.98 } }
+                }
+            };
+        }
+
+        private static CardTemplate CreateDefaultMembershipCardTemplate()
+        {
+            return new CardTemplate
+            {
+                TemplateId = "membership_card",
+                DisplayName = "Membership / Club Card",
+                Category = "CUSTOM_OTHER",
+                DocumentType = "MEMBERSHIP",
+                Identification = new TemplateIdentification
+                {
+                    AnchorKeywords = new List<string> { "Member", "Membership", "Club", "Fitness", "Library", "VIP" },
+                    MinKeywordMatches = 1,
+                    ExpectedPages = 1
+                },
+                Faces = new CardFaces
+                {
+                    Front = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 15.0, Y = 50.0, Width = 85.60, Height = 53.98 } },
+                    Back = new FaceDefinition { SourcePage = 0, CropRectMm = new MillimeterRect { X = 110.0, Y = 50.0, Width = 85.60, Height = 53.98 } }
                 }
             };
         }

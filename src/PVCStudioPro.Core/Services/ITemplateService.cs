@@ -11,6 +11,7 @@ namespace PVCStudioPro.Core.Services
         IReadOnlyList<CardTemplate> GetAllTemplates();
         IReadOnlyList<TemplateCategoryGroup> GetCategorizedTemplates();
         IReadOnlyList<TemplateOptionItem> GetTemplateOptions();
+        IReadOnlyList<CardTemplate> GetOtherCardTemplates();
         CardTemplate? GetTemplateById(string templateId);
         TemplateMatchResult MatchTemplate(string extractedText, double pageWidthMm = 0, double pageHeightMm = 0);
         TemplateMatchResult MatchTemplateByText(string extractedText);

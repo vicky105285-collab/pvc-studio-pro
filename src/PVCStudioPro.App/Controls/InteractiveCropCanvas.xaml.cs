@@ -70,6 +70,10 @@ namespace PVCStudioPro.App.Controls
             DependencyProperty.Register(nameof(PanOffsetY), typeof(double), typeof(InteractiveCropCanvas),
                 new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnVisualGeometryChanged));
 
+        public static readonly DependencyProperty RotationAngleProperty =
+            DependencyProperty.Register(nameof(RotationAngle), typeof(double), typeof(InteractiveCropCanvas),
+                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnVisualGeometryChanged));
+
         public static readonly DependencyProperty IsPerspectiveModeProperty =
             DependencyProperty.Register(nameof(IsPerspectiveMode), typeof(bool), typeof(InteractiveCropCanvas),
                 new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnVisualGeometryChanged));
@@ -152,6 +156,12 @@ namespace PVCStudioPro.App.Controls
         {
             get => (double)GetValue(PanOffsetYProperty);
             set => SetValue(PanOffsetYProperty, value);
+        }
+
+        public double RotationAngle
+        {
+            get => (double)GetValue(RotationAngleProperty);
+            set => SetValue(RotationAngleProperty, value);
         }
 
         public bool IsPerspectiveMode
@@ -255,6 +265,7 @@ namespace PVCStudioPro.App.Controls
             Canvas.SetTop(SourceImg, sTopLeftY);
             SourceImg.Width = screenW;
             SourceImg.Height = screenH;
+            SourceImgRotateTransform.Angle = RotationAngle;
 
             // 2. Perspective Mode vs Rectangle Mode
             if (IsPerspectiveMode)
@@ -319,7 +330,9 @@ namespace PVCStudioPro.App.Controls
 
             // Update HUD
             ZoomHudText.Text = $"{(int)(ZoomFactor * 100)}%";
-            CoordsHudText.Text = $"X: {(int)CropX} Y: {(int)CropY} | {(int)CropWidth} x {(int)CropHeight} px";
+            double mmW = Math.Round(CropWidth * 25.4 / 300.0, 1);
+            double mmH = Math.Round(CropHeight * 25.4 / 300.0, 1);
+            CoordsHudText.Text = $"X: {(int)CropX} Y: {(int)CropY} | {(int)CropWidth}×{(int)CropHeight} px ({mmW}×{mmH} mm)";
         }
 
         private static void PositionHandle(FrameworkElement element, double x, double y)

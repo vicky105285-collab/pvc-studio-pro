@@ -27,7 +27,7 @@ namespace PVCStudioPro.Core.Services.Implementations
             if (widthPx < 1) widthPx = 1;
             if (heightPx < 1) heightPx = 1;
 
-            var bitmap = new SKBitmap(widthPx, heightPx, SKColorType.Rgba8888, SKAlphaType.Premul);
+            var bitmap = new SKBitmap(widthPx, heightPx, SKColorType.Bgra8888, SKAlphaType.Premul);
             using var canvas = new SKCanvas(bitmap);
 
             RenderToPrintCanvas(model, canvas, dpi);

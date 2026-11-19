@@ -114,24 +114,54 @@ namespace PVCStudioPro.Core.Services.Implementations
             );
         }
 
-        public SKBitmap RotateBitmap(SKBitmap source, int degrees)
+        public SKBitmap RotateBitmap(SKBitmap source, int degrees) => RotateBitmap(source, (double)degrees, expandBounds: true);
+
+        public SKBitmap RotateBitmap(SKBitmap source, double degrees, bool expandBounds = true)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
-            int normDeg = ((degrees % 360) + 360) % 360;
-            if (normDeg == 0) return source.Copy();
+            double normDeg = ((degrees % 360) + 360) % 360;
+            if (Math.Abs(normDeg) < 0.0001 || Math.Abs(normDeg - 360) < 0.0001)
+            {
+                return source.Copy();
+            }
 
-            bool swap = normDeg == 90 || normDeg == 270;
-            int newW = swap ? source.Height : source.Width;
-            int newH = swap ? source.Width : source.Height;
+            int newW;
+            int newH;
+            if (Math.Abs(normDeg - 90) < 0.001 || Math.Abs(normDeg - 270) < 0.001)
+            {
+                newW = source.Height;
+                newH = source.Width;
+            }
+            else if (Math.Abs(normDeg - 180) < 0.001)
+            {
+                newW = source.Width;
+                newH = source.Height;
+            }
+            else if (expandBounds)
+            {
+                double rad = normDeg * Math.PI / 180.0;
+                double cos = Math.Abs(Math.Cos(rad));
+                double sin = Math.Abs(Math.Sin(rad));
+                newW = Math.Max(1, (int)Math.Round(source.Width * cos + source.Height * sin));
+                newH = Math.Max(1, (int)Math.Round(source.Width * sin + source.Height * cos));
+            }
+            else
+            {
+                newW = source.Width;
+                newH = source.Height;
+            }
 
             var rotated = new SKBitmap(newW, newH, source.ColorType, source.AlphaType);
             using var canvas = new SKCanvas(rotated);
             canvas.Clear(SKColors.Transparent);
 
             canvas.Translate(newW / 2f, newH / 2f);
-            canvas.RotateDegrees(normDeg);
+            canvas.RotateDegrees((float)normDeg);
             canvas.Translate(-source.Width / 2f, -source.Height / 2f);
-            canvas.DrawBitmap(source, 0, 0, SKSamplingOptions.Default, null);
+
+            var sampling = new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear);
+            canvas.DrawBitmap(source, 0, 0, sampling, null);
+            canvas.Flush();
 
             return rotated;
         }
