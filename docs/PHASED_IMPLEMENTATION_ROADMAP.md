@@ -1,8 +1,8 @@
-# PVC Studio Pro — Phased Implementation Roadmap (Phase 0.2 Validated)
+# PVC Studio Pro — Phased Implementation Roadmap (Phase 0.3 Validated)
 **Sequenced Engineering Delivery Plan: Dependencies, Quality Gates & Acceptance**
 
 - **Document:** `docs/PHASED_IMPLEMENTATION_ROADMAP.md`
-- **Revision:** Phase 0.2 Validated
+- **Revision:** Phase 0.3 Validated
 - **Date:** 2026-11-19
 - **Auditor:** Senior Windows Desktop Systems & Print Engine Architect
 - **Strategy:** Rigorous Phased Engineering. Each phase gates the next. Zero code in Phase 0.
@@ -16,17 +16,17 @@ graph TD
     P0["Phase 0: Forensic Audit & Architecture Decisions (CURRENT BASELINE)"]
     
     subgraph P1_Subsystem["Phase 1: Foundation & Session Core"]
-        P1A["Phase 1A: Native Memory & Asset Lifecycle (SafeBitmapHandle, IAssetLease)"]
+        P1A["Phase 1A: Native Memory & Asset Lifecycle (SafeNativeBitmap, IReadOnlyRasterSurface)"]
         P1B["Phase 1B: Multi-Document Session Manager (IDocumentSessionManager, Isolation)"]
         P1C["Phase 1C: Workspace Integration & Synchronization (ViewModels Wireup)"]
     end
 
     P2["Phase 2: Centralized Reusable Visual Crop Engine (InteractiveCropCanvas)"]
     P3["Phase 3: Adaptive Card Detection Engine (OpenCV + Template Anchors)"]
-    P4["Phase 4: Shared Physical Print Pipeline & 6-Stage Spooler Lifecycle"]
+    P4["Phase 4: Shared Physical Print Pipeline & Linked Print Attempts (print_job_attempts)"]
     P5["Phase 5: Passport Photo Biometric Engine & Multi-Up Sheet Spooling"]
     P6["Phase 6: Full Template Catalogue & Universal Toolbar Selector (29 Templates)"]
-    P7["Phase 7: Integer-Paise Financial Ledger & Isolated Test Mode"]
+    P7["Phase 7: Integer-Paise Ledger, IST Boundaries & Transactional Payment Service"]
     P8["Phase 8: Material Design 3 / Fluent Desktop Visual Redesign"]
     P9["Phase 9: Tiered Regression Testing, Caliper Hardware QA & Release"]
 
@@ -56,19 +56,37 @@ graph TD
 ---
 
 ### Phase 1A: Native Memory & Asset Lifecycle Management
-- **Objectives:** Implement atomic, reference-counted native memory management wrapping SkiaSharp `SKBitmap` to prevent native memory leaks, use-after-free crashes, and underflow bugs.
-- **Exact Source Files Likely to Change:**
-  - `src/PVCStudioPro.Core/Models/SafeBitmapHandle.cs` (New: Atomic Interlocked ref-counting wrapper)
+- **Objectives:** Implement atomic, reference-counted native memory management wrapping SkiaSharp `SKBitmap` to prevent native memory leaks, use-after-free crashes, and underflow bugs, exposing strictly non-disposable read-only raster surfaces (`IReadOnlyRasterSurface`) to application consumers.
+- **Strictly Allowed Production Files in Phase 1A:**
+  - `src/PVCStudioPro.Core/Models/IReadOnlyRasterSurface.cs` (New: Read-only raster surface)
   - `src/PVCStudioPro.Core/Models/IAssetLease.cs` (New: Short-lived lease contract)
+  - `src/PVCStudioPro.Core/Models/SafeNativeBitmap.cs` (New: Atomic Interlocked ref-counting wrapper)
   - `src/PVCStudioPro.Core/Models/SourceImageAsset.cs` (New: Root immutable asset)
   - `src/PVCStudioPro.Core/Models/DerivedImageAsset.cs` (New: Versioned revision tree)
-  - `tests/PVCStudioPro.Tests/NativeAssetLifecycleTests.cs` (New)
-- **Forbidden from Modification in 1A:** `Views/*`, `DatabaseService.cs`, `PrintService.cs`.
+- **Strictly Allowed Test Files in Phase 1A:**
+  - `tests/PVCStudioPro.Tests/NativeAssetLifecycleTests.cs` (New: Complete lifecycle test suite)
+- **Strictly FORBIDDEN in Phase 1A:**
+  - `src/PVCStudioPro.Core/Services/IDocumentSessionManager.cs` / `DocumentSessionManager.cs` (Phase 1B).
+  - `src/PVCStudioPro.App/ViewModels/*` (Phase 1C).
+  - `src/PVCStudioPro.App/Views/*` (Phase 8).
+  - `src/PVCStudioPro.Core/Services/Implementations/CropEngine.cs` (Phase 2).
+  - `src/PVCStudioPro.Core/Services/Implementations/PrintService.cs` (Phase 4).
+  - `src/PVCStudioPro.Core/Services/Implementations/DatabaseService.cs` (Phase 7).
+  - Any database migrations, XAML controls, or package changes.
 - **Existing Functionality to Reuse:** SkiaSharp native bindings.
-- **New Models / Interfaces:** `SafeBitmapHandle`, `IAssetLease<T>`, `ISharedAsset`, `SourceImageAsset`, `DerivedImageAsset`.
-- **Automated Tests:** `NativeAssetLifecycleTests.cs` (Concurrent lease acquisitions, atomic underflow rejection, dispose-on-zero verification, asynchronous execution guards).
+- **New Models / Interfaces:** `IReadOnlyRasterSurface`, `IAssetLease`, `ISharedAsset`, `SafeNativeBitmap`, `SourceImageAsset`, `DerivedImageAsset`.
+- **Automated Tests:**
+  1. `DoubleDisposal_OfAssetOwner_IsIdempotent`
+  2. `DoubleDisposal_OfLease_IsIdempotent`
+  3. `AcquireLease_AfterOwnerDisposal_ThrowsObjectDisposedException`
+  4. `ConcurrentAcquisition_AndOwnerDisposal_IsThreadSafe`
+  5. `OwnerDisposal_WhileLeaseHeld_KeepsResourceAlive`
+  6. `ExceptionAndCancellation_InRenderingPipeline_ReleasesLeaseCleanly`
+  7. `UndoRedo_RetentionAndEviction_DisposesEvictedNativeBuffers`
+  8. `MemoryQuota_Enforcement_EvictsOldestRevisionsWhenExceeding250MB`
+  9. `NoUseAfterFree_OrNativeResourceLeak`
 - **Manual Acceptance Criteria:** Run automated tests under high load; verify that memory allocates and frees cleanly without native access violation crashes.
-- **Definition of Done:** 100% passed unit tests for `SafeBitmapHandle` and `IAssetLease`; zero exposed raw mutable `SKBitmap` properties.
+- **Definition of Done:** 100% passed unit tests in `NativeAssetLifecycleTests.cs`; zero exposed raw mutable `SKBitmap` properties.
 - **Estimated Effort:** 1.5 Engineering Days.
 
 ---
@@ -143,19 +161,19 @@ graph TD
 
 ---
 
-### Phase 4: Shared Physical Print Pipeline & 6-Stage Spooler Lifecycle
-- **Objectives:** Enforce the single source of truth layout principle so the canvas preview, PDF export, and Windows print spooler share identical millimeter geometry, backed by a 6-stage print job lifecycle separating spooling from physical verification.
+### Phase 4: Shared Physical Print Pipeline & Linked Print Attempts
+- **Objectives:** Enforce the single source of truth layout principle so the canvas preview, PDF export, and Windows print spooler share identical millimeter geometry, backed by a 6-stage print job lifecycle and a linked multi-attempt model (`print_job_attempts`) supporting non-billable hardware reprints and defect tracking.
 - **Exact Source Files Likely to Change:**
   - `src/PVCStudioPro.Core/Services/Implementations/PhysicalPageRenderService.cs`
   - `src/PVCStudioPro.Core/Services/Implementations/PrintService.cs`
   - `src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs`
   - `src/PVCStudioPro.App/ViewModels/PrintPreviewApprovalViewModel.cs`
 - **Existing Functionality to Reuse:** SkiaSharp physical rendering and Windows GDI+ `PrintDocument`.
-- **New Models / Interfaces:** `IPhysicalPageLayoutEngine`, `PrintJobLifecycleStatus`, `PrintSpoolJob`.
-- **UI Changes:** Instant live toggle for cut guidelines (0.2 mm crop lines), center folding line, and mirror printing; live spooling status indicator and operator verification dialog.
+- **New Models / Interfaces:** `IPhysicalPageLayoutEngine`, `PrintJobLifecycleStatus`, `PrintSpoolJob`, `PrintJobAttempt`.
+- **UI Changes:** Instant live toggle for cut guidelines (0.2 mm crop lines), center folding line, and mirror printing; live spooling status indicator and operator reprint verification dialog.
 - **Dependencies:** Phase 1C.
-- **Automated Tests:** `PhysicalPageRenderTests.cs` (Pixel-to-mm roundtrip accuracy at 150, 300, 600, and 1200 DPI).
-- **Manual Acceptance Criteria:** Spool A4 sheet to Microsoft Print to PDF; measure exported PDF points; verify front card is exactly at $X=15.0\text{ mm}$ and back card at $X=109.4\text{ mm}$.
+- **Automated Tests:** `PhysicalPageRenderTests.cs` (Pixel-to-mm roundtrip accuracy at 150, 300, 600, and 1200 DPI; non-billable reprint generation).
+- **Manual Acceptance Criteria:** Spool A4 sheet to Microsoft Print to PDF; measure exported PDF points; verify front card is exactly at $X=15.0\text{ mm}$ and back card at $X=109.4\text{ mm}$; record defective attempt and reprint without double billing.
 - **Definition of Done:** Zero divergence between screen preview, exported PDF, and print spooler raster; spooler status transitions through `PhysicalOutputConfirmedByOperator`.
 - **Estimated Effort:** 2.0 Engineering Days.
 
@@ -195,20 +213,21 @@ graph TD
 
 ---
 
-### Phase 7: Integer-Paise Financial Ledger & Isolated Test Mode
-- **Objectives:** Implement enterprise financial ledger with 64-bit integer paise, separate `transaction_payments` table, split payments, auditable edits, voids with mandatory reasons, daily closing reconciliation, CSV export, safe database migration with rollback, and total physical Test Mode sandbox isolation.
+### Phase 7: Integer-Paise Financial Ledger, IST Boundaries & Transactional Payment Service
+- **Objectives:** Implement enterprise financial ledger with 64-bit integer paise, separate `transaction_payments` table, `print_job_attempts` linked attempts, centralized `ITransactionPaymentService` with ACID guarantees, explicit `Asia/Kolkata` day boundaries (`@StartUtc` to `@EndUtc`), overpayment prevention, refund ceiling enforcement, auditable edits, voids, daily closing reconciliation, and total physical Test Mode sandbox isolation.
 - **Exact Source Files Likely to Change:**
-  - `src/PVCStudioPro.Core/Services/Implementations/JobLedgerService.cs` (Upgrade to `TransactionLedgerService`)
+  - `src/PVCStudioPro.Core/Services/ITransactionPaymentService.cs` (New)
+  - `src/PVCStudioPro.Core/Services/Implementations/TransactionPaymentService.cs` (New)
   - `src/PVCStudioPro.Core/Services/IDatabasePathProvider.cs` (New)
   - `src/PVCStudioPro.Core/Services/Implementations/DatabasePathProvider.cs` (New)
   - `src/PVCStudioPro.App/ViewModels/JobLedgerViewModel.cs`
   - `src/PVCStudioPro.App/Views/JobLedgerView.xaml`
   - `src/PVCStudioPro.App/MainWindow.xaml` (Test Mode banner)
 - **Existing Functionality to Reuse:** Dapper ORM and SQLite database connectivity.
-- **New Models / Interfaces:** `ITransactionLedgerService`, `BusinessTransaction`, `TransactionPayment`, `TransactionAuditTrail`, `IDatabasePathProvider`.
-- **UI Changes:** Transaction edit/void modals; daily cash reconciliation panel; top bar Test Mode toggle with prominent orange warning banner.
+- **New Models / Interfaces:** `ITransactionPaymentService`, `BusinessTransaction`, `TransactionPayment`, `PrintJobAttempt`, `TransactionAuditTrail`, `IDatabasePathProvider`.
+- **UI Changes:** Transaction edit/void modals; daily cash reconciliation panel; top bar Test Mode toggle with prominent orange warning banner; read-only balance bindings.
 - **Dependencies:** Phase 1C.
-- **Automated Tests:** `TransactionLedgerTests.cs` (Integer paise math, 5 accounting scenarios, Test Mode database separation, schema migration validation).
+- **Automated Tests:** `TransactionLedgerTests.cs` (Integer paise math, 5 accounting scenarios, IST midnight boundary tests, refund ceiling rules, overpayment rejection, Test Mode database separation, schema migration validation).
 - **Manual Acceptance Criteria:** Enter transaction in Test Mode; reset test data; confirm production ledger remains completely untouched; edit a transaction in Production Mode; confirm audit trail records the change reason.
 - **Definition of Done:** Zero test data leakage; full financial reconciliation capabilities.
 - **Estimated Effort:** 3.0 Engineering Days.

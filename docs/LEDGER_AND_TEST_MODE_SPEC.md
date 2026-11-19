@@ -1,16 +1,16 @@
-# PVC Studio Pro — Business Ledger & Complete Test Mode Specification (Phase 0.2 Validated)
+# PVC Studio Pro — Business Ledger, Payment Consistency & Test Mode Specification (Phase 0.3 Validated)
 **Enterprise Financial Ledger, Normalized Multi-Payment Architecture & Total Environment Sandbox Isolation**
 
 - **Document:** `docs/LEDGER_AND_TEST_MODE_SPEC.md`
-- **Revision:** Phase 0.2 Validated
+- **Revision:** Phase 0.3 Validated
 - **Date:** 2026-11-19
 - **Status:** Architectural Specification (Pre-Implementation Gate)
 
 ---
 
-## 1. Normalized Financial Ledger Architecture
+## 1. Normalized Financial Ledger & Print Attempt Architecture
 
-To support commercial e-Sevai operations without financial drift or rounding discrepancies, financial tracking is structured as a **Master-Detail Normalized Architecture**:
+To support commercial e-Sevai operations without financial drift or rounding discrepancies, financial tracking and print tracking are structured into an interconnected, normalized architecture:
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -20,38 +20,41 @@ To support commercial e-Sevai operations without financial drift or rounding dis
 │  - document_type               - template_id           │
 │  - quantity                    - unit_price_paise      │
 │  - discount_paise              - net_total_paise       │
-│  - paid_paise                  - balance_paise         │
-│  - status (PENDING/PAID/PARTIAL/VOID)                  │
+│  - paid_paise (Derived)        - balance_paise(Derived)│
+│  - status (PENDING/PARTIAL/PAID/VOID)                  │
 │  - is_test_mode (0/1)                                  │
-│  - created_at                  - updated_at            │
-└───────────────────────────┬────────────────────────────┘
-                            │ 1 : N
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│           transaction_payments (Individual Entries)    │
-│  - payment_id (PK)             - transaction_id (FK)   │
-│  - payment_method (CASH/UPI/CARD/OTHER)                │
-│  - amount_paise                - is_refund (0/1)       │
-│  - reference_number            - is_test_mode (0/1)    │
-│  - collected_at                                        │
-└────────────────────────────────────────────────────────┘
-                            │ 1 : N
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│       transaction_audit_trail (Immutable Log)          │
-│  - audit_id (PK)               - transaction_id (FK)   │
-│  - action_type (CREATE/PAYMENT/VOID/REFUND/REPRINT)    │
-│  - field_changed               - old_value             │
-│  - new_value                   - mandatory_reason      │
-│  - operator_id                 - timestamp             │
-└────────────────────────────────────────────────────────┘
+│  - created_at (UTC)            - updated_at (UTC)      │
+└────────────┬───────────────────────────────┬───────────┘
+             │ 1 : N                         │ 1 : N
+             ▼                               ▼
+┌──────────────────────────────┐ ┌──────────────────────────────┐
+│ transaction_payments         │ │ print_job_attempts           │
+│ - payment_id (PK)            │ │ - attempt_id (PK)            │
+│ - transaction_id (FK)        │ │ - transaction_id (FK)        │
+│ - payment_method (CASH/UPI)  │ │ - attempt_number (1, 2, ...) │
+│ - amount_paise               │ │ - printer_name               │
+│ - is_refund (0/1)            │ │ - spooler_status             │
+│ - is_test_mode (0/1)         │ │ - physical_verification_stat │
+│ - collected_at (UTC)         │ │ - defect_reason              │
+└────────────┬─────────────────┘ │ - is_billable (1=Orig,0=Repr)│
+             │ 1 : N             │ - spooled_at (UTC)           │
+             ▼                   └──────────────────────────────┘
+┌──────────────────────────────┐
+│ transaction_audit_trail      │
+│ - audit_id (PK)              │
+│ - transaction_id (FK)        │
+│ - action_type                │
+│ - old_value / new_value      │
+│ - mandatory_reason           │
+│ - timestamp (UTC)            │
+└──────────────────────────────┘
 ```
 
 ---
 
 ## 2. DDL Schema Definition (SQLite)
 
-All currency fields are strictly stored in **integer paise** (64-bit integer, where ₹1.00 = 100 paise) to prevent floating-point rounding errors.
+All currency fields are strictly stored in **integer paise** (64-bit integer, where ₹1.00 = 100 paise) to prevent floating-point rounding errors. Timestamps are stored in ISO 8601 UTC strings (`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`).
 
 ### Table 1: `business_transactions`
 ```sql
@@ -67,12 +70,10 @@ CREATE TABLE IF NOT EXISTS business_transactions (
     quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
     unit_price_paise INTEGER NOT NULL DEFAULT 0 CHECK (unit_price_paise >= 0),
     discount_paise INTEGER NOT NULL DEFAULT 0 CHECK (discount_paise >= 0),
-    net_total_paise INTEGER NOT NULL DEFAULT 0 CHECK (net_total_paise >= 0),
+    net_total_paise INTEGER NOT NULL CHECK (net_total_paise >= 0),
     paid_paise INTEGER NOT NULL DEFAULT 0 CHECK (paid_paise >= 0),
-    balance_paise INTEGER NOT NULL DEFAULT 0 CHECK (balance_paise >= 0),
+    balance_paise INTEGER NOT NULL CHECK (balance_paise >= 0),
     status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PARTIAL', 'PAID', 'VOID')),
-    is_reprint INTEGER NOT NULL DEFAULT 0 CHECK (is_reprint IN (0, 1)),
-    reprint_reason TEXT,                          -- Reason for reprint (Paper Jam, Smudge, Alignment)
     is_test_mode INTEGER NOT NULL DEFAULT 0 CHECK (is_test_mode IN (0, 1)),
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
@@ -83,7 +84,7 @@ CREATE INDEX IF NOT EXISTS idx_trans_status ON business_transactions(status, is_
 CREATE INDEX IF NOT EXISTS idx_trans_invoice ON business_transactions(invoice_number);
 ```
 
-### Table 2: `transaction_payments`
+### Table 2: `transaction_payments` (Normalized Receipts & Refunds)
 ```sql
 CREATE TABLE IF NOT EXISTS transaction_payments (
     payment_id TEXT PRIMARY KEY,
@@ -102,7 +103,49 @@ CREATE INDEX IF NOT EXISTS idx_pay_collected ON transaction_payments(collected_a
 CREATE INDEX IF NOT EXISTS idx_pay_method ON transaction_payments(payment_method, is_test_mode);
 ```
 
-### Table 3: `transaction_audit_trail`
+### Table 3: `print_job_attempts` (Linked Attempts & Non-Billable Reprints)
+```sql
+CREATE TABLE IF NOT EXISTS print_job_attempts (
+    attempt_id TEXT PRIMARY KEY,
+    transaction_id TEXT NOT NULL REFERENCES business_transactions(transaction_id) ON DELETE CASCADE,
+    attempt_number INTEGER NOT NULL CHECK (attempt_number > 0),
+    printer_name TEXT NOT NULL,
+    media_tray TEXT NOT NULL,
+    spooler_job_id INTEGER,
+    spooler_status TEXT NOT NULL CHECK (spooler_status IN (
+        'SubmittedToSpooler',
+        'AcceptedBySpooler',
+        'SpoolerProcessingCompleted',
+        'SpoolerErrorOrCancelled'
+    )),
+    physical_verification_status TEXT NOT NULL DEFAULT 'PendingVerification' CHECK (
+        physical_verification_status IN (
+            'PendingVerification',
+            'ConfirmedSuccessful',
+            'DefectiveOutput'
+        )
+    ),
+    defect_reason TEXT CHECK (defect_reason IN (
+        NULL,
+        'PaperJam',
+        'RibbonScuff',
+        'AlignmentShift',
+        'ColorBanding',
+        'CardFeedError',
+        'OperatorError',
+        'Other'
+    )),
+    is_billable INTEGER NOT NULL DEFAULT 1 CHECK (is_billable IN (0, 1)),
+    operator_notes TEXT,
+    spooled_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    verified_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_print_attempts_trans ON print_job_attempts(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_print_attempts_date ON print_job_attempts(spooled_at);
+```
+
+### Table 4: `transaction_audit_trail` (Immutable Change History)
 ```sql
 CREATE TABLE IF NOT EXISTS transaction_audit_trail (
     audit_id TEXT PRIMARY KEY,
@@ -121,7 +164,92 @@ CREATE INDEX IF NOT EXISTS idx_audit_trans ON transaction_audit_trail(transactio
 
 ---
 
-## 3. SQL Queries & Expected Results for the 5 Accounting Scenarios
+## 3. Transactional Payment Service (`ITransactionPaymentService`)
+
+To prevent data drift, race conditions, or partial state updates, all financial mutations must route through `ITransactionPaymentService`.
+
+### 3.1 Service Contract
+```csharp
+public interface ITransactionPaymentService
+{
+    Task<PaymentResult> RecordPaymentAsync(AddPaymentCommand command, CancellationToken ct = default);
+    Task<RefundResult> RecordRefundAsync(AddRefundCommand command, CancellationToken ct = default);
+    Task<VoidResult> VoidTransactionAsync(VoidTransactionCommand command, CancellationToken ct = default);
+    Task<DailyReconciliationReport> GetDailyReconciliationAsync(DateOnly istDate, bool isTestMode, CancellationToken ct = default);
+}
+```
+
+### 3.2 ACID Transaction Guarantees & Business Rules
+1. **Single SQLite Transaction:** Every operation executes inside `BEGIN IMMEDIATE TRANSACTION`.
+2. **Refund Ceiling Enforcement:**
+   $$\text{MaxRefundablePaise} = \sum_{\text{is\_refund}=0} \text{amount\_paise} - \sum_{\text{is\_refund}=1} \text{amount\_paise}$$
+   If `refund_amount > MaxRefundablePaise`, the operation throws `RefundExceedsCollectedException` and aborts. A customer can never be refunded more than total collected receipts.
+3. **Overpayment Prevention Policy:**
+   If $(\text{current\_paid} + \text{payment\_amount}) > \text{net\_total\_paise}$, the operation is rejected by default (`OverpaymentNotPermittedException`). In e-Sevai operations, customers pay the exact invoice amount; accidental overpayment indicates operator keying error.
+4. **Environment Isolation Guard:**
+   The service asserts: `payment.is_test_mode == transaction.is_test_mode`. If a test payment attempts to associate with a production invoice, the transaction aborts with `SecurityIsolationException`.
+5. **Read-Only Derived UI Fields:**
+   `paid_paise`, `balance_paise`, and `status` in `business_transactions` are read-only properties derived strictly from the payments table. No UI ViewModel or command can write directly to these fields.
+
+---
+
+## 4. Indian Financial Reporting & Explicit IST Business-Day Boundaries
+
+### 4.1 The Flaw of SQLite `date('now')`
+Timestamps are stored in UTC strings (`2026-11-19T03:30:00.000Z`). However, daily closing reports for e-Sevai centres must adhere strictly to **Indian Standard Time (IST, UTC+05:30)**.
+
+In SQLite, executing `WHERE date(collected_at) = date('now')` is fatal:
+- SQLite `date('now')` evaluates to **UTC date**, not IST date.
+- At 02:00 AM IST on November 19, UTC is 20:30 PM on November 18.
+- Using `date('now')` would exclude all transactions recorded between midnight and 5:30 AM IST on November 19, erroneously attributing them to November 18.
+- Wrapping database columns in functions (e.g. `date(datetime(collected_at, '+5 hours', '30 minutes'))`) causes full table scans and prevents SQLite from using B-Tree index seeks on `idx_pay_collected`.
+
+### 4.2 Parameterized IST Day Bounds
+The service computes explicit UTC bounds for the requested IST business day:
+
+```csharp
+public static class IndianBusinessDay
+{
+    private static readonly TimeZoneInfo IstZone = 
+        TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+
+    public static (string StartUtcString, string EndUtcString) GetIstDayUtcBounds(DateOnly istDate)
+    {
+        var istStart = istDate.ToDateTime(TimeOnly.MinValue);
+        var startUtc = TimeZoneInfo.ConvertTimeToUtc(istStart, IstZone);
+
+        var istEnd = istDate.ToDateTime(new TimeOnly(23, 59, 59, 999));
+        var endUtc = TimeZoneInfo.ConvertTimeToUtc(istEnd, IstZone);
+
+        return (
+            startUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+            endUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+        );
+    }
+}
+```
+
+*Example for Business Date November 19, 2026:*
+- `StartUtc`: `2026-11-18T18:30:00.000Z` ($00:00:00\text{ IST}$)
+- `EndUtc`: `2026-11-19T18:29:59.999Z` ($23:59:59.999\text{ IST}$)
+
+### 4.3 High-Performance Indexed SQL Reporting
+```sql
+-- Daily Cash Reconciliation Query (IST Business Day)
+SELECT 
+    COALESCE(SUM(CASE WHEN is_refund = 0 THEN amount_paise ELSE 0 END), 0) AS total_collected_paise,
+    COALESCE(SUM(CASE WHEN is_refund = 1 THEN amount_paise ELSE 0 END), 0) AS total_refunded_paise,
+    COALESCE(SUM(CASE WHEN is_refund = 0 THEN amount_paise ELSE -amount_paise END), 0) AS net_cash_paise
+FROM transaction_payments
+WHERE payment_method = 'CASH'
+  AND is_test_mode = 0
+  AND collected_at >= @StartUtcString 
+  AND collected_at <= @EndUtcString;
+```
+
+---
+
+## 5. SQL Queries & Expected Results for the 5 Accounting Scenarios
 
 ### Scenario 1: ₹100 cash receipt and ₹20 cash refund
 - **Action:** Customer pays ₹100 cash for 2 PVC cards. 1 card is defective; operator issues ₹20 cash refund.
@@ -137,7 +265,8 @@ SELECT
 FROM transaction_payments
 WHERE payment_method = 'CASH' 
   AND is_test_mode = 0
-  AND date(collected_at) = date('now');
+  AND collected_at >= @StartUtcString 
+  AND collected_at <= @EndUtcString;
 ```
 - **Expected Output:**
   - `total_collected_paise`: `10000` (₹100.00)
@@ -190,12 +319,14 @@ SELECT
     p.payment_id, p.transaction_id, t.created_at AS invoice_date, p.collected_at AS payment_date, p.amount_paise
 FROM transaction_payments p
 JOIN business_transactions t ON p.transaction_id = t.transaction_id
-WHERE date(p.collected_at) = date('now') AND p.transaction_id = 'TX-0901';
+WHERE p.collected_at >= @StartUtcString 
+  AND p.collected_at <= @EndUtcString 
+  AND p.transaction_id = 'TX-0901';
 ```
 - **Expected Output:**
   - Invoice Date: `2026-11-10T10:00:00Z`
   - Payment Date: `2026-11-19T09:15:00Z`
-  - Today's Cash Drawer correctly shows ₹40 cash inflow despite invoice being from an earlier date.
+  - Today's Cash Drawer correctly captures the ₹40 cash inflow despite the invoice having been created earlier.
 
 ### Scenario 5: Voided invoice with previous payment and refund
 - **Action:** Invoice ₹70.00 paid cash, printed card is destroyed by operator; invoice is voided and ₹70.00 refunded.
@@ -219,39 +350,9 @@ GROUP BY t.status;
 
 ---
 
-## 4. Database Migration, Backup & Rollback Protocol
+## 6. Total Environment Test Mode Sandbox Isolation
 
-To transition from the legacy flat `print_jobs` schema without data loss:
-
-```mermaid
-graph TD
-    Start["Application Startup Migration Trigger"] --> BKP["Step 1: Automatic SQLite Backup to pvc_studio_pre_migration.db"]
-    BKP --> MIGR["Step 2: DDL Migration inside BEGIN TRANSACTION"]
-    MIGR --> DATA["Step 3: Migrate historical print_jobs to business_transactions & transaction_payments"]
-    DATA --> VALID["Step 4: Automated Integrity & Balance Validation"]
-    
-    VALID -->|Verification OK| COMMIT["COMMIT TRANSACTION -> Mark Schema Version 2"]
-    VALID -->|Discrepancy / Error| ROLLBACK["ROLLBACK -> Restore from Backup -> Alert Operator"]
-```
-
-### 3-Step Migration Protocol:
-1. **Automated Backup:**
-   The application creates a physical timestamped copy of `pvc_studio.db` to `pvc_studio_backup_pre_v2.db` using SQLite online backup API before running any DDL statements.
-2. **Transactional Data Migration:**
-   - Execute table creation for `business_transactions`, `transaction_payments`, and `transaction_audit_trail`.
-   - Map legacy rows from `print_jobs`:
-     - Convert legacy decimal/float currency amounts to integer paise (`ROUND(amount * 100)`).
-     - Populate initial payment record in `transaction_payments` for any legacy record marked `PAID`.
-3. **Automated Balance Validation & Rollback:**
-   - Verify: `COUNT(business_transactions) == COUNT(print_jobs)`.
-   - Verify: `SUM(net_total_paise) == ROUND(SUM(legacy_total) * 100)`.
-   - If any check fails, trigger immediate `ROLLBACK`, restore from backup, and display diagnostic error without altering user data.
-
----
-
-## 5. Total Environment Test Mode Sandbox Isolation
-
-### 5.1 Centralized Database Path Resolution
+### 6.1 Centralized Database Path Resolution
 All database interactions route through a centralized path provider interface:
 
 ```csharp
@@ -265,7 +366,7 @@ public interface IDatabasePathProvider
 }
 ```
 
-### 5.2 Physical Directory & Path Separation
+### 6.2 Physical Directory & Path Separation
 | Asset Category | Production Mode Path / Resource | Test Mode Sandbox Path / Resource |
 | :--- | :--- | :--- |
 | **Financial Database** | `%LOCALAPPDATA%\PVCStudioPro\pvc_studio.db` | `%LOCALAPPDATA%\PVCStudioPro\TestMode\pvc_studio_test.db` |
@@ -274,7 +375,7 @@ public interface IDatabasePathProvider
 | **Invoice Numbers** | Sequence: `INV-YYYYMMDD-XXXX` (Permanent) | Sequence: `TEST-XXXX` (Disposable) |
 | **Exported Files** | `%USERPROFILE%\Documents\PVC Studio Pro\Exports\` | `%LOCALAPPDATA%\PVCStudioPro\TestMode\Exports\` |
 
-### 5.3 Enforceable Defensive Assertions
+### 6.3 Enforceable Defensive Assertions
 To prevent catastrophic accidental data loss, destructive reset actions enforce strict path validation:
 
 ```csharp
@@ -288,13 +389,6 @@ public void ResetTestDatabase()
             "FATAL SAFETY VIOLATION: Attempted to reset database when not running in TestMode sandbox!");
     }
 
-    // Safe to delete only when path assertion passes
     File.Delete(activeDb);
 }
 ```
-
-### 5.4 Test Mode UI & Operational Guardrails
-- **Persistent Visual Watermark:** A prominent amber status banner is permanently docked at the top of the main window (`#D97706` background, bold white text):  
-  `⚠️ TEST MODE ACTIVE — SIMULATION SANDBOX ONLY | ZERO FINANCIAL IMPACT [RESET TEST DATA]`.
-- **Mode Switching Protection:** Toggling between Test Mode and Production Mode requires explicit modal dialog confirmation.
-- **Printed Document Watermark:** Test mode print spool streams automatically inject a semi-transparent watermark: `TEST PRINT - NOT FOR SALE`.

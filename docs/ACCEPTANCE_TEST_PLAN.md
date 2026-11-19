@@ -1,8 +1,8 @@
-# PVC Studio Pro — Acceptance Test Plan & Quality Gates (Phase 0.2 Validated)
+# PVC Studio Pro — Acceptance Test Plan & Quality Gates (Phase 0.3 Validated)
 **Definitive Verification Protocol: Tiered Evidence Architecture & Acceptance Gates**
 
 - **Document:** `docs/ACCEPTANCE_TEST_PLAN.md`
-- **Revision:** Phase 0.2 Validated
+- **Revision:** Phase 0.3 Validated
 - **Date:** 2026-11-19
 - **Auditor:** Senior Windows Desktop Systems & Print Engine Architect
 - **Quality Mandate:** Unit tests alone do not establish completion. Claims of "100% universal accuracy" are prohibited. Verification requires demonstrable evidence across five distinct testing tiers.
@@ -44,6 +44,22 @@ flowchart TD
 ---
 
 ## 2. End-to-End Acceptance Test Scripts
+
+### Test Suite 0: Native Memory Lifecycle & Asset Ownership (Tier 1 — Phase 1A Gate)
+- **Objective:** Verify absolute memory safety, idempotent disposal, atomic ref-counting, quota eviction, and non-disposable read-only surface enforcement before any session or UI integration.
+- **Automated Test Cases (`NativeAssetLifecycleTests.cs`):**
+  1. `DoubleDisposal_OfAssetOwner_IsIdempotent`: Calling `.Dispose()` multiple times on `SafeNativeBitmap` does not throw exceptions or double-free native memory.
+  2. `DoubleDisposal_OfLease_IsIdempotent`: Calling `.Dispose()` multiple times on `IAssetLease` decrements ref-count exactly once.
+  3. `AcquireLease_AfterOwnerDisposal_ThrowsObjectDisposedException`: Calling `AcquireLease()` after owner disposal immediately throws `ObjectDisposedException`.
+  4. `ConcurrentAcquisition_AndOwnerDisposal_IsThreadSafe`: 20 parallel tasks acquiring leases while another thread calls `Dispose()`. Zero memory corruptions, zero crashes.
+  5. `OwnerDisposal_WhileLeaseHeld_KeepsResourceAlive`: Disposing owner while a lease is active keeps unmanaged bitmap alive; resource is released only when the lease is disposed.
+  6. `ExceptionAndCancellation_InRenderingPipeline_ReleasesLeaseCleanly`: An exception or cancellation thrown during rendering releases the lease in `finally`.
+  7. `UndoRedo_RetentionAndEviction_DisposesEvictedNativeBuffers`: Pushing 16 revisions into an undo manager with depth limit 15 evicts Revision 0, immediately releasing its native memory.
+  8. `MemoryQuota_Enforcement_EvictsOldestRevisionsWhenExceeding250MB`: Allocating 300 MB of native revision buffers triggers FIFO eviction and disposal when exceeding the 250 MB ceiling.
+  9. `NoUseAfterFree_OrNativeResourceLeak`: 1,000 rapid acquire/release cycles across 4 threads complete with 0 unmanaged leaks and baseline working set.
+- **Pass Criteria:** 100% passed xUnit tests with zero native memory access violations.
+
+---
 
 ### Test Suite 1: Centralized Crop Engine Acceptance Test (Tiers 1, 3 & 4)
 - **Objective:** Verify zoom, pan, fit-to-window, 100% zoom, 8 drag handles, aspect-ratio locking, perspective quad correction, rotation, numeric millimeter adjustment, undo/redo, and cross-workspace state propagation.
@@ -98,8 +114,8 @@ flowchart TD
 
 ---
 
-### Test Suite 3: True Physical Print & Spooling Acceptance Test (Tiers 3, 4 & 5)
-- **Objective:** Verify that on-screen sheet preview, exported PDF, and physical print spooling are mathematically identical, with complete 6-stage lifecycle verification.
+### Test Suite 3: True Physical Print, Spooling & Linked Reprint Acceptance Test (Tiers 3, 4 & 5)
+- **Objective:** Verify that on-screen sheet preview, exported PDF, and physical print spooling are mathematically identical, with complete 6-stage lifecycle verification and linked reprint tracking.
 - **Step-by-Step Procedure:**
   1. In `Production Studio`, select layout: `A4 Single Side (Side-by-Side)`.
   2. Verify on-screen physical sheet displays full A4 paper ($210 \times 297\text{ mm}$) fitted to window with zero scrolling required.
@@ -111,10 +127,18 @@ flowchart TD
   8. Select target printer `Microsoft Print to PDF` and click `START PRINTING`.
   9. Verify print job lifecycle:
      - Status transitions: `SubmittedToSpooler` $\rightarrow$ `AcceptedBySpooler` $\rightarrow$ `SpoolerProcessingCompleted`.
+     - System creates row in `print_job_attempts` (Attempt 1, `is_billable = 1`).
      - UI presents verification dialog: `Did the card print correctly? [Confirmed] [Reprint Needed]`.
-     - Operator clicks `[Confirmed]`: status transitions to `PhysicalOutputConfirmedByOperator`.
-     - Ledger records transaction as ready for payment collection.
-- **Pass Criteria:** Sub-millimeter parity between screen preview, exported PDF points, and print spooler raster; genuine Win32 spooler tracking decoupled from billing.
+  10. **Defective Print & Linked Reprint Test:**
+      - Operator clicks `[Reprint Needed]` and selects defect reason: `RibbonScuff`.
+      - System updates Attempt 1: `physical_verification_status = 'DefectiveOutput'`, `defect_reason = 'RibbonScuff'`.
+      - Operator clicks `[Start Reprint]`.
+      - System generates Attempt 2 (`attempt_number = 2`, `is_billable = 0`).
+      - Spooler processes Attempt 2. Operator clicks `[Confirmed]`.
+      - System updates Attempt 2: `physical_verification_status = 'ConfirmedSuccessful'`.
+      - Check Invoice: Customer is billed for exactly 1 card (₹70.00). Attempt 2 incurred ₹0 extra customer fee.
+      - Check Material Wastage Report: Exactly 1 blank card is logged as spoiled.
+- **Pass Criteria:** Sub-millimeter parity across preview and print; linked reprint tracked without customer over-billing.
 
 ---
 
@@ -136,8 +160,8 @@ flowchart TD
 
 ---
 
-### Test Suite 5: Business Ledger & Test Mode Acceptance Test (Tiers 1, 2 & 4)
-- **Objective:** Verify integer paise precision across the 5 specific accounting scenarios and total Test Mode sandbox isolation.
+### Test Suite 5: Business Ledger, IST Boundaries & Transactional Payment Consistency (Tiers 1, 2 & 4)
+- **Objective:** Verify integer paise precision, IST business day boundaries, transactional payment constraints, and total Test Mode sandbox isolation.
 - **Step-by-Step Procedure:**
   1. **Test Mode Sandbox Isolation Check:**
      - Toggle `Test Mode` in application header.
@@ -161,4 +185,12 @@ flowchart TD
   6. **Scenario 5: Voided invoice with previous payment and refund:**
      - Void a ₹70 transaction and record refund.
      - Verify net cash contribution is 0 and invoice is excluded from revenue reports.
-- **Pass Criteria:** Zero test data leakage into production, 100% mathematical precision in integer paise, all 5 scenarios reconciled.
+  7. **IST Midnight Boundary Verification:**
+     - Insert transaction at `2026-11-18 23:59:50 IST` (`2026-11-18T18:29:50Z`). Verify it falls into Day 1 ledger.
+     - Insert transaction at `2026-11-19 00:00:10 IST` (`2026-11-18T18:30:10Z`). Verify it falls into Day 2 ledger.
+     - Insert transaction at `2026-11-19 04:30:00 IST` (`2026-11-18T23:00:00Z`). Verify it falls into Day 2 ledger (confirming rejection of raw SQLite `date('now')`).
+  8. **Transactional Payment Consistency & Safety Rules:**
+     - Attempt to refund ₹120 on a ₹100 payment: verify `RefundExceedsCollectedException` is thrown and operation rolls back.
+     - Attempt to pay ₹150 on a ₹140 bill without credit flag: verify `OverpaymentNotPermittedException` is thrown and operation rolls back.
+     - Attempt to record a test payment against a production invoice: verify `SecurityIsolationException` is thrown and operation rolls back.
+- **Pass Criteria:** Zero test data leakage into production, 100% mathematical precision in integer paise, all 5 scenarios reconciled, IST day boundaries verified, payment constraints enforced.

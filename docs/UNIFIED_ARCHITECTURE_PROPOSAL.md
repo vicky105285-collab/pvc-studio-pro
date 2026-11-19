@@ -1,8 +1,8 @@
-# PVC Studio Pro — Unified Architecture Proposal (Phase 0.2 Validated)
-**Enterprise Desktop Architecture: Lifecycle-Managed Leased Assets, Multi-Document Sessions & Verified Print Lifecycles**
+# PVC Studio Pro — Unified Architecture Proposal (Phase 0.3 Validated)
+**Enterprise Desktop Architecture: Non-Disposable Leased Surfaces, Multi-Document Sessions & Linked Print Lifecycles**
 
 - **Document:** `docs/UNIFIED_ARCHITECTURE_PROPOSAL.md`
-- **Revision:** Phase 0.2 Validated
+- **Revision:** Phase 0.3 Validated
 - **Date:** 2026-11-19
 - **Status:** Architectural Proposal (Pre-Implementation Gate)
 
@@ -72,14 +72,35 @@ Exposing public mutable `SKBitmap` properties in desktop applications introduces
 - **Use-After-Free / Double-Free:** If a workspace or service calls `.Dispose()` on an asset while an asynchronous background print rasterizer is reading its scanlines, an unmanaged memory access violation occurs, crashing the application.
 - **Reference Count Underflow:** Manual reference counting without atomic synchronization (`Interlocked`) can drop below zero under concurrent UI requests.
 - **Uncontrolled Native Memory Growth:** SkiaSharp bitmaps reside in native C++ unmanaged memory. If undo/redo stacks store unlimited bitmaps without eviction policies, the application quickly exhausts virtual address space.
+- **False Immutability:** Putting a lease on a mutable `SKBitmap` does not prevent callers from mutating pixels via `Erase()` or `SetPixel()`, or calling `.Dispose()` directly on the underlying bitmap.
 
-### 2.2 The Reference-Counted Lease Contract (`IAssetLease<T>`)
-Callers never hold or manipulate raw `SKBitmap` references directly. All interaction occurs through short-lived leases or direct canvas rendering:
+### 2.2 The Immutable Surface Abstraction (`IReadOnlyRasterSurface`)
+Application consumers (preview renderers, PDF composers, print spoolers) interact only with an immutable surface contract:
 
 ```csharp
-public interface IAssetLease<out T> : IDisposable where T : class
+public interface IReadOnlyRasterSurface
 {
-    T Resource { get; }
+    string AssetId { get; }
+    int Revision { get; }
+    int Width { get; }
+    int Height { get; }
+    int Dpi { get; }
+    double WidthMm => (Width * 25.4) / Dpi;
+    double HeightMm => (Height * 25.4) / Dpi;
+    
+    // Renders the underlying pixels to a destination canvas without exposing bitmap pointers
+    void RenderTo(SKCanvas canvas, SKRect destRect, SKPaint? paint = null);
+    
+    // Obtains an immutable, thread-safe Skia image snapshot
+    SKImage CreateImmutableSnapshot();
+    
+    // Read-only span for OCR / barcode analysis without mutation capabilities
+    ReadOnlySpan<byte> ReadPixelBytes();
+}
+
+public interface IAssetLease : IDisposable
+{
+    IReadOnlyRasterSurface Surface { get; }
     string AssetId { get; }
     int Revision { get; }
     bool IsDisposed { get; }
@@ -93,7 +114,7 @@ public interface ISharedAsset : IDisposable
     bool IsDisposed { get; }
     
     // Acquires a thread-safe lease incrementing ref-count
-    IAssetLease<SKBitmap> AcquireBitmapLease();
+    IAssetLease AcquireLease();
     
     // Clones the current state into an independent new asset
     ISharedAsset Clone(string newAssetId);
@@ -107,31 +128,70 @@ public interface ISharedAsset : IDisposable
 The underlying resource is managed by an atomic wrapper:
 
 ```csharp
-public sealed class SafeBitmapHandle : IDisposable
+public sealed class SafeNativeBitmap : IDisposable
 {
-    private SKBitmap? _bitmap;
+    private SKBitmap? _nativeBitmap;
     private int _refCount;
+    private int _ownerDisposed; // 0 = active, 1 = owner disposed
     private readonly object _syncLock = new();
 
-    public SafeBitmapHandle(SKBitmap bitmap)
+    public SafeNativeBitmap(SKBitmap bitmap)
     {
-        _bitmap = bitmap ?? throw new ArgumentNullException(nameof(bitmap));
-        _refCount = 1; // Initial owner
+        _nativeBitmap = bitmap ?? throw new ArgumentNullException(nameof(bitmap));
+        _refCount = 1; // Initial owner reference
+        _ownerDisposed = 0;
     }
 
     public int ReferenceCount => Volatile.Read(ref _refCount);
-    public bool IsDisposed => _bitmap == null;
+    public bool IsOwnerDisposed => Volatile.Read(ref _ownerDisposed) == 1;
+    public bool IsNativeDisposed => _nativeBitmap == null;
 
-    public IAssetLease<SKBitmap> AcquireLease(string assetId, int revision)
+    public IAssetLease AcquireLease(string assetId, int revision, int dpi)
     {
         lock (_syncLock)
         {
-            if (_bitmap == null || _refCount <= 0)
-                throw new ObjectDisposedException(nameof(SafeBitmapHandle), 
-                    $"Cannot acquire lease on disposed asset {assetId}.");
+            if (IsOwnerDisposed || _nativeBitmap == null || _refCount <= 0)
+            {
+                throw new ObjectDisposedException(nameof(SafeNativeBitmap), 
+                    $"Cannot acquire lease on disposed native asset '{assetId}'.");
+            }
 
             Interlocked.Increment(ref _refCount);
-            return new AssetLease(this, assetId, revision);
+            var surface = new ReadOnlyRasterSurface(this, assetId, revision, dpi);
+            return new AssetLease(this, surface, assetId, revision);
+        }
+    }
+
+    internal void RenderInternal(SKCanvas canvas, SKRect destRect, SKPaint? paint)
+    {
+        lock (_syncLock)
+        {
+            if (_nativeBitmap == null)
+                throw new ObjectDisposedException(nameof(SafeNativeBitmap), "Native bitmap has been released.");
+            
+            canvas.DrawBitmap(_nativeBitmap, destRect, paint);
+        }
+    }
+
+    internal SKImage CreateSnapshotInternal()
+    {
+        lock (_syncLock)
+        {
+            if (_nativeBitmap == null)
+                throw new ObjectDisposedException(nameof(SafeNativeBitmap), "Native bitmap has been released.");
+
+            return SKImage.FromBitmap(_nativeBitmap);
+        }
+    }
+
+    internal ReadOnlySpan<byte> ReadPixelBytesInternal()
+    {
+        lock (_syncLock)
+        {
+            if (_nativeBitmap == null)
+                throw new ObjectDisposedException(nameof(SafeNativeBitmap), "Native bitmap has been released.");
+
+            return _nativeBitmap.GetPixelSpan();
         }
     }
 
@@ -143,38 +203,68 @@ public sealed class SafeBitmapHandle : IDisposable
             if (remaining < 0)
             {
                 Interlocked.Exchange(ref _refCount, 0);
-                throw new InvalidOperationException("Reference count underflow detected on native asset handle.");
+                throw new InvalidOperationException("Reference count underflow detected on native bitmap handle.");
             }
 
-            if (remaining == 0 && _bitmap != null)
+            if (remaining == 0 && _nativeBitmap != null)
             {
-                _bitmap.Dispose();
-                _bitmap = null;
+                _nativeBitmap.Dispose();
+                _nativeBitmap = null;
             }
         }
     }
 
     public void Dispose()
     {
-        ReleaseLease();
+        // Idempotent owner disposal
+        if (Interlocked.CompareExchange(ref _ownerDisposed, 1, 0) == 0)
+        {
+            ReleaseLease();
+        }
     }
 
-    private sealed class AssetLease : IAssetLease<SKBitmap>
+    private sealed class ReadOnlyRasterSurface : IReadOnlyRasterSurface
     {
-        private SafeBitmapHandle? _handle;
+        private readonly SafeNativeBitmap _handle;
         public string AssetId { get; }
         public int Revision { get; }
+        public int Dpi { get; }
 
-        public AssetLease(SafeBitmapHandle handle, string assetId, int revision)
+        public ReadOnlyRasterSurface(SafeNativeBitmap handle, string assetId, int revision, int dpi)
         {
             _handle = handle;
             AssetId = assetId;
             Revision = revision;
+            Dpi = dpi;
         }
 
-        public SKBitmap Resource => _handle != null && !_handle.IsDisposed
-            ? _handle.Bitmap 
-            : throw new ObjectDisposedException(nameof(AssetLease), $"Lease on {AssetId} has already been disposed.");
+        public int Width => _handle._nativeBitmap?.Width ?? 0;
+        public int Height => _handle._nativeBitmap?.Height ?? 0;
+
+        public void RenderTo(SKCanvas canvas, SKRect destRect, SKPaint? paint = null) =>
+            _handle.RenderInternal(canvas, destRect, paint);
+
+        public SKImage CreateImmutableSnapshot() =>
+            _handle.CreateSnapshotInternal();
+
+        public ReadOnlySpan<byte> ReadPixelBytes() =>
+            _handle.ReadPixelBytesInternal();
+    }
+
+    private sealed class AssetLease : IAssetLease
+    {
+        private SafeNativeBitmap? _handle;
+        public IReadOnlyRasterSurface Surface { get; }
+        public string AssetId { get; }
+        public int Revision { get; }
+
+        public AssetLease(SafeNativeBitmap handle, IReadOnlyRasterSurface surface, string assetId, int revision)
+        {
+            _handle = handle;
+            Surface = surface;
+            AssetId = assetId;
+            Revision = revision;
+        }
 
         public bool IsDisposed => _handle == null;
 
@@ -194,10 +284,20 @@ Asynchronous rendering pipelines (e.g. preview rasterization, 600 DPI print spoo
 public async Task<byte[]> RenderPrintSpoolAsync(ISharedAsset asset, CancellationToken ct)
 {
     // 1. Acquire lease synchronously BEFORE async dispatch
-    using var lease = asset.AcquireBitmapLease();
+    using var lease = asset.AcquireLease();
     
     // 2. Pass lease into background worker
     return await Task.Run(() =>
+    {
+        ct.ThrowIfCancellationRequested();
+        using var surface = SKSurface.Create(new SKImageInfo(1011, 638));
+        lease.Surface.RenderTo(surface.Canvas, new SKRect(0, 0, 1011, 638));
+        using var image = surface.Snapshot();
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
+    }, ct);
+    // 3. Lease is safely released in using block even if task throws or cancels
+}
     {
         ct.ThrowIfCancellationRequested();
         using var surface = SKSurface.Create(new SKImageInfo(1011, 638));
@@ -328,6 +428,13 @@ stateDiagram-v2
 5. `PhysicalOutputConfirmedByOperator`: Operator visually confirms card output. Transaction marked `PRINT_CONFIRMED`; payment collected.
 6. `PhysicalOutputNotVerified`: Output defective (smudge, misalignment). Marked `PRINT_DEFECTIVE`; card reprint initiated without duplicate billing.
 
+### 5.3 Linked Print Attempt Model (`print_job_attempts`)
+A single customer invoice/transaction can have multiple linked print attempts:
+- Attempt 1: Spooled $\rightarrow$ Ribbon error $\rightarrow$ Marked `DefectiveOutput` (`defect_reason = 'RibbonScuff'`), `is_billable = 1`.
+- Attempt 2 (Reprint): Operator replaces ribbon and prints again $\rightarrow$ Marked `ConfirmedSuccessful`, `is_billable = 0`.
+- **Wastage Tracking:** Material ledger records 1 blank spoiled for shop cost accounting.
+- **Customer Protection:** The customer is charged only once for their card. Payment status remains completely independent of print attempt count.
+
 ---
 
 ## 6. Adaptive Identity Document Detection & Extraction Pipeline
@@ -442,3 +549,7 @@ CREATE TABLE IF NOT EXISTS transaction_payments (
    - Production DB: `%LOCALAPPDATA%\PVCStudioPro\pvc_studio.db`
    - Test DB: `%LOCALAPPDATA%\PVCStudioPro\TestMode\pvc_studio_test.db`
 4. **Persistent Banner & Watermarks:** Test mode locks an amber status bar across the UI, and print jobs append a prominent test watermark.
+
+### 8.4 Indian Business Day Reporting & Transactional Consistency
+1. **Explicit IST Boundaries:** Timestamps are stored in UTC strings, but daily shop reports query parameterized `Asia/Kolkata` day boundaries (`@StartUtc` to `@EndUtc`), avoiding the 5.5-hour midnight cutoff distortion caused by SQLite `date('now')`.
+2. **Centralized Payment Service (`ITransactionPaymentService`):** All receipts, refunds, and void adjustments run in ACID transactions. Independent UI updates to `paid_paise` or `balance_paise` are prohibited; these fields are strictly read-only derived properties. Overpayments are rejected by default, and refunds can never exceed total collected funds.

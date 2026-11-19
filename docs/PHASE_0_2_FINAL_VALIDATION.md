@@ -1,9 +1,14 @@
 # PVC STUDIO PRO — PHASE 0.2 FINAL ARCHITECTURE VALIDATION
 **Document Version:** 1.0.0  
 **Date:** 2026-11-19  
-**Status:** VALIDATED ARCHITECTURAL SPECIFICATION (PRE-IMPLEMENTATION GATE)  
+**Status:** VALIDATED ARCHITECTURAL SPECIFICATION (See also Phase 0.3 Technical Corrections: [`docs/PHASE_0_3_FINAL_TECHNICAL_CORRECTIONS.md`](file:///d:/pvc%20card%20pro/docs/PHASE_0_3_FINAL_TECHNICAL_CORRECTIONS.md))  
 **Branch:** `competitor-feature-parity`  
 **Baseline Commit:** `1da2db5`  
+
+---
+
+> [!NOTE]
+> Phase 0.3 ([`docs/PHASE_0_3_FINAL_TECHNICAL_CORRECTIONS.md`](file:///d:/pvc%20card%20pro/docs/PHASE_0_3_FINAL_TECHNICAL_CORRECTIONS.md)) provides the final binding technical refinements to this document: replacing `IAssetLease<SKBitmap>` with `IReadOnlyRasterSurface`, defining explicit `Asia/Kolkata` day boundary parameters, specifying `ITransactionPaymentService` and the `print_job_attempts` reprint lifecycle, and outlining the 9 automated Phase 1A unit test cases.  
 
 ---
 
