@@ -44,7 +44,7 @@ namespace PVCStudioPro.Tests
         }
 
         [Fact]
-        public void SingleSideA4_LayoutGeometry_ShouldMatchStandardCompetitorArrangement()
+        public void SingleSideA4_LayoutGeometry_ShouldMatchStandardArrangement()
         {
             using var frontBmp = new SKBitmap(2022, 1275);
             using var backBmp = new SKBitmap(2022, 1275);

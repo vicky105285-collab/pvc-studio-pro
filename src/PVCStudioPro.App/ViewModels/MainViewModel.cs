@@ -39,16 +39,12 @@ namespace PVCStudioPro.App.ViewModels
 
         // Production & Processing Workspaces
         public ProductionWorkspaceViewModel ProductionVM { get; }
-        public DashboardViewModel DashboardVM { get; }
         public DocumentDeskViewModel DocumentDeskVM { get; }
-        public CropStudioViewModel CropStudioVM { get; }
         public DocumentPageDesignerViewModel PageDesignerVM { get; }
         public PrintPreviewApprovalViewModel PrintPreviewApprovalVM { get; }
-        public CardPrintViewModel CardPrintVM { get; }
         public PhotoStudioViewModel PhotoStudioVM { get; }
         public DocumentProcessingViewModel DocProcessingVM { get; }
         public BatchProcessingViewModel BatchVM { get; }
-        public PrintCenterViewModel PrintCenterVM { get; }
         public PrinterTrayManagerViewModel PrinterTrayVM { get; }
         public CalibrationViewModel CalibrationVM { get; }
         public TemplateManagerViewModel TemplatesVM { get; }
@@ -60,16 +56,12 @@ namespace PVCStudioPro.App.ViewModels
 
         public MainViewModel(
             ProductionWorkspaceViewModel productionVM,
-            DashboardViewModel dashboardVM,
             DocumentDeskViewModel documentDeskVM,
-            CropStudioViewModel cropStudioVM,
             DocumentPageDesignerViewModel pageDesignerVM,
             PrintPreviewApprovalViewModel printPreviewApprovalVM,
-            CardPrintViewModel cardPrintVM,
             PhotoStudioViewModel photoStudioVM,
             DocumentProcessingViewModel docProcessingVM,
             BatchProcessingViewModel batchVM,
-            PrintCenterViewModel printCenterVM,
             PrinterTrayManagerViewModel printerTrayVM,
             CalibrationViewModel calibrationVM,
             TemplateManagerViewModel templatesVM,
@@ -93,16 +85,12 @@ namespace PVCStudioPro.App.ViewModels
             SyncSessions();
 
             ProductionVM = productionVM;
-            DashboardVM = dashboardVM;
             DocumentDeskVM = documentDeskVM;
-            CropStudioVM = cropStudioVM;
             PageDesignerVM = pageDesignerVM;
             PrintPreviewApprovalVM = printPreviewApprovalVM;
-            CardPrintVM = cardPrintVM;
             PhotoStudioVM = photoStudioVM;
             DocProcessingVM = docProcessingVM;
             BatchVM = batchVM;
-            PrintCenterVM = printCenterVM;
             PrinterTrayVM = printerTrayVM;
             CalibrationVM = calibrationVM;
             TemplatesVM = templatesVM;
@@ -111,15 +99,6 @@ namespace PVCStudioPro.App.ViewModels
             ReportsVM = reportsVM;
             BackupVM = backupVM;
             SettingsVM = settingsVM;
-
-            // Wire cross-workspace callbacks
-            DashboardVM.NavigateAction = dest => Navigate(dest);
-
-            DocumentDeskVM.OpenInCropStudioAction = (bmp, title) =>
-            {
-                CropStudioVM.LoadImage(bmp, title);
-                Navigate("CropStudio");
-            };
 
             DocumentDeskVM.OpenInPrintPreviewAction = (front, back, kind) =>
             {
@@ -133,24 +112,6 @@ namespace PVCStudioPro.App.ViewModels
                 Navigate("PageDesigner");
             };
 
-            CardPrintVM.OpenInCropStudioAction = (bmp, title) =>
-            {
-                CropStudioVM.LoadImage(bmp, title);
-                Navigate("CropStudio");
-            };
-
-            CardPrintVM.OpenInPrintPreviewAction = (front, back, kind) =>
-            {
-                _ = PrintPreviewApprovalVM.LoadCardsAsync(front, back, kind);
-                Navigate("PrintPreviewApproval");
-            };
-
-            CardPrintVM.OpenInPageDesignerAction = (front, back, title) =>
-            {
-                PageDesignerVM.LoadCardsIntoDesigner(front, back, title);
-                Navigate("PageDesigner");
-            };
-
             PageDesignerVM.OpenInPrintPreviewAction = layout =>
             {
                 PrintPreviewApprovalVM.InitializeWithLayout(layout);
@@ -158,16 +119,6 @@ namespace PVCStudioPro.App.ViewModels
             };
 
             PageDesignerVM.CloseAction = () =>
-            {
-                Navigate("DocumentDesk");
-            };
-
-            CropStudioVM.ReturnToDeskAction = (bmp, isFront) =>
-            {
-                DocumentDeskVM.ReceiveCroppedCard(bmp, isFront);
-            };
-
-            CropStudioVM.CloseAction = () =>
             {
                 Navigate("DocumentDesk");
             };
@@ -240,10 +191,6 @@ namespace PVCStudioPro.App.ViewModels
                     CurrentView = DocumentDeskVM;
                     ActiveWorkspaceTitle = "Document Desk";
                     break;
-                case "CropStudio":
-                    CurrentView = CropStudioVM;
-                    ActiveWorkspaceTitle = "Crop Studio";
-                    break;
                 case "PageDesigner":
                     CurrentView = PageDesignerVM;
                     ActiveWorkspaceTitle = "Page Designer";
@@ -251,15 +198,6 @@ namespace PVCStudioPro.App.ViewModels
                 case "PrintPreviewApproval":
                     CurrentView = PrintPreviewApprovalVM;
                     ActiveWorkspaceTitle = "Print Preview & Approval";
-                    break;
-                case "Dashboard":
-                    _ = DashboardVM.LoadDashboardDataAsync();
-                    CurrentView = DashboardVM;
-                    ActiveWorkspaceTitle = "Dashboard";
-                    break;
-                case "Cards":
-                    CurrentView = CardPrintVM;
-                    ActiveWorkspaceTitle = "Card Studio";
                     break;
                 case "Photo":
                     CurrentView = PhotoStudioVM;
@@ -272,11 +210,6 @@ namespace PVCStudioPro.App.ViewModels
                 case "Batch":
                     CurrentView = BatchVM;
                     ActiveWorkspaceTitle = "Batch Processing";
-                    break;
-                case "PrintCenter":
-                    _ = PrintCenterVM.RefreshStatusAsync();
-                    CurrentView = PrintCenterVM;
-                    ActiveWorkspaceTitle = "Print Center";
                     break;
                 case "PrinterTray":
                     _ = PrinterTrayVM.LoadDataAsync();
@@ -315,8 +248,8 @@ namespace PVCStudioPro.App.ViewModels
                     ActiveWorkspaceTitle = "Settings & Preferences";
                     break;
                 default:
-                    CurrentView = DashboardVM;
-                    ActiveWorkspaceTitle = "Dashboard";
+                    CurrentView = ProductionVM;
+                    ActiveWorkspaceTitle = "Production Studio";
                     break;
             }
         }

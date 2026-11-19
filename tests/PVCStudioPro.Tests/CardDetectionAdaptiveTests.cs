@@ -271,6 +271,61 @@ namespace PVCStudioPro.Tests
             vm.DetectionConfidenceSummary.Should().Be("96% High Confidence");
         }
 
+        [Fact]
+        public async Task AadhaarMasking_WhenApplyMaskIsTrue_RedactsPixelRegion()
+        {
+            // Create a synthetic 300 DPI A4 page with an Aadhaar cutline and dark colored card content
+            using var page = CreateSyntheticA4Bitmap(300);
+            int fx = (int)Math.Round(17.78 * 300 / 25.4);
+            int fy = (int)Math.Round(219.71 * 300 / 25.4);
+            int fw = (int)Math.Round(88.47 * 300 / 25.4);
+            int fh = (int)Math.Round(56.30 * 300 / 25.4);
+
+            // Fill card area with dark navy (#001F3F) to easily distinguish from white redaction mask
+            using (var canvas = new SKCanvas(page))
+            using (var paint = new SKPaint { Color = new SKColor(0, 31, 63), Style = SKPaintStyle.Fill })
+            {
+                canvas.DrawRect(new SKRect(fx, fy, fx + fw, fy + fh), paint);
+            }
+
+            string textSample = "Unique Identification Authority of India Mera Aadhaar Meri Pehchan 1234 5678 9012";
+
+            // 1. Unmasked extraction
+            var unmasked = await _cardDetection.DetectAndExtractAdaptiveAsync(
+                page,
+                textSample,
+                applyMask: false);
+
+            unmasked.FrontCard.Should().NotBeNull();
+
+            // 2. Masked extraction
+            var masked = await _cardDetection.DetectAndExtractAdaptiveAsync(
+                page,
+                textSample,
+                applyMask: true);
+
+            masked.FrontCard.Should().NotBeNull();
+
+            // Mask zone in 600 DPI normalized card: RelativeXMm=28.0mm, RelativeYMm=46.5mm, Width=24mm, Height=4.5mm
+            // Sample pixel inside the mask rectangle (X = 35mm, Y = 48mm)
+            int sampleX = (int)Math.Round((35.0 * 600.0) / 25.4); // ~827 px
+            int sampleY = (int)Math.Round((48.0 * 600.0) / 25.4); // ~1134 px
+
+            var unmaskedPixel = unmasked.FrontCard!.GetPixel(sampleX, sampleY);
+            var maskedPixel = masked.FrontCard!.GetPixel(sampleX, sampleY);
+
+            // Unmasked pixel must be dark navy
+            unmaskedPixel.Red.Should().BeLessThan(50);
+            unmaskedPixel.Blue.Should().BeGreaterThan(40);
+
+            // Masked pixel must be redacted (white mask fill: Red=255, Green=255, Blue=255)
+            maskedPixel.Red.Should().Be(255, "Masked region must be filled with white redaction rectangle");
+            maskedPixel.Green.Should().Be(255);
+            maskedPixel.Blue.Should().Be(255);
+
+            unmaskedPixel.Should().NotBe(maskedPixel, "Redaction mask must alter the pixels in the output bitmap");
+        }
+
         private static PVCStudioPro.App.ViewModels.ProductionWorkspaceViewModel CreateWorkspaceViewModel()
         {
             var importService = new DocumentImportService();

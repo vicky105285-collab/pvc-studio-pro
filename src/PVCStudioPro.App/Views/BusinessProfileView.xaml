@@ -188,7 +188,7 @@
                                     <TextBox Text="{Binding Profile.NextInvoiceNumber, UpdateSourceTrigger=PropertyChanged}" Height="38" VerticalContentAlignment="Center" FontSize="13"/>
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="2">
+                                <StackPanel Grid.Column="2" Visibility="{Binding Converter={StaticResource FeatureVisibilityConverter}, ConverterParameter=F-THERMAL-RECEIPT}">
                                     <TextBlock Text="{DynamicResource LblReceiptPaperSize}" Style="{StaticResource FormLabelStyle}"/>
                                     <ComboBox ItemsSource="{Binding AvailablePaperSizes}" SelectedItem="{Binding Profile.ReceiptPaperSize}" Height="38"/>
                                     <TextBlock Text="Choose 58mm POS thermal roll, 80mm roll, or A4 statement" Style="{StaticResource FormHelpStyle}"/>
@@ -218,7 +218,7 @@
                             </Border>
 
                             <!-- Row 4: Receipt Footer Message -->
-                            <StackPanel Margin="0,0,0,16">
+                            <StackPanel Margin="0,0,0,16" Visibility="{Binding Converter={StaticResource FeatureVisibilityConverter}, ConverterParameter=F-THERMAL-RECEIPT}">
                                 <TextBlock Text="{DynamicResource LblReceiptFooter}" Style="{StaticResource FormLabelStyle}"/>
                                 <TextBox Text="{Binding Profile.ReceiptFooterMessage, UpdateSourceTrigger=PropertyChanged}" Height="54" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Padding="8"/>
                                 <TextBlock Text="Custom thank you message printed at the bottom of customer receipts" Style="{StaticResource FormHelpStyle}"/>

@@ -168,18 +168,15 @@ namespace PVCStudioPro.Tests
                 services.AddSingleton<IPrinterTrayService>(sp => new PrinterTrayService(sp.GetRequiredService<IPrinterDiscoveryService>(), Path.Combine(configDir, "printer_profiles.json")));
                 services.AddSingleton<IBackupService>(sp => new BackupService(dbPath, configDir));
                 services.AddSingleton<IBatchProcessingService, BatchProcessingService>();
+                services.AddSingleton<IFeatureFlagsService, FeatureFlagsService>();
 
                 services.AddSingleton<ProductionWorkspaceViewModel>();
-                services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<DocumentDeskViewModel>();
-                services.AddSingleton<CropStudioViewModel>();
                 services.AddSingleton<DocumentPageDesignerViewModel>();
                 services.AddSingleton<PrintPreviewApprovalViewModel>();
-                services.AddSingleton<CardPrintViewModel>();
                 services.AddSingleton<PhotoStudioViewModel>();
                 services.AddSingleton<DocumentProcessingViewModel>();
                 services.AddSingleton<BatchProcessingViewModel>();
-                services.AddSingleton<PrintCenterViewModel>();
                 services.AddSingleton<PrinterTrayManagerViewModel>();
                 services.AddSingleton<CalibrationViewModel>();
                 services.AddSingleton<TemplateManagerViewModel>();
@@ -254,6 +251,36 @@ namespace PVCStudioPro.Tests
             }
 
             violations.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void StringsTa_LoadsAndContainsAllExpectedTamilKeys()
+        {
+            string current = AppContext.BaseDirectory;
+            string taPath = string.Empty;
+            while (!string.IsNullOrEmpty(current))
+            {
+                string target = Path.Combine(current, "src", "PVCStudioPro.App", "I18n", "Strings.ta.xaml");
+                if (File.Exists(target))
+                {
+                    taPath = target;
+                    break;
+                }
+                var parent = Directory.GetParent(current);
+                if (parent == null) break;
+                current = parent.FullName;
+            }
+
+            File.Exists(taPath).Should().BeTrue("Strings.ta.xaml must exist");
+
+            using var stream = File.OpenRead(taPath);
+            var dict = (ResourceDictionary)XamlReader.Load(stream);
+
+            dict.Should().NotBeNull();
+            dict.Contains("AppTitle").Should().BeTrue();
+            dict.Contains("NavProductionStudio").Should().BeTrue();
+            dict.Contains("ChkMaskAadhaar").Should().BeTrue();
+            dict["ChkMaskAadhaar"].ToString().Should().Contain("முதல் 8 எண்களை மறை");
         }
     }
 }

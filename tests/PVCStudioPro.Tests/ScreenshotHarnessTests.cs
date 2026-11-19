@@ -61,6 +61,7 @@ namespace PVCStudioPro.Tests
                 services.AddSingleton<IBackupService>(new BackupService(dbPath, configDir));
                 services.AddSingleton<IBatchProcessingService, BatchProcessingService>();
                 services.AddSingleton<IPassportPhotoEngine, PassportPhotoEngine>();
+                services.AddSingleton<IFeatureFlagsService, FeatureFlagsService>();
 
                 services.AddTransient<MainViewModel>();
                 services.AddTransient<ProductionWorkspaceViewModel>();
@@ -95,6 +96,7 @@ namespace PVCStudioPro.Tests
                         app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/PVCStudioPro.App;component/Resources/Theme/M3Tokens.xaml", UriKind.RelativeOrAbsolute) });
                         app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/PVCStudioPro.App;component/I18n/Strings.en.xaml", UriKind.RelativeOrAbsolute) });
                         app.Resources.Add("BooleanToVisibilityConverter", new System.Windows.Controls.BooleanToVisibilityConverter());
+                        app.Resources.Add("FeatureVisibilityConverter", new PVCStudioPro.App.Converters.FeatureVisibilityConverter());
                         _appInitialized = true;
                     }
 
@@ -121,7 +123,7 @@ namespace PVCStudioPro.Tests
             string current = AppContext.BaseDirectory;
             while (!string.IsNullOrEmpty(current))
             {
-                string target = Path.Combine(current, "docs", "screens");
+                string target = Path.Combine(current, "docs", "screens", "runs");
                 if (Directory.Exists(Path.Combine(current, "docs")))
                 {
                     Directory.CreateDirectory(target);
@@ -132,7 +134,7 @@ namespace PVCStudioPro.Tests
                 current = parent.FullName;
             }
 
-            string fallback = Path.GetFullPath(@"..\..\..\..\docs\screens");
+            string fallback = Path.GetFullPath(@"..\..\..\..\docs\screens\runs");
             Directory.CreateDirectory(fallback);
             return fallback;
         }

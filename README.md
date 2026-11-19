@@ -5,7 +5,7 @@
 [![Platform: Windows 11 / 10](https://img.shields.io/badge/Platform-Windows%2011%20%7C%2010-0078D4?logo=windows)](https://microsoft.com)
 [![Framework: .NET 11](https://img.shields.io/badge/Framework-.NET%2011-512BD4?logo=dotnet)](https://dotnet.microsoft.com)
 [![UI: WPF UI Fluent Design](https://img.shields.io/badge/UI-Fluent%20Design%20(Mica)-0067B8)](https://github.com/lepoco/wpfui)
-[![Tests: 164 Passing](https://img.shields.io/badge/Tests-164%20Passed-107C41)](tests/PVCStudioPro.Tests)
+[![Tests: 179 Passing](https://img.shields.io/badge/Tests-179%20Passed-107C41)](tests/PVCStudioPro.Tests)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Offline: 100% Local](https://img.shields.io/badge/Operation-100%25%20Offline-green)](#privacy--compliance)
 
@@ -21,7 +21,7 @@ All features listed below are verified Working via automated unit/integration te
 
 - **600 DPI Vector PDF & Image Ingestion:** Precision vector rasterization via PDFium (`PdfService.RenderPageAsync`) and multi-format raster image decoding (PNG, JPEG, TIFF, BMP, WebP) with interactive password unlock for protected PDFs.
 - **5-Stage Adaptive Card Detection:** Automatic document categorization and confidence scoring (`CardDetectionService.DetectAndExtractAdaptiveAsync`) with fallback bounds estimation.
-- **29 Competitor-Parity Government Templates:** Full coverage across 5 official categories:
+- **29 Indian ID Card Templates:** Full coverage across 5 official categories:
   - *Identity:* e-Aadhaar (UIDAI), NSDL PAN, UTIITSL PAN, e-EPIC Voter ID (Modern & Legacy)
   - *Healthcare:* Ayushman Bharat (PM-JAY), ABHA Digital Health ID
   - *Labour & Social:* e-Shram National Database, State Labour Welfare cards

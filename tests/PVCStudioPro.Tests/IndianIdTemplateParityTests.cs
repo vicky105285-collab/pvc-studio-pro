@@ -11,13 +11,13 @@ using PVCStudioPro.Core.Services.Implementations;
 
 namespace PVCStudioPro.Tests
 {
-    public class CompetitorParityTests
+    public class IndianIdTemplateParityTests
     {
         private readonly CardDetectionService _cardDetection;
         private readonly ManualCropService _cropService;
         private readonly TemplateService _templateService;
 
-        public CompetitorParityTests()
+        public IndianIdTemplateParityTests()
         {
             _cardDetection = new CardDetectionService();
             _cropService = new ManualCropService();
@@ -213,7 +213,7 @@ namespace PVCStudioPro.Tests
         }
 
         [Fact]
-        public async Task AllCompetitorTemplates_LoadedAndVerified_FromRealDbCatalogue()
+        public async Task AllIndianIdTemplates_LoadedAndVerified_FromCatalogue()
         {
             var templateService = new TemplateService();
             await templateService.InitializeTemplatesAsync();
@@ -254,7 +254,7 @@ namespace PVCStudioPro.Tests
             foreach (var expectedId in expectedIds)
             {
                 var tmpl = allTemplates.FirstOrDefault(t => t.TemplateId == expectedId);
-                tmpl.Should().NotBeNull($"Template {expectedId} from competitor Real.db should be registered");
+                tmpl.Should().NotBeNull($"Template {expectedId} from Indian ID card catalogue should be registered");
                 tmpl!.Faces.Front.CropRectMm.Width.Should().BeGreaterThan(0);
                 tmpl.Faces.Front.CropRectMm.Height.Should().BeGreaterThan(0);
             }

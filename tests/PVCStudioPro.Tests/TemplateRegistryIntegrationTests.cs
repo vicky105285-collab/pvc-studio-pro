@@ -22,11 +22,11 @@ namespace PVCStudioPro.Tests
         }
 
         [Fact]
-        public void TemplateRegistry_ShouldContainExactly29CalibratedCompetitorTemplates()
+        public void TemplateRegistry_ShouldContainExactly29CalibratedIndianIdTemplates()
         {
             var allTemplates = _templateService.GetAllTemplates();
             allTemplates.Should().NotBeNull();
-            allTemplates.Count.Should().Be(29, "Competitor parity requires all 29 templates to be registered");
+            allTemplates.Count.Should().Be(29, "Template catalog requires all 29 Indian ID templates to be registered");
 
             // Ensure unique template IDs
             var uniqueIds = allTemplates.Select(t => t.TemplateId).Distinct().ToList();
@@ -55,7 +55,7 @@ namespace PVCStudioPro.Tests
         }
 
         [Fact]
-        public void GetCategorizedTemplates_ShouldCoverAllFiveMajorCompetitorCategories()
+        public void GetCategorizedTemplates_ShouldCoverAllFiveMajorCategories()
         {
             var categories = _templateService.GetCategorizedTemplates();
             categories.Should().NotBeNull();
@@ -67,7 +67,7 @@ namespace PVCStudioPro.Tests
             int totalGrouped = categories.Sum(c => c.Templates.Count);
             totalGrouped.Should().Be(29, "Every registered template must belong to a category group");
 
-            // Ensure specific competitor templates are in their expected groups
+            // Ensure specific Indian ID templates are in their expected groups
             var healthGroup = categories.First(c => c.CategoryKey == "HEALTHCARE");
             healthGroup.Templates.Should().Contain(t => t.TemplateId == "ayushman_pmjay");
             healthGroup.Templates.Should().Contain(t => t.TemplateId == "abha_health_id");
@@ -90,7 +90,7 @@ namespace PVCStudioPro.Tests
         [InlineData("e-Shram Ministry of Labour and Employment Universal Account Number", "eshram_card")]
         [InlineData("Civil Supplies Kerala Ration Card Priority Household", "kerala_ration")]
         [InlineData("Union of India Driving Licence Form 7 Rule 16", "parivahan_dl")]
-        public void MatchTemplateByText_ShouldIdentifyCompetitorTemplatesAccurately(string text, string expectedTemplateId)
+        public void MatchTemplateByText_ShouldIdentifyIndianIdTemplatesAccurately(string text, string expectedTemplateId)
         {
             var match = _templateService.MatchTemplateByText(text);
             match.Should().NotBeNull();

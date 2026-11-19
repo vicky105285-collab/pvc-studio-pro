@@ -491,7 +491,8 @@ namespace PVCStudioPro.App.ViewModels
                         _cachedPageBitmap,
                         textSample,
                         docInfo.PageWidthMm,
-                        docInfo.PageHeightMm);
+                        docInfo.PageHeightMm,
+                        applyMask: IsMaskAadhaar);
 
                     _detectedKind = extraction.DetectedKind;
                     DetectedDocTitle = extraction.MatchedTemplate?.DisplayName ?? $"{_detectedKind}";
@@ -513,7 +514,8 @@ namespace PVCStudioPro.App.ViewModels
 
                     var extraction = await _cardDetectionEngine.DetectAndExtractAdaptiveAsync(
                         _cachedPageBitmap,
-                        string.Empty);
+                        string.Empty,
+                        applyMask: IsMaskAadhaar);
 
                     _detectedKind = extraction.DetectedKind;
                     DetectedDocTitle = extraction.MatchedTemplate?.DisplayName ?? $"{_detectedKind}";

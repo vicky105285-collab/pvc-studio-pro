@@ -124,18 +124,15 @@ namespace PVCStudioPro.App
 
                 services.AddSingleton<IBackupService>(sp => new BackupService(dbPath, configDir));
                 services.AddSingleton<IBatchProcessingService, BatchProcessingService>();
+                services.AddSingleton<IFeatureFlagsService, FeatureFlagsService>();
 
                 services.AddSingleton<ProductionWorkspaceViewModel>();
-                services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<DocumentDeskViewModel>();
-                services.AddSingleton<CropStudioViewModel>();
                 services.AddSingleton<DocumentPageDesignerViewModel>();
                 services.AddSingleton<PrintPreviewApprovalViewModel>();
-                services.AddSingleton<CardPrintViewModel>();
                 services.AddSingleton<PhotoStudioViewModel>();
                 services.AddSingleton<DocumentProcessingViewModel>();
                 services.AddSingleton<BatchProcessingViewModel>();
-                services.AddSingleton<PrintCenterViewModel>();
                 services.AddSingleton<PrinterTrayManagerViewModel>();
                 services.AddSingleton<CalibrationViewModel>();
                 services.AddSingleton<TemplateManagerViewModel>();

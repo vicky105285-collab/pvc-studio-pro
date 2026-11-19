@@ -233,6 +233,30 @@ namespace PVCStudioPro.Tests
         }
 
         [Fact]
+        public void AdvancedCrop_StraightenTilt_RotatesSmoothlyAtFineAngles()
+        {
+            var cropService = new ManualCropService();
+            using var testImage = new SKBitmap(200, 200, SKColorType.Bgra8888, SKAlphaType.Premul);
+            using (var c = new SKCanvas(testImage))
+            {
+                c.Clear(SKColors.Blue);
+            }
+
+            // Test fine straighten angle of +5.5 degrees
+            using var rotated = cropService.RotateBitmap(testImage, 5.5, expandBounds: false);
+            rotated.Should().NotBeNull();
+            rotated.Width.Should().Be(200);
+            rotated.Height.Should().Be(200);
+            rotated.ColorType.Should().Be(SKColorType.Bgra8888);
+
+            // Test 90 degree exact rotation
+            using var rotated90 = cropService.RotateBitmap(testImage, 90);
+            rotated90.Should().NotBeNull();
+            rotated90.Width.Should().Be(200);
+            rotated90.Height.Should().Be(200);
+        }
+
+        [Fact]
         public void PhysicalPageLayoutEngine_CustomCardDimensions_PreservedWithoutStretching()
         {
             var layoutEngine = new PhysicalPageLayoutEngine();

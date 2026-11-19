@@ -192,27 +192,23 @@ namespace PVCStudioPro.Tests
                 templateService,
                 sessionManager);
 
-            var cropStudioVM = new CropStudioViewModel(cropService, cardDetection, sessionManager);
-
             string filePath = CreateTestImageFile("crop_source.png", 400, 300);
             var session = await sessionManager.OpenDocumentAsync(filePath);
 
-            // Load session image into Crop Studio
-            cropStudioVM.LoadFromSession(session, isFront: true);
-
-            // Perform a crop
-            cropStudioVM.CropX = 20;
-            cropStudioVM.CropY = 20;
-            cropStudioVM.CropWidth = 200;
-            cropStudioVM.CropHeight = 120;
-            cropStudioVM.PerformCrop();
-
-            // Assign to front face
-            cropStudioVM.AssignToFrontFace();
+            // Commit a crop to front card asset directly through session
+            using var lease = session.SourceAsset.AcquireLease();
+            var cropBmp = new SKBitmap(200, 120, SKColorType.Bgra8888, SKAlphaType.Premul);
+            var derived = DerivedImageAsset.Create(
+                session.SourceAsset.AssetId,
+                session.ActiveRevision + 1,
+                300,
+                "Custom Front Crop",
+                cropBmp);
+            session.CommitRevision("Custom Front Crop", frontAsset: derived);
 
             // Session must have front card asset committed
             session.FrontCardAsset.Should().NotBeNull();
-            session.FrontCardAsset!.TransformDescription.Should().Be("Crop Studio Front");
+            session.FrontCardAsset!.TransformDescription.Should().Be("Custom Front Crop");
             session.ActiveRevision.Should().Be(1);
 
             // Production workspace reflects updated front card

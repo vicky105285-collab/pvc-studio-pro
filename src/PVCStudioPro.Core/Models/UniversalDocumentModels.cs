@@ -240,7 +240,8 @@ namespace PVCStudioPro.Core.Models
             double pageHeightMm = 297.0,
             string? preferredTemplateId = null,
             DocumentKind preferredKind = DocumentKind.Unknown,
-            AadhaarGeneration preferredAadhaarGen = AadhaarGeneration.Unknown);
+            AadhaarGeneration preferredAadhaarGen = AadhaarGeneration.Unknown,
+            bool applyMask = false);
 
         Task<SKRectI> RefineCropBoundsWithOpenCvAsync(
             SKBitmap pageBitmap,

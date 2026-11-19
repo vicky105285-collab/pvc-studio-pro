@@ -28,20 +28,11 @@
         <DataTemplate DataType="{x:Type vm:DocumentDeskViewModel}">
             <views:DocumentDeskView/>
         </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:CropStudioViewModel}">
-            <views:CropStudioView/>
-        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:DocumentPageDesignerViewModel}">
             <views:DocumentPageDesignerView/>
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:PrintPreviewApprovalViewModel}">
             <views:PrintPreviewApprovalView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
-            <views:DashboardView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:CardPrintViewModel}">
-            <views:CardPrintView/>
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:PhotoStudioViewModel}">
             <views:PhotoStudioView/>
@@ -51,9 +42,6 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:BatchProcessingViewModel}">
             <views:BatchProcessingView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:PrintCenterViewModel}">
-            <views:PrintCenterView/>
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:PrinterTrayManagerViewModel}">
             <views:PrinterTrayManagerView/>
@@ -180,7 +168,8 @@
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavBatchProcessing}" Command="{Binding NavigateCommand}" CommandParameter="Batch">
+                    <ui:NavigationViewItem Content="{DynamicResource NavBatchProcessing}" Command="{Binding NavigateCommand}" CommandParameter="Batch"
+                                           Visibility="{Binding Converter={StaticResource FeatureVisibilityConverter}, ConverterParameter=F-BATCH-SPOOL}">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="FolderZip24" />
                         </ui:NavigationViewItem.Icon>

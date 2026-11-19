@@ -28,7 +28,8 @@ namespace PVCStudioPro.Core.Services.Implementations
             double pageHeightMm = 297.0,
             string? preferredTemplateId = null,
             DocumentKind preferredKind = DocumentKind.Unknown,
-            AadhaarGeneration preferredAadhaarGen = AadhaarGeneration.Unknown)
+            AadhaarGeneration preferredAadhaarGen = AadhaarGeneration.Unknown,
+            bool applyMask = false)
         {
             return await Task.Run(async () =>
             {
@@ -165,7 +166,7 @@ namespace PVCStudioPro.Core.Services.Implementations
                 }
                 else
                 {
-                    // Calibrated competitor defaults
+                    // Calibrated Indian ID card template defaults
                     GetCalibratedCoordinates(detectedKind, aadhaarGen,
                         out frontXMm, out frontYMm, out frontWMm, out frontHMm,
                         out backXMm, out backYMm, out backWMm, out backHMm,
@@ -261,6 +262,50 @@ namespace PVCStudioPro.Core.Services.Implementations
                 {
                     canvas.Clear(SKColors.White);
                     canvas.DrawBitmap(frontSub, new SKRect(0, 0, targetW, targetH), new SKSamplingOptions(SKCubicResampler.Mitchell));
+
+                    if (applyMask)
+                    {
+                        var maskZones = matchedTemplate?.Faces?.Front?.MaskZones;
+                        if (maskZones == null || maskZones.Count == 0)
+                        {
+                            if (detectedKind == DocumentKind.Aadhaar)
+                            {
+                                maskZones = new List<MaskZone>
+                                {
+                                    new MaskZone
+                                    {
+                                        Name = "DefaultAadhaarMask",
+                                        RelativeXMm = 20.0,
+                                        RelativeYMm = 42.0,
+                                        WidthMm = 45.0,
+                                        HeightMm = 6.0,
+                                        OverlayText = "XXXX XXXX "
+                                    }
+                                };
+                            }
+                        }
+
+                        if (maskZones != null && maskZones.Count > 0)
+                        {
+                            using var maskPaint = new SKPaint { Color = SKColors.White, Style = SKPaintStyle.Fill };
+                            using var textPaint = new SKPaint { Color = SKColors.Black, IsAntialias = true };
+                            using var font = new SKFont(SKTypeface.Default, 28);
+
+                            foreach (var mz in maskZones)
+                            {
+                                float mx = (float)((mz.RelativeXMm * 600.0) / MmPerInch);
+                                float my = (float)((mz.RelativeYMm * 600.0) / MmPerInch);
+                                float mw = (float)((mz.WidthMm * 600.0) / MmPerInch);
+                                float mh = (float)((mz.HeightMm * 600.0) / MmPerInch);
+
+                                canvas.DrawRect(new SKRect(mx, my, mx + mw, my + mh), maskPaint);
+                                if (!string.IsNullOrEmpty(mz.OverlayText))
+                                {
+                                    canvas.DrawText(mz.OverlayText, mx + 15, my + (mh * 0.75f), SKTextAlign.Left, font, textPaint);
+                                }
+                            }
+                        }
+                    }
                 }
                 result.FrontCard = finalFront;
 
