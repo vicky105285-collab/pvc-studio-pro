@@ -15,84 +15,118 @@
         <KeyBinding Key="Escape" Command="{Binding CloseCropDrawerCommand}"/>
     </UserControl.InputBindings>
 
-    <Grid Margin="12,8,12,12">
+    <Grid Margin="10,6,10,10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Top Action Bar -->
-            <RowDefinition Height="*"/>    <!-- Main 3-Column Task Workspace -->
+            <RowDefinition Height="Auto"/> <!-- Top Sub-Header Action Strip & Alerts -->
+            <RowDefinition Height="*"/>    <!-- Split Stage: 8 Cols Canvas + 4 Cols Inspector -->
             <RowDefinition Height="Auto"/> <!-- Status Bar -->
         </Grid.RowDefinitions>
 
-        <!-- ROW 0: TOP ACTION BAR, PASSWORD PROMPT & LOW-CONFIDENCE AMBER ALERT -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,10">
-            <!-- Action Toolbar (Clean, high-density, commercial desktop) -->
-            <Border Style="{StaticResource SurfaceCardStyle}" Padding="12,8" Margin="0,0,0,6">
+        <!-- ================= ROW 0: TOP SUB-HEADER ACTION STRIP & ALERTS ================= -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <!-- Google Stitch Action Strip -->
+            <Border Background="{DynamicResource StitchSurfaceBrush}" BorderBrush="{DynamicResource StitchSurfaceContainerHighBrush}" BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,6">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/> <!-- Document Source & Adaptive Telemetry -->
+                        <ColumnDefinition Width="*"/>    <!-- Spacer -->
+                        <ColumnDefinition Width="Auto"/> <!-- Pre-flight Controls Strip -->
                     </Grid.ColumnDefinitions>
 
-                    <!-- Primary Document Actions -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                        <ui:Button Command="{Binding OpenDocumentFileDialogCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Height="36" Padding="16,0" Margin="0,0,8,0" ToolTip="Open Aadhaar PDF, PAN, Voter, or Scanned Image (Ctrl+O)">
+                    <!-- Left: Document Source & 5-Stage Adaptive Telemetry -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Open Document CTA -->
+                        <ui:Button Command="{Binding OpenDocumentFileDialogCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Height="32" Padding="12,0" Margin="0,0,8,0" ToolTip="Open Aadhaar PDF, PAN, Voter, or Scanned Image (Ctrl+O)">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="FolderOpen24" Margin="0,0,8,0"/>
-                                <TextBlock Text="Open Document" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock Text="📁 " FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Text="Open Document" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"/>
                             </StackPanel>
                         </ui:Button>
 
-                        <ui:Button Command="{Binding SaveProjectCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="36" Margin="0,0,6,0" ToolTip="Save current layout to .pvcproj project file">
+                        <!-- File Metadata Pill -->
+                        <Border Background="{DynamicResource StitchSurfaceContainerLowBrush}" BorderBrush="{DynamicResource StitchSurfaceContainerHighBrush}" BorderThickness="1" CornerRadius="6" Padding="8,4" Margin="0,0,6,0" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Save24" Margin="0,0,6,0"/>
-                                <TextBlock Text="Save Project" VerticalAlignment="Center"/>
+                                <TextBlock Text="📄 " FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding DetectedDocTitle, FallbackValue='No Document Loaded'}" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource StitchTextPrimaryBrush}" VerticalAlignment="Center" MaxWidth="190" TextTrimming="CharacterEllipsis"/>
+                                <Border Background="{DynamicResource StitchPrimaryContainerBrush}" CornerRadius="3" Padding="5,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="600 DPI Vector" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource StitchSecondaryContainerBrush}"/>
+                                </Border>
                             </StackPanel>
-                        </ui:Button>
-
-                        <ui:Button Command="{Binding ExportPdfCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="36" Margin="0,0,6,0" ToolTip="Export 600 DPI vector print-ready PDF">
-                            <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="DocumentPdf24" Margin="0,0,6,0"/>
-                                <TextBlock Text="Export PDF" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </ui:Button>
-                    </StackPanel>
-
-                    <!-- Document Recognition & Security Status Badge -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                        <Border Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="10,4" Margin="0,0,8,0">
-                            <TextBlock Text="{Binding DetectedBadge}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center"/>
                         </Border>
-                        <Border Background="{Binding ConfidenceBadgeBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,0" Visibility="{Binding HasLoadedDocument, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <TextBlock Text="{Binding DetectionConfidenceSummary}" FontWeight="Bold" FontSize="10.5" Foreground="{Binding ConfidenceTextBrush}" VerticalAlignment="Center"/>
-                        </Border>
-                        <TextBlock Text="{Binding DetectedDocTitle}" FontWeight="SemiBold" FontSize="12.5" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="320"/>
-                    </StackPanel>
 
-                    <!-- Universal 29-Template Categorized Selector & Override -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,16,0">
-                        <TextBlock Text="Template:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0" FontSize="11.5"/>
+                        <!-- 5-Stage Adaptive AI Detection Telemetry Badge -->
+                        <Border Background="{Binding ConfidenceBadgeBrush}" CornerRadius="6" Padding="8,4" Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{Binding HasLoadedDocument, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🛡️ " FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="5-Stage: " FontWeight="SemiBold" FontSize="10.5" Foreground="{Binding ConfidenceTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding DetectedBadge}" FontWeight="Bold" FontSize="10.5" Foreground="{Binding ConfidenceTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text=" • " FontSize="10" Foreground="{Binding ConfidenceTextBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding DetectionConfidenceSummary}" FontWeight="Bold" FontSize="10.5" Foreground="{Binding ConfidenceTextBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Universal Template Selector -->
                         <ComboBox ItemsSource="{Binding TemplateOptions}"
                                   SelectedItem="{Binding SelectedTemplateOption}"
                                   DisplayMemberPath="FormattedLabel"
-                                  Width="260" Height="34"
-                                  ToolTip="Select or override with any of the 29 calibrated government templates (Identity, Health, Labour, State Rations, Transport)"/>
+                                  Width="190" Height="30" Margin="0,0,6,0"
+                                  ToolTip="Select or override calibrated government template"/>
                     </StackPanel>
 
-                    <!-- Quick Workspace Switcher for Secondary Tools -->
-                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                        <ui:Button Command="{Binding SelectOtherCardOptionCommand}" CommandParameter="other_id_dual" Style="{StaticResource SecondaryActionButtonStyle}" Height="34" Margin="0,0,6,0" ToolTip="Quick switch to Other Cards / Custom Presets">
+                    <!-- Right: Pre-Flight Processing Controls -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Auto-Detect Bounds (Ctrl+D) -->
+                        <ui:Button Command="{Binding AutoExtractCardsCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="30" Padding="8,0" Margin="0,0,4,0" ToolTip="Auto-Detect Card Bounds (Ctrl+D)">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="ContactCard24" Margin="0,0,6,0"/>
-                                <TextBlock Text="Other Cards" VerticalAlignment="Center"/>
+                                <TextBlock Text="✨ " FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="Auto-Detect" FontWeight="SemiBold" FontSize="10.5" VerticalAlignment="Center"/>
                             </StackPanel>
                         </ui:Button>
-                        <ui:Button Command="{Binding OpenCropDrawerCommand}" CommandParameter="Front Card (Slot 1)" Style="{StaticResource SecondaryActionButtonStyle}" Height="34" Margin="0,0,6,0" ToolTip="Open fine-tuned interactive crop adjustment drawer">
+
+                        <!-- Fine Tilt Straighten Slider with 'ROT' label and angle readout -->
+                        <Border Background="{DynamicResource StitchSurfaceContainerLowBrush}" BorderBrush="{DynamicResource StitchSurfaceContainerHighBrush}" BorderThickness="1" CornerRadius="6" Padding="6,2" Margin="0,0,4,0" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Crop24" Margin="0,0,6,0"/>
-                                <TextBlock Text="Adjust Crop" VerticalAlignment="Center"/>
+                                <TextBlock Text="ROT" FontWeight="Bold" FontSize="9" Foreground="{DynamicResource StitchTextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <Slider Minimum="-45" Maximum="45" SmallChange="0.5" LargeChange="5.0"
+                                        Value="{Binding StraightenAngle, Mode=TwoWay}"
+                                        Width="70" VerticalAlignment="Center" ToolTip="Fine Tilt Straighten (-45° to +45°)"/>
+                                <TextBlock Text="{Binding StraightenAngle, StringFormat={}{0:+0.0;-0.0;0.0}°}"
+                                           FontWeight="Bold" FontSize="10" FontFamily="Consolas" Width="38"
+                                           TextAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource StitchSecondaryBrush}" Margin="2,0,0,0"/>
                             </StackPanel>
-                        </ui:Button>
+                        </Border>
+
+                        <!-- 90° CCW / CW Buttons -->
+                        <ui:Button Command="{Binding RotateCropCcwCommand}" Content="⟲" Height="30" Width="28" Padding="0" FontSize="12" Margin="0,0,2,0" ToolTip="Rotate 90° CCW"/>
+                        <ui:Button Command="{Binding RotateCropCwCommand}" Content="⟳" Height="30" Width="28" Padding="0" FontSize="12" Margin="0,0,4,0" ToolTip="Rotate 90° CW"/>
+
+                        <!-- Shadow Purge Filter Toggle -->
+                        <ToggleButton IsChecked="{Binding IsShadowPurge}" Command="{Binding ToggleShadowPurgeCommand}" Height="30" Padding="6,0" Margin="0,0,4,0" ToolTip="Shadow Purge illumination filter">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="☀️ " FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="Shadow Purge" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </ToggleButton>
+
+                        <!-- Mask First 8 UID Toggle -->
+                        <ToggleButton IsChecked="{Binding IsMaskAadhaar}" Command="{Binding ToggleMaskAadhaarCommand}" Height="30" Padding="6,0" Margin="0,0,4,0" ToolTip="UIDAI Compliant Aadhaar Masking (First 8 Digits Redacted)">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔒 " FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="Mask UID" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <Border Background="#006C4A" CornerRadius="3" Padding="3,1" Margin="3,0,0,0">
+                                    <TextBlock Text="UIDAI" FontSize="8" FontWeight="Bold" Foreground="White"/>
+                                </Border>
+                            </StackPanel>
+                        </ToggleButton>
+
+                        <!-- Aspect Ratio Presets Selector -->
+                        <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding SelectedCropRatio}" Height="30" Width="130" Margin="0,0,4,0" ToolTip="Physical Card Aspect Ratio Standard">
+                            <ComboBoxItem Content="ISO CR-80" Tag="Cr80Card"/>
+                            <ComboBoxItem Content="Aadhaar Pouch" Tag="AadhaarFullPouch"/>
+                            <ComboBoxItem Content="Passport (35×45)" Tag="PassportPhoto"/>
+                            <ComboBoxItem Content="Stamp (25×30)" Tag="StampPhoto"/>
+                            <ComboBoxItem Content="Freeform Crop" Tag="Freeform"/>
+                        </ComboBox>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -105,14 +139,14 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="🔒 Document is Password-Protected. Enter PDF Decryption Password:" FontWeight="Bold" Foreground="#92400E" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                    <TextBox Grid.Column="1" Text="{Binding PasswordInput, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Margin="0,0,12,0"/>
-                    <ui:Button Grid.Column="2" Command="{Binding UnlockPasswordCommand}" Content="Unlock &amp; Extract Cards" Height="34" Padding="14,0" Background="#B45309" Foreground="White" FontWeight="Bold" CornerRadius="4"/>
+                    <TextBlock Grid.Column="0" Text="🔒 Document is Password-Protected. Enter PDF Password:" FontWeight="Bold" Foreground="#92400E" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBox Grid.Column="1" Text="{Binding PasswordInput, UpdateSourceTrigger=PropertyChanged}" Height="32" VerticalContentAlignment="Center" Margin="0,0,12,0"/>
+                    <ui:Button Grid.Column="2" Command="{Binding UnlockPasswordCommand}" Content="Unlock &amp; Extract Cards" Height="32" Padding="14,0" Background="#B45309" Foreground="White" FontWeight="Bold" CornerRadius="4"/>
                 </Grid>
             </Border>
 
             <!-- LOW CONFIDENCE AMBER BANNER (Conditional - Appears when detection confidence < 85%) -->
-            <Border Background="#FFFBEB" BorderBrush="#F59E0B" BorderThickness="1.5" CornerRadius="6" Padding="12,8" Margin="0,0,0,6"
+            <Border Background="#FFFBEB" BorderBrush="#F59E0B" BorderThickness="1.5" CornerRadius="6" Padding="10,6" Margin="0,0,0,6"
                     Visibility="{Binding IsLowConfidenceBannerVisible, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -122,18 +156,18 @@
                         <ColumnDefinition Width="8"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="⚠️" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Grid.Column="0" Text="⚠️" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding LowConfidenceWarningTitle}" FontWeight="Bold" Foreground="#B45309" FontSize="12"/>
-                        <TextBlock Text="{Binding LowConfidenceWarningDetails}" Foreground="#92400E" FontSize="11"/>
+                        <TextBlock Text="{Binding LowConfidenceWarningTitle}" FontWeight="Bold" Foreground="#B45309" FontSize="11.5"/>
+                        <TextBlock Text="{Binding LowConfidenceWarningDetails}" Foreground="#92400E" FontSize="10.5"/>
                     </StackPanel>
-                    <ui:Button Grid.Column="2" Command="{Binding OpenCropDrawerCommand}" CommandParameter="Front Card" Content="Review &amp; Adjust Bounds" Height="30" Padding="12,0" Background="#F59E0B" Foreground="White" FontWeight="SemiBold" CornerRadius="4"/>
-                    <ui:Button Grid.Column="4" Command="{Binding DismissLowConfidenceBannerCommand}" Content="Accept Auto Bounds" Height="30" Padding="12,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
+                    <ui:Button Grid.Column="2" Command="{Binding OpenCropDrawerCommand}" CommandParameter="Front Card" Content="Review &amp; Adjust Bounds" Height="28" Padding="10,0" Background="#F59E0B" Foreground="White" FontWeight="SemiBold" CornerRadius="4"/>
+                    <ui:Button Grid.Column="4" Command="{Binding DismissLowConfidenceBannerCommand}" Content="Accept Auto Bounds" Height="28" Padding="10,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
                 </Grid>
             </Border>
 
             <!-- OPERATOR PRINT VERIFICATION BANNER (Conditional - Appears after SpoolerProcessingCompleted) -->
-            <Border Background="#EFF6FF" BorderBrush="#3B82F6" BorderThickness="1.5" CornerRadius="6" Padding="12,8" Margin="0,0,0,6"
+            <Border Background="#EFF6FF" BorderBrush="#3B82F6" BorderThickness="1.5" CornerRadius="6" Padding="10,6" Margin="0,0,0,6"
                     Visibility="{Binding IsReprintVerificationPromptVisible, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -143,128 +177,35 @@
                         <ColumnDefinition Width="8"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="🖨️" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Grid.Column="0" Text="🖨️" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="Print Spooled to Hardware — Please Verify Physical Card Output" FontWeight="Bold" Foreground="#1E40AF" FontSize="12"/>
-                        <TextBlock Text="Check physical print quality for ribbon scuffs, banding, or misalignment before billing customer." Foreground="#1D4ED8" FontSize="11"/>
+                        <TextBlock Text="Print Spooled to Hardware — Please Verify Physical Card Output" FontWeight="Bold" Foreground="#1E40AF" FontSize="11.5"/>
+                        <TextBlock Text="Check physical print quality for ribbon scuffs, banding, or misalignment before billing customer." Foreground="#1D4ED8" FontSize="10.5"/>
                     </StackPanel>
-                    <ui:Button Grid.Column="2" Command="{Binding ConfirmPrintOutputCommand}" Content="✓ Print Verified (Confirm &amp; Bill)" Height="30" Padding="14,0" Background="#16A34A" Foreground="White" FontWeight="Bold" CornerRadius="4"/>
-                    <ui:Button Grid.Column="4" Command="{Binding ReportDefectAndReprintCommand}" CommandParameter="MisalignedOrDefective" Content="⚠️ Defect / Reprint Needed" Height="30" Padding="14,0" Background="#DC2626" Foreground="White" FontWeight="SemiBold" CornerRadius="4"/>
+                    <ui:Button Grid.Column="2" Command="{Binding ConfirmPrintOutputCommand}" Content="✓ Print Verified (Confirm &amp; Bill)" Height="28" Padding="12,0" Background="#16A34A" Foreground="White" FontWeight="Bold" CornerRadius="4"/>
+                    <ui:Button Grid.Column="4" Command="{Binding ReportDefectAndReprintCommand}" CommandParameter="MisalignedOrDefective" Content="⚠️ Defect / Reprint Needed" Height="28" Padding="12,0" Background="#DC2626" Foreground="White" FontWeight="SemiBold" CornerRadius="4"/>
                 </Grid>
             </Border>
         </StackPanel>
 
-        <!-- ROW 1: 3-COLUMN TASK WORKSPACE (Zero scrolling, fully responsive) -->
+        <!-- ================= ROW 1: SPLIT STAGE (8 COLS CANVAS + 4 COLS INSPECTOR) ================= -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="280"/> <!-- Left: Documents, Card Faces, Layout Presets -->
-                <ColumnDefinition Width="*"/>   <!-- Center: True Physical Sheet Canvas -->
-                <ColumnDefinition Width="310"/> <!-- Right: Hardware Spooler & Settings -->
+                <ColumnDefinition Width="1.85*"/> <!-- Left 8 Cols: Dark Viewport Document Canvas -->
+                <ColumnDefinition Width="385"/>    <!-- Right 4 Cols: Fluent Inspector -->
             </Grid.ColumnDefinitions>
 
-            <!-- ================= LEFT PANEL: Document, Faces, Layouts ================= -->
-            <Border Grid.Column="0" Style="{StaticResource SurfaceCardStyle}" Padding="14" Margin="0,0,10,0">
+            <!-- ================= LEFT 8 COLS: Dark Viewport Canvas Stage ================= -->
+            <Border Grid.Column="0" Background="{DynamicResource StitchInverseSurfaceBrush}" BorderBrush="#16273E" BorderThickness="1" CornerRadius="8" Margin="0,0,10,0" ClipToBounds="True">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/> <!-- Top Telemetry & Switcher Strip -->
+                        <RowDefinition Height="*"/>    <!-- Main Central Document / Sheet Viewport -->
+                        <RowDefinition Height="Auto"/> <!-- Bottom Footnote Strip -->
                     </Grid.RowDefinitions>
 
-                    <!-- Section Header -->
-                    <TextBlock Grid.Row="0" Text="EXTRACTED CARD FACES" Style="{StaticResource FormLabelStyle}" FontWeight="Bold" Margin="0,0,0,8"/>
-
-                    <!-- Side-by-Side Dual Card Faces -->
-                    <Grid Grid.Row="1">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- Front Card Face -->
-                        <Border Grid.Row="0" Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="6" Margin="0,0,0,8" Padding="6">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <Grid Grid.Row="0" Margin="0,0,0,4">
-                                    <TextBlock Text="FRONT FACE" FontWeight="Bold" FontSize="10.5" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                                    <TextBlock Text="85.60 × 53.98 mm" FontSize="9.5" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
-                                </Grid>
-                                <Border Grid.Row="1" Background="White" CornerRadius="4" ClipToBounds="True">
-                                    <Image Source="{Binding FrontCardImage}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
-                                </Border>
-                            </Grid>
-                        </Border>
-
-                        <!-- Back Card Face -->
-                        <Border Grid.Row="1" Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="6" Margin="0,0,0,8" Padding="6">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <Grid Grid.Row="0" Margin="0,0,0,4">
-                                    <TextBlock Text="BACK FACE" FontWeight="Bold" FontSize="10.5" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                                    <TextBlock Text="85.60 × 53.98 mm" FontSize="9.5" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
-                                </Grid>
-                                <Border Grid.Row="1" Background="White" CornerRadius="4" ClipToBounds="True">
-                                    <Image Source="{Binding BackCardImage}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
-                                </Border>
-                            </Grid>
-                        </Border>
-                    </Grid>
-
-                    <!-- Quick Tools & Sheet Layout Selector -->
-                    <StackPanel Grid.Row="2">
-                        <!-- Quick Face Actions -->
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="6"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <ui:Button Grid.Column="0" Command="{Binding SwapCardFacesCommand}" Content="Swap Faces" Height="30" FontSize="11" Style="{StaticResource SecondaryActionButtonStyle}"/>
-                            <ui:Button Grid.Column="2" Command="{Binding RotateCards90Command}" Content="Rotate 90°" Height="30" FontSize="11" Style="{StaticResource SecondaryActionButtonStyle}"/>
-                        </Grid>
-
-                        <CheckBox IsChecked="{Binding IsMaskAadhaar}" Command="{Binding ToggleMaskAadhaarCommand}" Margin="0,0,0,6">
-                            <TextBlock Text="Mask Aadhaar (Hide First 8 Digits)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        </CheckBox>
-
-                        <CheckBox IsChecked="{Binding ShowCutMarks}" Margin="0,0,0,6">
-                            <TextBlock Text="Cut Guidelines (0.2 mm Crop Lines)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        </CheckBox>
-
-                        <CheckBox IsChecked="{Binding ShowFoldLine}" Margin="0,0,0,6">
-                            <TextBlock Text="Center Folding Line (Crease Guide)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        </CheckBox>
-
-                        <CheckBox IsChecked="{Binding MirrorMode}" Margin="0,0,0,10">
-                            <TextBlock Text="Mirror Mode (Dragon Sheet Reverse)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        </CheckBox>
-
-                        <Separator Margin="0,0,0,10"/>
-
-                        <!-- One-Click Physical Sheet Layout Preset -->
-                        <TextBlock Text="PHYSICAL SHEET ARRANGEMENT" Style="{StaticResource FormLabelStyle}" FontWeight="Bold" Margin="0,0,0,6"/>
-                        <ComboBox ItemsSource="{Binding SheetLayoutOptions}" SelectedItem="{Binding SelectedSheetLayoutString}" Height="34" Margin="0,0,0,6"/>
-                        <TextBlock Text="Automatically positions both cards on the chosen paper." Style="{StaticResource FormHelpStyle}"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <!-- ================= CENTER WORKSPACE: True Physical Sheet Canvas ================= -->
-            <Border Grid.Column="1" Background="{DynamicResource PreviewCanvasBgBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="{StaticResource RadiusMedium}" Margin="0,0,10,0" ClipToBounds="True">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/> <!-- Canvas Controls Strip -->
-                        <RowDefinition Height="*"/>    <!-- Real Physical Sheet Image Viewport -->
-                    </Grid.RowDefinitions>
-
-                    <!-- Top Canvas Controls Strip -->
-                    <Border Grid.Row="0" Background="{DynamicResource CardSurfaceBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,0,1" Padding="12,6">
+                    <!-- Top Telemetry & Canvas Mode Strip -->
+                    <Border Grid.Row="0" Background="#162232" BorderBrush="#2D3F55" BorderThickness="0,0,0,1" Padding="10,6">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -272,313 +213,438 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
+                            <!-- Telemetry Chip -->
                             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="PHYSICAL PRINT PREVIEW:" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0"/>
-                                <TextBlock Text="{Binding PageDimensionsText}" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                                <Border Background="#0E1C2F" BorderBrush="#006C4A" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="● " FontSize="8" Foreground="#85F8C4" VerticalAlignment="Center"/>
+                                        <TextBlock Text="CANVAS: A4 600 DPI • OPENGL ACCELERATED" FontWeight="Bold" FontSize="9" Foreground="#85F8C4" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
 
-                            <!-- Calibration Nudge Shortcuts -->
+                            <!-- Canvas Mode Switcher Buttons -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ui:Button Command="{Binding SetCanvasTabCommand}" CommandParameter="0" Height="26" Padding="10,0" Margin="0,0,6,0"
+                                           Background="#0E1C2F" Foreground="White" BorderBrush="#006C4A" BorderThickness="1" CornerRadius="4">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="📐 " FontSize="10" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Crop &amp; Loupe Studio" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </ui:Button>
+
+                                <ui:Button Command="{Binding SetCanvasTabCommand}" CommandParameter="1" Height="26" Padding="10,0"
+                                           Background="#0E1C2F" Foreground="White" BorderBrush="#334155" BorderThickness="1" CornerRadius="4">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🖨️ " FontSize="10" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Print Sheet Layout" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </ui:Button>
+                            </StackPanel>
+
+                            <!-- Alignment Guidelines & Nudge Controls -->
                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                <CheckBox IsChecked="{Binding ShowCutMarks}" Command="{Binding ToggleCutMarksCommand}" Margin="0,0,10,0" VerticalAlignment="Center">
-                                    <TextBlock Text="Cut Marks" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <CheckBox IsChecked="{Binding ShowCutMarks}" Command="{Binding ToggleCutMarksCommand}" Margin="0,0,6,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Cut" FontSize="10" Foreground="#CBD5E1"/>
                                 </CheckBox>
-                                <CheckBox IsChecked="{Binding MirrorMode}" Command="{Binding ToggleMirrorModeCommand}" Margin="0,0,14,0" VerticalAlignment="Center">
-                                    <TextBlock Text="Mirror (Dragon Sheet)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <CheckBox IsChecked="{Binding ShowFoldLine}" Command="{Binding ToggleFoldLineCommand}" Margin="0,0,6,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Fold" FontSize="10" Foreground="#CBD5E1"/>
+                                </CheckBox>
+                                <CheckBox IsChecked="{Binding MirrorMode}" Command="{Binding ToggleMirrorModeCommand}" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Mirror" FontSize="10" Foreground="#CBD5E1"/>
                                 </CheckBox>
 
-                                <TextBlock Text="Nudge Offset:" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <ui:Button Command="{Binding NudgeFineCommand}" CommandParameter="LEFT" Content="◀" Height="26" Width="26" Padding="0" FontSize="10" Margin="0,0,2,0" ToolTip="Nudge Left 0.1 mm"/>
-                                <ui:Button Command="{Binding NudgeFineCommand}" CommandParameter="RIGHT" Content="▶" Height="26" Width="26" Padding="0" FontSize="10" Margin="0,0,4,0" ToolTip="Nudge Right 0.1 mm"/>
-                                <ui:Button Command="{Binding NudgeFineCommand}" CommandParameter="UP" Content="▲" Height="26" Width="26" Padding="0" FontSize="10" Margin="0,0,2,0" ToolTip="Nudge Up 0.1 mm"/>
-                                <ui:Button Command="{Binding NudgeFineCommand}" CommandParameter="DOWN" Content="▼" Height="26" Width="26" Padding="0" FontSize="10" Margin="0,0,4,0" ToolTip="Nudge Down 0.1 mm"/>
-                                <ui:Button Command="{Binding NudgeFineCommand}" CommandParameter="RESET" Content="0" Height="26" Width="26" Padding="0" FontSize="10" ToolTip="Reset Offsets"/>
+                                <TextBlock Text="Nudge:" FontSize="9.5" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,3,0"/>
+                                <ui:Button Command="{Binding NudgeFineCommand}" CommandParameter="LEFT" Content="◀" Height="22" Width="22" Padding="0" FontSize="8.5" Margin="0,0,2,0" ToolTip="Nudge Left 0.1 mm"/>
+                                <ui:Button Command="{Binding NudgeFineCommand}" CommandParameter="RIGHT" Content="▶" Height="22" Width="22" Padding="0" FontSize="8.5" Margin="0,0,2,0" ToolTip="Nudge Right 0.1 mm"/>
+                                <ui:Button Command="{Binding NudgeFineCommand}" CommandParameter="UP" Content="▲" Height="22" Width="22" Padding="0" FontSize="8.5" Margin="0,0,2,0" ToolTip="Nudge Up 0.1 mm"/>
+                                <ui:Button Command="{Binding NudgeFineCommand}" CommandParameter="DOWN" Content="▼" Height="22" Width="22" Padding="0" FontSize="8.5" Margin="0,0,3,0" ToolTip="Nudge Down 0.1 mm"/>
+                                <ui:Button Command="{Binding NudgeFineCommand}" CommandParameter="RESET" Content="0" Height="22" Width="22" Padding="0" FontSize="8.5" ToolTip="Reset Offsets"/>
                             </StackPanel>
                         </Grid>
                     </Border>
 
-                    <!-- Real Physical Sheet Image (Fitted to viewport, complete A4 paper visible with zero scroll!) -->
-                    <Grid Grid.Row="1" Margin="16">
-                        <Border Background="White" BorderBrush="#94A3B8" BorderThickness="1" CornerRadius="2" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Border.Effect>
-                                <DropShadowEffect BlurRadius="16" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.25"/>
-                            </Border.Effect>
-                            <!-- Rendered Physical Sheet Bitmap from IPhysicalPageRenderService -->
-                            <Image Source="{Binding SheetPreviewImage}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
-                        </Border>
+                    <!-- Central Document / Sheet Viewport Container -->
+                    <Grid Grid.Row="1" Margin="8">
+                        <TabControl SelectedIndex="{Binding ActiveCanvasTabIndex}" BorderThickness="0" Background="Transparent" Padding="0">
+                            <TabControl.ItemContainerStyle>
+                                <Style TargetType="TabItem">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </Style>
+                            </TabControl.ItemContainerStyle>
+
+                            <!-- Tab 0: Interactive Visual Crop Canvas with Dual Bounds & Live 3x Loupe -->
+                            <TabItem>
+                                <Border Background="#162032" CornerRadius="6" BorderBrush="#283548" BorderThickness="1" ClipToBounds="True">
+                                    <controls:InteractiveCropCanvas
+                                        SourceImage="{Binding CropSourceImage}"
+                                        CropX="{Binding CropX, Mode=TwoWay}"
+                                        CropY="{Binding CropY, Mode=TwoWay}"
+                                        CropWidth="{Binding CropWidth, Mode=TwoWay}"
+                                        CropHeight="{Binding CropHeight, Mode=TwoWay}"
+                                        RotationAngle="{Binding StraightenAngle, Mode=TwoWay}"
+                                        SelectedAspectRatio="{Binding SelectedCropRatio, Mode=TwoWay}"
+                                        IsPerspectiveMode="{Binding IsPerspectiveCropMode, Mode=TwoWay}"
+                                        Corner1X="{Binding CropCorner1X, Mode=TwoWay}"
+                                        Corner1Y="{Binding CropCorner1Y, Mode=TwoWay}"
+                                        Corner2X="{Binding CropCorner2X, Mode=TwoWay}"
+                                        Corner2Y="{Binding CropCorner2Y, Mode=TwoWay}"
+                                        Corner3X="{Binding CropCorner3X, Mode=TwoWay}"
+                                        Corner3Y="{Binding CropCorner3Y, Mode=TwoWay}"
+                                        Corner4X="{Binding CropCorner4X, Mode=TwoWay}"
+                                        Corner4Y="{Binding CropCorner4Y, Mode=TwoWay}"/>
+                                </Border>
+                            </TabItem>
+
+                            <!-- Tab 1: Rendered Physical Sheet Layout on Real Paper -->
+                            <TabItem>
+                                <Grid Background="#162032">
+                                    <Border Background="White" BorderBrush="#94A3B8" BorderThickness="1" CornerRadius="2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="16" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.35"/>
+                                        </Border.Effect>
+                                        <Image Source="{Binding SheetPreviewImage}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    </Border>
+                                </Grid>
+                            </TabItem>
+                        </TabControl>
                     </Grid>
+
+                    <!-- Bottom Footnote Strip -->
+                    <Border Grid.Row="2" Background="#162232" BorderBrush="#2D3F55" BorderThickness="0,1,0,0" Padding="12,4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                <TextBlock Text="🟢 Front Crop Locked (ISO ID-1)" FontSize="9.5" FontWeight="SemiBold" Foreground="#34D399" Margin="0,0,12,0"/>
+                                <TextBlock Text="🟣 Back Crop Synchronized" FontSize="9.5" FontWeight="SemiBold" Foreground="#A78BFA" Margin="0,0,12,0"/>
+                                <TextBlock Text="Space + Drag to Pan Sheet" FontSize="9.5" Foreground="#94A3B8"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding PageDimensionsText}" FontSize="9.5" FontWeight="SemiBold" Foreground="#64748B"/>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
 
-            <!-- ================= RIGHT PANEL: Hardware Spooler & Settings ================= -->
-            <Border Grid.Column="2" Style="{StaticResource SurfaceCardStyle}" Padding="16">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+            <!-- ================= RIGHT 4 COLS: Fluent Inspector ================= -->
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="0,0,2,0">
 
-                    <TextBlock Grid.Row="0" Text="PRODUCTION HARDWARE SETUP" Style="{StaticResource FormLabelStyle}" FontWeight="Bold" Margin="0,0,0,10"/>
-
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <!-- PANEL 1: CROP GEOMETRY & ANCHORS -->
+                    <Border Style="{StaticResource SurfaceCardStyle}" Padding="12" Margin="0,0,0,8">
                         <StackPanel>
-                            <!-- Target Printer -->
-                            <StackPanel Margin="0,0,0,12">
-                                <TextBlock Text="Target Windows Printer:" Style="{StaticResource FormLabelStyle}"/>
-                                <ComboBox ItemsSource="{Binding PrinterList}" SelectedItem="{Binding SelectedPrinter}" Height="34"/>
-                            </StackPanel>
-
-                            <!-- Copies & Price -->
-                            <Grid Margin="0,0,0,12">
+                            <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <TextBlock Text="📐 " FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="CROP GEOMETRY &amp; ANCHORS" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource StitchTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="#006C4A" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="ISO 7810 ID-1" FontWeight="Bold" FontSize="9" Foreground="White"/>
+                                </Border>
+                            </Grid>
+
+                            <!-- Dual Card Coordinate Matrix (mm) -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Front Card MM Box -->
+                                <Border Grid.Column="0" Background="{DynamicResource StitchSurfaceContainerLowBrush}" BorderBrush="{DynamicResource StitchSurfaceContainerHighBrush}" BorderThickness="1" CornerRadius="6" Padding="8,6">
+                                    <StackPanel>
+                                        <TextBlock Text="FRONT (SLOT 1)" FontWeight="Bold" FontSize="9.5" Foreground="#006C4A" Margin="0,0,0,4"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="X (mm):" FontSize="8.5" Foreground="{DynamicResource StitchTextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding FrontCropXMm, StringFormat='{}{0:F1}'}" FontWeight="Bold" FontSize="10.5"/>
+                                                <TextBlock Text="W (mm):" FontSize="8.5" Foreground="{DynamicResource StitchTextSecondaryBrush}" Margin="0,2,0,0"/>
+                                                <TextBlock Text="{Binding FrontCropWMm, StringFormat='{}{0:F1}'}" FontWeight="Bold" FontSize="10.5"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="Y (mm):" FontSize="8.5" Foreground="{DynamicResource StitchTextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding FrontCropYMm, StringFormat='{}{0:F1}'}" FontWeight="Bold" FontSize="10.5"/>
+                                                <TextBlock Text="H (mm):" FontSize="8.5" Foreground="{DynamicResource StitchTextSecondaryBrush}" Margin="0,2,0,0"/>
+                                                <TextBlock Text="{Binding FrontCropHMm, StringFormat='{}{0:F1}'}" FontWeight="Bold" FontSize="10.5"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Back Card MM Box -->
+                                <Border Grid.Column="2" Background="{DynamicResource StitchSurfaceContainerLowBrush}" BorderBrush="{DynamicResource StitchSurfaceContainerHighBrush}" BorderThickness="1" CornerRadius="6" Padding="8,6">
+                                    <StackPanel>
+                                        <TextBlock Text="BACK (SLOT 2)" FontWeight="Bold" FontSize="9.5" Foreground="#4F46E5" Margin="0,0,0,4"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="X (mm):" FontSize="8.5" Foreground="{DynamicResource StitchTextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding BackCropXMm, StringFormat='{}{0:F1}'}" FontWeight="Bold" FontSize="10.5"/>
+                                                <TextBlock Text="W (mm):" FontSize="8.5" Foreground="{DynamicResource StitchTextSecondaryBrush}" Margin="0,2,0,0"/>
+                                                <TextBlock Text="{Binding BackCropWMm, StringFormat='{}{0:F1}'}" FontWeight="Bold" FontSize="10.5"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="Y (mm):" FontSize="8.5" Foreground="{DynamicResource StitchTextSecondaryBrush}"/>
+                                                <TextBlock Text="{Binding BackCropYMm, StringFormat='{}{0:F1}'}" FontWeight="Bold" FontSize="10.5"/>
+                                                <TextBlock Text="H (mm):" FontSize="8.5" Foreground="{DynamicResource StitchTextSecondaryBrush}" Margin="0,2,0,0"/>
+                                                <TextBlock Text="{Binding BackCropHMm, StringFormat='{}{0:F1}'}" FontWeight="Bold" FontSize="10.5"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- Magnetic Edge Snapping & Perspective Quad Buttons -->
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ToggleButton Grid.Column="0" IsChecked="{Binding IsMagneticSnapping}" Command="{Binding ToggleMagneticSnappingCommand}" Height="28" Padding="6,0" FontSize="10" ToolTip="Magnetic Edge Snapping to vector lines">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🧲 " FontSize="9" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Edge Snapping" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </ToggleButton>
+                                <ToggleButton Grid.Column="2" IsChecked="{Binding IsPerspectiveCropMode}" Command="{Binding TogglePerspectiveCropModeCommand}" Height="28" Padding="6,0" FontSize="10" ToolTip="Homography 4-Point Unwarp">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="📐 " FontSize="9" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Perspective Quad" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </ToggleButton>
+                            </Grid>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:Button Grid.Column="0" Command="{Binding ResetCropToAutoCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="28" Padding="4,0" FontSize="10" Content="Reset Bounds" ToolTip="Reset to AI Calibrated Bounds"/>
+                                <ui:Button Grid.Column="2" Command="{Binding OpenSavePresetDialogCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="28" Padding="4,0" FontSize="10" Content="Save Preset..." ToolTip="Save custom physical card dimensions"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- PANEL 2: REAL-TIME CROP PREVIEWS -->
+                    <Border Style="{StaticResource SurfaceCardStyle}" Padding="12" Margin="0,0,0,8">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <TextBlock Text="👁️ " FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="REAL-TIME CROP PREVIEWS" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource StitchTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="{DynamicResource StitchSurfaceContainerHighBrush}" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="1:1 SCALED" FontWeight="Bold" FontSize="9" Foreground="{DynamicResource StitchTextSecondaryBrush}"/>
+                                </Border>
+                            </Grid>
+
+                            <!-- Previews Stack -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Front Preview -->
+                                <Border Grid.Column="0" Background="{DynamicResource StitchSurfaceContainerLowestBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="6" Padding="6">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,4">
+                                            <TextBlock Text="SLOT 1 • FRONT" FontWeight="Bold" FontSize="9" Foreground="#006C4A"/>
+                                            <Border Background="#006C4A" CornerRadius="3" Padding="4,1" HorizontalAlignment="Right" Visibility="{Binding IsMaskAadhaar, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <TextBlock Text="MASKED" FontSize="7.5" FontWeight="Bold" Foreground="White"/>
+                                            </Border>
+                                        </Grid>
+                                        <Border Height="95" Background="White" CornerRadius="4" ClipToBounds="True">
+                                            <Image Source="{Binding FrontCardImage}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Back Preview -->
+                                <Border Grid.Column="2" Background="{DynamicResource StitchSurfaceContainerLowestBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="6" Padding="6">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,4">
+                                            <TextBlock Text="SLOT 2 • BACK" FontWeight="Bold" FontSize="9" Foreground="#4F46E5"/>
+                                            <Border Background="#4F46E5" CornerRadius="3" Padding="4,1" HorizontalAlignment="Right">
+                                                <TextBlock Text="QR OK" FontSize="7.5" FontWeight="Bold" Foreground="White"/>
+                                            </Border>
+                                        </Grid>
+                                        <Border Height="95" Background="White" CornerRadius="4" ClipToBounds="True">
+                                            <Image Source="{Binding BackCardImage}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- Face Actions -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:Button Grid.Column="0" Command="{Binding SwapCardFacesCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="28" Padding="4,0" FontSize="10.5" Content="⇄ Swap Faces"/>
+                                <ui:Button Grid.Column="2" Command="{Binding RotateCards90Command}" Style="{StaticResource SecondaryActionButtonStyle}" Height="28" Padding="4,0" FontSize="10.5" Content="↻ Rotate 90°"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- PANEL 3: PIPELINE TELEMETRY -->
+                    <Border Style="{StaticResource SurfaceCardStyle}" Padding="12" Margin="0,0,0,8">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <TextBlock Text="⚡ " FontSize="11" VerticalAlignment="Center"/>
+                                    <TextBlock Text="PIPELINE TELEMETRY" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource StitchTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="#ECFDF5" BorderBrush="#059669" BorderThickness="1" CornerRadius="4" Padding="6,1">
+                                    <TextBlock Text="ZERO-LOSS RGB" FontWeight="Bold" FontSize="8.5" Foreground="#047857"/>
+                                </Border>
+                            </Grid>
+
+                            <Grid Margin="0,2,0,2">
+                                <TextBlock Text="Render Engine:" FontSize="9.5" Foreground="{DynamicResource StitchTextSecondaryBrush}"/>
+                                <TextBlock Text="{Binding RenderingEngineInfo}" FontWeight="SemiBold" FontSize="9.5" HorizontalAlignment="Right" Foreground="{DynamicResource StitchTextPrimaryBrush}"/>
+                            </Grid>
+                            <Grid Margin="0,2,0,2">
+                                <TextBlock Text="Rasterizer DPI:" FontSize="9.5" Foreground="{DynamicResource StitchTextSecondaryBrush}"/>
+                                <TextBlock Text="{Binding OutputDpiInfo}" FontWeight="SemiBold" FontSize="9.5" HorizontalAlignment="Right" Foreground="{DynamicResource StitchTextPrimaryBrush}"/>
+                            </Grid>
+                            <Grid Margin="0,2,0,2">
+                                <TextBlock Text="Safe Memory Lease:" FontSize="9.5" Foreground="{DynamicResource StitchTextSecondaryBrush}"/>
+                                <TextBlock Text="{Binding MemoryLeaseInfo}" FontWeight="SemiBold" FontSize="9.5" HorizontalAlignment="Right" Foreground="#006C4A"/>
+                            </Grid>
+                            <Grid Margin="0,2,0,0">
+                                <TextBlock Text="Color Gamut:" FontSize="9.5" Foreground="{DynamicResource StitchTextSecondaryBrush}"/>
+                                <TextBlock Text="Rec.709 sRGB Preserved" FontWeight="SemiBold" FontSize="9.5" HorizontalAlignment="Right" Foreground="{DynamicResource StitchTextPrimaryBrush}"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- PANEL 4: PHYSICAL TRAY ROUTING & DIRECT SPOOL DOCK -->
+                    <Border Style="{StaticResource SurfaceCardStyle}" Padding="12" Margin="0,0,0,4">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🖨️ " FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="PHYSICAL TRAY ROUTING &amp; SPOOL" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource StitchTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Active Jig Pill -->
+                            <Border Background="{DynamicResource StitchSurfaceContainerLowBrush}" BorderBrush="{DynamicResource StitchSurfaceContainerHighBrush}" BorderThickness="1" CornerRadius="5" Padding="8,4" Margin="0,0,0,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="JIG: " FontWeight="Bold" FontSize="9.5" Foreground="{DynamicResource StitchSecondaryBrush}"/>
+                                    <TextBlock Text="{Binding ActiveJigName}" FontWeight="SemiBold" FontSize="9.5" Foreground="{DynamicResource StitchTextPrimaryBrush}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Target Windows Printer -->
+                            <StackPanel Margin="0,0,0,6">
+                                <TextBlock Text="Target Windows Printer:" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource StitchTextSecondaryBrush}" Margin="0,0,0,2"/>
+                                <ComboBox ItemsSource="{Binding PrinterList}" SelectedItem="{Binding SelectedPrinter}" Height="30" FontSize="11"/>
+                            </StackPanel>
+
+                            <!-- Copies & Fee -->
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Copies:" Style="{StaticResource FormLabelStyle}"/>
-                                    <TextBox Text="{Binding Copies}" Height="34" VerticalContentAlignment="Center" FontSize="12.5"/>
+                                    <TextBlock Text="Copies:" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource StitchTextSecondaryBrush}" Margin="0,0,0,2"/>
+                                    <TextBox Text="{Binding Copies}" Height="30" VerticalContentAlignment="Center" FontSize="11"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Fee (₹):" Style="{StaticResource FormLabelStyle}"/>
-                                    <TextBox Text="{Binding CardFee, StringFormat='F2'}" Height="34" VerticalContentAlignment="Center" FontWeight="Bold" FontSize="12.5"/>
+                                    <TextBlock Text="Fee (₹):" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource StitchTextSecondaryBrush}" Margin="0,0,0,2"/>
+                                    <TextBox Text="{Binding CardFee, StringFormat='F2'}" Height="30" VerticalContentAlignment="Center" FontWeight="Bold" FontSize="11"/>
                                 </StackPanel>
                             </Grid>
 
                             <!-- Payment Mode -->
-                            <StackPanel Margin="0,0,0,14">
-                                <TextBlock Text="Payment Mode:" Style="{StaticResource FormLabelStyle}"/>
-                                <ComboBox ItemsSource="{Binding PaymentModes}" SelectedItem="{Binding SelectedPaymentMode}" Height="34"/>
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Text="Payment Mode:" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource StitchTextSecondaryBrush}" Margin="0,0,0,2"/>
+                                <ComboBox ItemsSource="{Binding PaymentModes}" SelectedItem="{Binding SelectedPaymentMode}" Height="30" FontSize="11"/>
                             </StackPanel>
 
-                            <!-- Success Banner -->
-                            <Border Background="{DynamicResource StatusSuccessBgBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,10" Visibility="{Binding PrintSuccessAlert, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <!-- Print Success Alert -->
+                            <Border Background="#ECFDF5" BorderBrush="#059669" BorderThickness="1" CornerRadius="6" Padding="8,6" Margin="0,0,0,8" Visibility="{Binding PrintSuccessAlert, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="✓" FontWeight="Bold" Foreground="{DynamicResource StatusSuccessFgBrush}" FontSize="15" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Job spooled successfully. Recorded in ledger." FontWeight="SemiBold" Foreground="{DynamicResource StatusSuccessFgBrush}" VerticalAlignment="Center" FontSize="11"/>
+                                    <TextBlock Text="✓ " FontWeight="Bold" Foreground="#047857" FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Job spooled successfully. Recorded in ledger." FontWeight="SemiBold" Foreground="#047857" VerticalAlignment="Center" FontSize="10.5"/>
                                 </StackPanel>
                             </Border>
-                        </StackPanel>
-                    </ScrollViewer>
 
-                    <!-- HERO ACTION BUTTON (Big, prominent, explicit confirmation) -->
-                    <ui:Button Grid.Row="2" Command="{Binding StartPrintingCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Height="50" FontSize="14" HorizontalAlignment="Stretch">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Print24" Margin="0,0,8,0"/>
-                            <TextBlock Text="START PRINTING" FontWeight="Bold"/>
+                            <!-- PRIMARY ACTION CTA: Direct Winspool (F5) -->
+                            <ui:Button Command="{Binding StartPrintingCommand}" Height="44" Background="#006C4A" Foreground="White" BorderBrush="#004D34" BorderThickness="1" CornerRadius="6" HorizontalAlignment="Stretch" Margin="0,0,0,6">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⚡ " FontSize="14" VerticalAlignment="Center"/>
+                                    <TextBlock Text="SEND TO PRINT TRAY (F5)" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </ui:Button>
+
+                            <!-- Secondary Actions -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="4"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="4"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:Button Grid.Column="0" Command="{Binding ExportPdfCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="28" Padding="2,0" FontSize="10" Content="Export PDF" ToolTip="Export Dual PDF (Ctrl+S)"/>
+                                <ui:Button Grid.Column="2" Command="{Binding PurgeMemoryCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="28" Padding="2,0" FontSize="10" Content="Purge RAM" ToolTip="Clear cached page leases"/>
+                                <ui:Button Grid.Column="4" Command="{Binding SaveProjectCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Height="28" Padding="2,0" FontSize="10" Content="Save Proj" ToolTip="Save project file"/>
+                            </Grid>
                         </StackPanel>
-                    </ui:Button>
-                </Grid>
-            </Border>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
 
-        <!-- ROW 2: BOTTOM STATUS BAR -->
-        <Border Grid.Row="2" Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,8,0,0">
+        <!-- ================= ROW 2: STATUS BAR ================= -->
+        <Border Grid.Row="2" Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="4" Padding="10,4" Margin="0,6,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="ISO/IEC 7810 CR80 Standard • 600 DPI Calibrated Spooler" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="10.5" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="ISO/IEC 7810 CR80 Standard • 600 DPI Calibrated Spooler" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center"/>
             </Grid>
-        </Border>
-
-        <!-- CROP ADJUSTMENT DRAWER OVERLAY (Fit-to-Window, Advanced Straighten, Free Crop & Multi-Card Options) -->
-        <Border Grid.Row="0" Grid.RowSpan="3" Background="#90000000" Panel.ZIndex="100"
-                Visibility="{Binding IsCropDrawerOpen, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
-            <Border Width="1040" Height="720" Style="{StaticResource SurfaceCardStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/> <!-- Header & Presets -->
-                        <RowDefinition Height="*"/>    <!-- Canvas & Controls -->
-                        <RowDefinition Height="Auto"/> <!-- Action Buttons -->
-                    </Grid.RowDefinitions>
-
-                    <!-- Drawer Header & Quick Aspect Ratio Presets -->
-                    <Grid Grid.Row="0" Margin="0,0,0,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="Advanced Card Crop &amp; Straighten Studio" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                            <TextBlock Text="Fine tilt straighten (-45° to +45°), freeform unconstrained crop, ISO CR80, photo presets and perspective alignment" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        </StackPanel>
-
-                        <!-- Aspect Ratio Presets & Mode -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
-                            <TextBlock Text="Preset:" VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0"/>
-                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="CR80" Content="CR80 (85.6×54)" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Standard ISO CR80 PVC Card"/>
-                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Aadhaar" Content="Aadhaar Pouch (88.5×56.5)" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Full e-Aadhaar without top or bottom cutoffs"/>
-                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Free" Content="Free Crop" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Unconstrained freeform crop"/>
-                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Passport" Content="Passport (35×45)" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
-                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Stamp" Content="Stamp (25×30)" Height="30" Margin="0,0,8,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
-                            <ui:Button Command="{Binding TogglePerspectiveCropModeCommand}" Content="Perspective Quad" Height="30" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
-                        </StackPanel>
-
-                        <ui:Button Grid.Column="2" Command="{Binding CloseCropDrawerCommand}" Content="✕" Width="32" Height="32" CornerRadius="16" Padding="0" Style="{StaticResource SecondaryActionButtonStyle}"/>
-                    </Grid>
-
-                    <!-- Preview, Straighten Bar & Bounds Adjuster -->
-                    <Grid Grid.Row="1" Margin="0,0,0,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="280"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Interactive Canvas & Straighten Toolbar -->
-                        <Grid Grid.Column="0" Margin="0,0,14,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <!-- Interactive Visual Crop Canvas -->
-                            <Border Grid.Row="0" Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="6" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" ClipToBounds="True">
-                                <controls:InteractiveCropCanvas
-                                    SourceImage="{Binding CropSourceImage}"
-                                    CropX="{Binding CropX, Mode=TwoWay}"
-                                    CropY="{Binding CropY, Mode=TwoWay}"
-                                    CropWidth="{Binding CropWidth, Mode=TwoWay}"
-                                    CropHeight="{Binding CropHeight, Mode=TwoWay}"
-                                    RotationAngle="{Binding StraightenAngle, Mode=TwoWay}"
-                                    SelectedAspectRatio="{Binding SelectedCropRatio, Mode=TwoWay}"
-                                    IsPerspectiveMode="{Binding IsPerspectiveCropMode, Mode=TwoWay}"
-                                    Corner1X="{Binding CropCorner1X, Mode=TwoWay}"
-                                    Corner1Y="{Binding CropCorner1Y, Mode=TwoWay}"
-                                    Corner2X="{Binding CropCorner2X, Mode=TwoWay}"
-                                    Corner2Y="{Binding CropCorner2Y, Mode=TwoWay}"
-                                    Corner3X="{Binding CropCorner3X, Mode=TwoWay}"
-                                    Corner3Y="{Binding CropCorner3Y, Mode=TwoWay}"
-                                    Corner4X="{Binding CropCorner4X, Mode=TwoWay}"
-                                    Corner4Y="{Binding CropCorner4Y, Mode=TwoWay}"/>
-                            </Border>
-
-                            <!-- Straighten Tilt Slider & Quick Rotation Controls -->
-                            <Border Grid.Row="1" Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="6" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Margin="0,8,0,0" Padding="12,8">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                        <ui:SymbolIcon Symbol="ArrowRotateClockwise24" Margin="0,0,6,0"/>
-                                        <TextBlock Text="Straighten Tilt:" FontWeight="SemiBold" FontSize="11.5" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    </StackPanel>
-
-                                    <!-- Fine Slider from -45 to +45 degrees -->
-                                    <Slider Grid.Column="1"
-                                            Minimum="-45" Maximum="45" SmallChange="0.5" LargeChange="5.0"
-                                            Value="{Binding StraightenAngle, Mode=TwoWay}"
-                                            VerticalAlignment="Center" Margin="0,0,10,0"/>
-
-                                    <TextBlock Grid.Column="2"
-                                               Text="{Binding StraightenAngle, StringFormat={}{0:F1}°}"
-                                               FontWeight="Bold" FontSize="12" FontFamily="Consolas" Width="48"
-                                               VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-
-                                    <ui:Button Grid.Column="3" Command="{Binding ResetStraightenAngleCommand}" Content="Reset 0°" Height="28" Padding="8,0" Margin="4,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
-                                    <ui:Button Grid.Column="4" Command="{Binding RotateCropCcwCommand}" Content="⟲ -90°" Height="28" Padding="8,0" Margin="2,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Rotate 90 degrees counter-clockwise"/>
-                                    <ui:Button Grid.Column="5" Command="{Binding RotateCropCwCommand}" Content="⟳ +90°" Height="28" Padding="8,0" Margin="2,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Rotate 90 degrees clockwise"/>
-                                    <ui:Button Grid.Column="6" Command="{Binding FlipCropHorizontalCommand}" Content="⇄ Flip" Height="28" Padding="8,0" Margin="2,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Flip scan horizontally"/>
-                                </Grid>
-                            </Border>
-                        </Grid>
-
-                        <!-- Controls & Target Card Slot Column -->
-                        <Border Grid.Column="1" Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="6" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Padding="14">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <StackPanel>
-                                    <TextBlock Text="Target Card Slot:" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
-                                    <ComboBox ItemsSource="{Binding CropFaceOptions}" SelectedItem="{Binding CropTargetFace}" Height="32" Margin="0,0,0,12"/>
-
-                                    <TextBlock Text="Crop Geometry (300 DPI px):" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
-
-                                    <TextBlock Text="Left (X Offset):" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBox Text="{Binding CropX, UpdateSourceTrigger=PropertyChanged}" MinHeight="32" Padding="8,4" VerticalContentAlignment="Center" Margin="0,2,0,6"/>
-
-                                    <TextBlock Text="Top (Y Offset):" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBox Text="{Binding CropY, UpdateSourceTrigger=PropertyChanged}" MinHeight="32" Padding="8,4" VerticalContentAlignment="Center" Margin="0,2,0,6"/>
-
-                                    <TextBlock Text="Width:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBox Text="{Binding CropWidth, UpdateSourceTrigger=PropertyChanged}" MinHeight="32" Padding="8,4" VerticalContentAlignment="Center" Margin="0,2,0,6"/>
-
-                                    <TextBlock Text="Height:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBox Text="{Binding CropHeight, UpdateSourceTrigger=PropertyChanged}" MinHeight="32" Padding="8,4" VerticalContentAlignment="Center" Margin="0,2,0,10"/>
-
-                                    <!-- Custom Physical Dimensions (mm) -->
-                                    <Border Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="4" Padding="10" Margin="0,0,0,10">
-                                        <StackPanel>
-                                            <TextBlock Text="Physical Card Dimensions (mm):" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
-                                            <Grid Margin="0,0,0,6">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="6"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel Grid.Column="0">
-                                                    <TextBlock Text="Width (mm):" FontSize="9.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                    <TextBox Text="{Binding CustomCardWidthMm, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Padding="6,2" VerticalContentAlignment="Center"/>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="2">
-                                                    <TextBlock Text="Height (mm):" FontSize="9.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                    <TextBox Text="{Binding CustomCardHeightMm, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Padding="6,2" VerticalContentAlignment="Center"/>
-                                                </StackPanel>
-                                            </Grid>
-                                            <ui:Button Command="{Binding OpenSavePresetDialogCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Content="💾 Save as Custom Preset..." Height="30" HorizontalAlignment="Stretch"/>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <!-- Quick Other Cards Presets -->
-                                    <Border Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="4" Padding="10" Margin="0,0,0,10">
-                                        <StackPanel>
-                                            <TextBlock Text="Card Presets:" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
-                                            <UniformGrid Columns="2" Margin="0,0,0,4">
-                                                <ui:Button Command="{Binding SelectOtherCardOptionCommand}" CommandParameter="other_id_dual" Content="Other Dual ID" Height="26" Margin="1" Style="{StaticResource SecondaryActionButtonStyle}" FontSize="10"/>
-                                                <ui:Button Command="{Binding SelectOtherCardOptionCommand}" CommandParameter="other_id_single" Content="Other Single ID" Height="26" Margin="1" Style="{StaticResource SecondaryActionButtonStyle}" FontSize="10"/>
-                                                <ui:Button Command="{Binding SelectOtherCardOptionCommand}" CommandParameter="student_id" Content="Student ID" Height="26" Margin="1" Style="{StaticResource SecondaryActionButtonStyle}" FontSize="10"/>
-                                                <ui:Button Command="{Binding SelectOtherCardOptionCommand}" CommandParameter="employee_badge" Content="Employee Badge" Height="26" Margin="1" Style="{StaticResource SecondaryActionButtonStyle}" FontSize="10"/>
-                                            </UniformGrid>
-                                        </StackPanel>
-                                    </Border>
-
-                                    <ui:Button Command="{Binding ResetCropToAutoCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Content="Reset to Calibrated Bounds" HorizontalAlignment="Stretch" Margin="0,0,0,6"/>
-                                </StackPanel>
-                            </ScrollViewer>
-                        </Border>
-                    </Grid>
-
-                    <!-- Footer Actions -->
-                    <Grid Grid.Row="2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Text="Physical color invariant: Original native BGRA colors 100% preserved in display, PDF &amp; print." FontSize="10.5" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                            <TextBlock Text="Selected ratio will be applied cleanly without squishing or aspect distortion." FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        </StackPanel>
-                        <ui:Button Grid.Column="1" Command="{Binding CloseCropDrawerCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Content="Cancel" Height="36" Padding="16,0" Margin="0,0,8,0"/>
-                        <ui:Button Grid.Column="2" Command="{Binding ApplyCustomCropCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Content="Apply &amp; Update Layout" Height="36" Padding="20,0"/>
-                    </Grid>
-                </Grid>
-            </Border>
         </Border>
 
         <!-- SAVE CUSTOM PRESET MODAL DIALOG -->
         <Border Background="{DynamicResource ModalBackdropBrush}"
                 Visibility="{Binding IsSavePresetDialogOpen, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"
-                VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Panel.ZIndex="200">
             <Border Style="{StaticResource SurfaceCardStyle}"
                     Width="440" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
                 <StackPanel>
@@ -612,10 +678,10 @@
             </Border>
         </Border>
 
-        <!-- GLOBAL ASYNC LOADING OVERLAY (Zero-blocking, clean indeterminate progress ring) -->
+        <!-- GLOBAL ASYNC LOADING OVERLAY -->
         <Border Background="{DynamicResource ModalBackdropBrush}"
                 Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"
-                VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Panel.ZIndex="300">
             <Border Style="{StaticResource SurfaceCardStyle}"
                     Width="320" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
                 <StackPanel HorizontalAlignment="Center">

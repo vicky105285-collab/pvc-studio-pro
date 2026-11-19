@@ -18,6 +18,8 @@
         <KeyBinding Modifiers="Ctrl" Key="O" Command="{Binding QuickOpenDocumentCommand}"/>
         <KeyBinding Modifiers="Ctrl" Key="P" Command="{Binding QuickPrintCommand}"/>
         <KeyBinding Modifiers="Ctrl" Key="S" Command="{Binding QuickExportPdfCommand}"/>
+        <KeyBinding Key="F5" Command="{Binding DirectSpoolF5Command}"/>
+        <KeyBinding Modifiers="Ctrl" Key="D" Command="{Binding ProductionVM.AutoExtractCardsCommand}"/>
     </Window.InputBindings>
 
     <Window.Resources>
@@ -76,27 +78,49 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Top TitleBar with App Branding, Active Workspace, and Quick Action Buttons -->
+        <!-- Top TitleBar with Google Stitch Midnight Executive Branding & Live Telemetry -->
         <ui:TitleBar Grid.Row="0" Title="{DynamicResource AppTitle}">
             <ui:TitleBar.Header>
-                <Grid VerticalAlignment="Center" Margin="12,0,0,0">
+                <Grid VerticalAlignment="Center" Margin="10,0,0,0">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- Active Workspace Breadcrumb -->
-                    <Border Grid.Column="0" Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="4" Padding="8,2" Margin="0,0,16,0">
-                        <TextBlock Text="{Binding ActiveWorkspaceTitle}" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <Border Grid.Column="0" Background="{DynamicResource StitchPrimaryContainerBrush}" CornerRadius="4" Padding="8,3" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="PVC STUDIO PRO" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource StitchSecondaryContainerBrush}" Margin="0,0,6,0"/>
+                            <TextBlock Text="•" FontSize="11" Foreground="#475569" Margin="0,0,6,0"/>
+                            <TextBlock Text="{Binding ActiveWorkspaceTitle}" FontWeight="SemiBold" FontSize="11" Foreground="White"/>
+                        </StackPanel>
                     </Border>
 
-                    <!-- Theme Toggle -->
-                    <ui:Button Grid.Column="1" Command="{Binding ToggleThemeCommand}" Content="{Binding CurrentTheme}" Height="28" Padding="10,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Background="{DynamicResource NeutralSurfaceBrush}" Margin="0,0,8,0"/>
+                    <!-- 100% Offline Badge -->
+                    <Border Grid.Column="1" Background="#064E3B" BorderBrush="#059669" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="● " FontSize="8" Foreground="#34D399" VerticalAlignment="Center"/>
+                            <TextBlock Text="v2.4 Desktop • 100% Offline" FontSize="10" FontWeight="SemiBold" Foreground="#A7F3D0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Zero PII Retained Shield -->
+                    <Border Grid.Column="2" Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🛡️ " FontSize="10" VerticalAlignment="Center"/>
+                            <TextBlock Text="Zero PII Retained" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
 
                     <!-- Open Document Session Tabs -->
-                    <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="8,0" VerticalAlignment="Center">
+                    <ScrollViewer Grid.Column="3" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="4,0,8,0" VerticalAlignment="Center">
                         <ItemsControl ItemsSource="{Binding OpenSessions}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -124,8 +148,35 @@
                         </ItemsControl>
                     </ScrollViewer>
 
+                    <!-- Hardware Status Pill -->
+                    <Border Grid.Column="4" Background="{DynamicResource NeutralSurfaceBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Padding="8,3" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🖨️ " FontSize="10" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding PrinterStatusText}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Today Financial Summary Pill -->
+                    <Border Grid.Column="5" Background="#ECFDF5" BorderBrush="#6EE7B7" BorderThickness="1" CornerRadius="4" Padding="8,3" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="₹ " FontWeight="Bold" FontSize="11" Foreground="#047857" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding TodayRevenueSummary}" FontSize="10.5" FontWeight="Bold" Foreground="#065F46" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- F5 Direct Spool Quick Action Button -->
+                    <ui:Button Grid.Column="6" Command="{Binding DirectSpoolF5Command}" Height="28" Padding="10,0" Margin="0,0,6,0" Background="#006C4A" Foreground="White" BorderBrush="#004D34" BorderThickness="1" CornerRadius="4" ToolTip="Instant Direct Winspool (F5)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚡ " FontSize="11" VerticalAlignment="Center"/>
+                            <TextBlock Text="F5 Direct Spool" FontWeight="Bold" FontSize="10.5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ui:Button>
+
+                    <!-- Theme Toggle -->
+                    <ui:Button Grid.Column="7" Command="{Binding ToggleThemeCommand}" Content="{Binding CurrentTheme}" Height="28" Padding="8,0" FontSize="10.5" FontWeight="SemiBold" CornerRadius="4" Background="{DynamicResource NeutralSurfaceBrush}" Margin="0,0,6,0"/>
+
                     <!-- Language Switcher -->
-                    <ui:Button Grid.Column="3" Command="{Binding ToggleLanguageCommand}" Content="{Binding LanguageButtonText}" Height="28" Padding="12,0" FontSize="11" FontWeight="SemiBold" CornerRadius="4" Background="#EBF3FC" Foreground="#0067B8" BorderBrush="#C2DCF7" BorderThickness="1"/>
+                    <ui:Button Grid.Column="8" Command="{Binding ToggleLanguageCommand}" Content="{Binding LanguageButtonText}" Height="28" Padding="10,0" FontSize="10.5" FontWeight="SemiBold" CornerRadius="4" Background="#EBF3FC" Foreground="#0067B8" BorderBrush="#C2DCF7" BorderThickness="1"/>
                 </Grid>
             </ui:TitleBar.Header>
         </ui:TitleBar>
@@ -152,7 +203,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Collapsible Fluent Navigation Rail (Compact 56px icon rail by default, expands to 240px on mouse hover) -->
+            <!-- Collapsible Fluent Navigation Rail with Google Stitch Executive Navy Palette -->
             <ui:NavigationView x:Name="RootNavigation"
                                Grid.Column="0"
                                PaneDisplayMode="Left"
@@ -160,8 +211,35 @@
                                OpenPaneLength="240"
                                IsPaneOpen="False"
                                IsBackButtonVisible="Collapsed"
+                               Background="#0E1C2F"
+                               Foreground="White"
                                MouseEnter="Navigation_MouseEnter"
                                MouseLeave="Navigation_MouseLeave">
+                <ui:NavigationView.PaneHeader>
+                    <Border Padding="12,10" Background="#0A1422" BorderBrush="#16273E" BorderThickness="0,0,0,1">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Background="#006C4A" CornerRadius="6" Width="28" Height="28" Margin="0,0,10,0">
+                                    <TextBlock Text="💳" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="PVC STUDIO" FontWeight="Bold" FontSize="12.5" Foreground="White"/>
+                                    <TextBlock Text="ENTERPRISE SUITE" FontWeight="SemiBold" FontSize="9" Foreground="#34D399"/>
+                                </StackPanel>
+                            </Grid>
+                            <Border Background="#0E233A" BorderBrush="#006C4A" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,2,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="● " FontSize="8" Foreground="#85F8C4" VerticalAlignment="Center"/>
+                                    <TextBlock Text="ENGINE: CORE-V2.4" FontSize="9" FontWeight="Bold" Foreground="#85F8C4" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </ui:NavigationView.PaneHeader>
                 <ui:NavigationView.MenuItems>
                     <!-- HERO: UNIFIED PVC PRODUCTION STUDIO -->
                     <ui:NavigationViewItem Content="{DynamicResource NavProductionStudio}" Command="{Binding NavigateCommand}" CommandParameter="Production" ToolTip="Production Studio">
@@ -233,6 +311,25 @@
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
                 </ui:NavigationView.MenuItems>
+
+                <ui:NavigationView.PaneFooter>
+                    <Border Padding="10,8" Background="#0A1422" BorderBrush="#16273E" BorderThickness="0,1,0,0" Margin="4,0,4,6" CornerRadius="6">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                <TextBlock Text="● " FontSize="8" Foreground="#34D399" VerticalAlignment="Center"/>
+                                <TextBlock Text="HARDWARE BRIDGE • LIVE" FontWeight="Bold" FontSize="9" Foreground="#34D399"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                <TextBlock Text="🖨️ " FontSize="9.5" VerticalAlignment="Center"/>
+                                <TextBlock Text="L8050 PVC JIG 2-UP" FontWeight="SemiBold" FontSize="10" Foreground="White" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔒 " FontSize="8.5" VerticalAlignment="Center"/>
+                                <TextBlock Text="HOST: SECURE-DESK-01" FontSize="8.5" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </ui:NavigationView.PaneFooter>
             </ui:NavigationView>
 
             <!-- Dynamic Workspace Content Host -->

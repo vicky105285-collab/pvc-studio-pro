@@ -57,6 +57,24 @@
     <SolidColorBrush x:Key="StatusInfoBgBrush" Color="#0C4A6E"/>
     <SolidColorBrush x:Key="StatusInfoFgBrush" Color="#38BDF8"/>
 
+    <!-- Google Stitch Design System Tokens (Dark Mode) -->
+    <SolidColorBrush x:Key="StitchPrimaryContainerBrush" Color="#0B1524"/>
+    <SolidColorBrush x:Key="StitchSecondaryBrush" Color="#10B981"/>
+    <SolidColorBrush x:Key="StitchSecondaryContainerBrush" Color="#064E3B"/>
+    <SolidColorBrush x:Key="StitchOnSecondaryContainerBrush" Color="#6EE7B7"/>
+    <SolidColorBrush x:Key="StitchSecondaryFixedBrush" Color="#34D399"/>
+    <SolidColorBrush x:Key="StitchOnSecondaryFixedBrush" Color="#022C22"/>
+    <SolidColorBrush x:Key="StitchSurfaceBrush" Color="#0B0F19"/>
+    <SolidColorBrush x:Key="StitchSurfaceContainerLowestBrush" Color="#1E293B"/>
+    <SolidColorBrush x:Key="StitchSurfaceContainerLowBrush" Color="#162032"/>
+    <SolidColorBrush x:Key="StitchSurfaceContainerHighBrush" Color="#283548"/>
+    <SolidColorBrush x:Key="StitchSurfaceContainerHighestBrush" Color="#334155"/>
+    <SolidColorBrush x:Key="StitchInverseSurfaceBrush" Color="#1A2638"/>
+    <SolidColorBrush x:Key="StitchTextPrimaryBrush" Color="#F8FAFC"/>
+    <SolidColorBrush x:Key="StitchTextSecondaryBrush" Color="#94A3B8"/>
+    <SolidColorBrush x:Key="StitchTertiaryFixedBrush" Color="#1E293B"/>
+    <SolidColorBrush x:Key="StitchOnTertiaryFixedBrush" Color="#93C5FD"/>
+
     <!-- Legacy Compatibility Aliases -->
     <SolidColorBrush x:Key="BrandPrimaryBrush" Color="#38BDF8"/>
     <SolidColorBrush x:Key="BrandSuccessBrush" Color="#22C55E"/>

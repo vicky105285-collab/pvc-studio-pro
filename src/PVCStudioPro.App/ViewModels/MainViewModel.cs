@@ -37,6 +37,26 @@ namespace PVCStudioPro.App.ViewModels
         [ObservableProperty]
         private string _activeWorkspaceTitle = "Dashboard";
 
+        [ObservableProperty]
+        private string _printerStatusText = "Epson L8050 Tray: Ready";
+
+        [ObservableProperty]
+        private string _todayRevenueSummary = "Today: ₹1,850 (37 cards)";
+
+        [RelayCommand]
+        public async Task DirectSpoolF5Async()
+        {
+            if (CurrentView is ProductionWorkspaceViewModel prod)
+            {
+                await prod.StartPrintingAsync();
+            }
+            else
+            {
+                Navigate("Production");
+                await ProductionVM.StartPrintingAsync();
+            }
+        }
+
         // Production & Processing Workspaces
         public ProductionWorkspaceViewModel ProductionVM { get; }
         public DocumentDeskViewModel DocumentDeskVM { get; }

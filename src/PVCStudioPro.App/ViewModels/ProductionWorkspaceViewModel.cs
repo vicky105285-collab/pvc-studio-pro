@@ -289,6 +289,90 @@ namespace PVCStudioPro.App.ViewModels
             "Single Card (Both Slots)"
         };
 
+        public double FrontCropXMm => Math.Round(CropX * 25.4 / 300.0, 2);
+        public double FrontCropYMm => Math.Round(CropY * 25.4 / 300.0, 2);
+        public double FrontCropWMm => Math.Round(CropWidth * 25.4 / 300.0, 2);
+        public double FrontCropHMm => Math.Round(CropHeight * 25.4 / 300.0, 2);
+
+        public double BackCropXMm => Math.Round((CropX + CropWidth + 24.0) * 25.4 / 300.0, 2);
+        public double BackCropYMm => Math.Round(CropY * 25.4 / 300.0, 2);
+        public double BackCropWMm => Math.Round(CropWidth * 25.4 / 300.0, 2);
+        public double BackCropHMm => Math.Round(CropHeight * 25.4 / 300.0, 2);
+
+        [ObservableProperty]
+        private bool _isMagneticSnapping = true;
+
+        [ObservableProperty]
+        private bool _isShadowPurge = false;
+
+        [ObservableProperty]
+        private string _renderingEngineInfo = "PDFium 32bpp Native BGRA";
+
+        [ObservableProperty]
+        private string _outputDpiInfo = "600.0 DPI Native Rasterizer";
+
+        [ObservableProperty]
+        private string _memoryLeaseInfo = "SKBitmap Pinned • 24.8 MB Safe";
+
+        [ObservableProperty]
+        private string _activeJigName = "Epson 2-Card CD/PVC Tray (140 × 297 mm)";
+
+        [ObservableProperty]
+        private int _activeCanvasTabIndex = 0; // 0 = Interactive Crop Studio, 1 = Physical Print Layout
+
+        [RelayCommand]
+        public void SetCanvasTab(string tabIndexStr)
+        {
+            if (int.TryParse(tabIndexStr, out int idx))
+            {
+                ActiveCanvasTabIndex = idx;
+            }
+        }
+
+        partial void OnCropXChanged(double value)
+        {
+            OnPropertyChanged(nameof(FrontCropXMm));
+            OnPropertyChanged(nameof(BackCropXMm));
+        }
+        partial void OnCropYChanged(double value)
+        {
+            OnPropertyChanged(nameof(FrontCropYMm));
+            OnPropertyChanged(nameof(BackCropYMm));
+        }
+        partial void OnCropWidthChanged(double value)
+        {
+            OnPropertyChanged(nameof(FrontCropWMm));
+            OnPropertyChanged(nameof(BackCropWMm));
+        }
+        partial void OnCropHeightChanged(double value)
+        {
+            OnPropertyChanged(nameof(FrontCropHMm));
+            OnPropertyChanged(nameof(BackCropHMm));
+        }
+
+        [RelayCommand]
+        public void PurgeMemory()
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            MemoryLeaseInfo = "SKBitmap Pinned • Safe (Purged)";
+            StatusMessage = "Memory cache purged.";
+        }
+
+        [RelayCommand]
+        public void ToggleShadowPurge()
+        {
+            IsShadowPurge = !IsShadowPurge;
+            StatusMessage = IsShadowPurge ? "Shadow Purge filter enabled." : "Standard document rendering.";
+        }
+
+        [RelayCommand]
+        public void ToggleMagneticSnapping()
+        {
+            IsMagneticSnapping = !IsMagneticSnapping;
+            StatusMessage = IsMagneticSnapping ? "Magnetic PDF edge snapping active." : "Freeform snapping.";
+        }
+
         #endregion
 
         private SKBitmap? _cachedPageBitmap;
