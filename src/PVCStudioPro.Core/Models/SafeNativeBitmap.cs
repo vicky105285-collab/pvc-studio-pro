@@ -375,7 +375,7 @@ namespace PVCStudioPro.Core.Models
 
             public IReadOnlyRasterSurface Surface => _surface;
 
-            public bool IsDisposed => _handle == null;
+            public bool IsDisposed => Volatile.Read(ref _handle) == null;
 
             public void Dispose()
             {

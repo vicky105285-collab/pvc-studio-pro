@@ -468,5 +468,73 @@ namespace PVCStudioPro.Tests
         }
 
         #endregion
+
+        #region Test 11: Cross-Thread Lease Disposal Visibility
+
+        [Fact]
+        public async Task LeaseDisposal_IsObservedAcrossThreads_AndThrowsObjectDisposedException()
+        {
+            var rawBitmap = CreateTestBitmap(120, 80, SKColors.Crimson);
+            using var safeHandle = new SafeNativeBitmap(rawBitmap);
+            var lease = safeHandle.AcquireLease("cross-thread-lease", 0, 300);
+            var surface = lease.Surface;
+
+            using var observerStarted = new ManualResetEventSlim(false);
+
+            // Thread 1: loops waiting to observe lease.IsDisposed == true
+            var observerTask = Task.Run(() =>
+            {
+                observerStarted.Set();
+
+                // Spin-wait until lease.IsDisposed becomes observable via Volatile.Read
+                var sw = Stopwatch.StartNew();
+                while (!lease.IsDisposed)
+                {
+                    if (sw.ElapsedMilliseconds > 5000)
+                    {
+                        throw new TimeoutException("Lease disposal was not observed across threads within timeout.");
+                    }
+                    Thread.SpinWait(10);
+                }
+
+                // Verify that lease.IsDisposed is observed as true
+                lease.IsDisposed.Should().BeTrue();
+
+                // Subsequent surface access from Thread 1 MUST immediately throw ObjectDisposedException
+                Action widthAccess = () => _ = surface.Width;
+                widthAccess.Should().Throw<ObjectDisposedException>();
+
+                Action heightAccess = () => _ = surface.Height;
+                heightAccess.Should().Throw<ObjectDisposedException>();
+
+                Action snapshotAccess = () => _ = surface.CreateImmutableSnapshot();
+                snapshotAccess.Should().Throw<ObjectDisposedException>();
+
+                Action readPixelsAccess = () => surface.ReadPixels((span, row) => { });
+                readPixelsAccess.Should().Throw<ObjectDisposedException>();
+
+                Action readPixelsFuncAccess = () => surface.ReadPixels((span, row) => span.Length);
+                readPixelsFuncAccess.Should().Throw<ObjectDisposedException>();
+
+                using var targetBitmap = new SKBitmap(120, 80);
+                using var canvas = new SKCanvas(targetBitmap);
+                Action renderAccess = () => surface.RenderTo(canvas, new SKRect(0, 0, 120, 80));
+                renderAccess.Should().Throw<ObjectDisposedException>();
+            });
+
+            // Ensure observer thread is spinning
+            observerStarted.Wait();
+            await Task.Delay(15);
+
+            // Thread 2 (here): dispose the lease
+            lease.Dispose();
+
+            // Wait for observer task to complete successfully
+            await observerTask;
+            lease.IsDisposed.Should().BeTrue();
+            safeHandle.ReferenceCount.Should().Be(1);
+        }
+
+        #endregion
     }
 }
