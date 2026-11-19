@@ -202,5 +202,58 @@ namespace PVCStudioPro.Tests
                 try { Directory.Delete(testDir, true); } catch { }
             }
         }
+
+        [Fact]
+        public void AllView_XamlFiles_ContainNoPropertyToStyleMismatches()
+        {
+            string current = AppContext.BaseDirectory;
+            string appDir = string.Empty;
+            while (!string.IsNullOrEmpty(current))
+            {
+                string target = Path.Combine(current, "src", "PVCStudioPro.App");
+                if (Directory.Exists(target))
+                {
+                    appDir = target;
+                    break;
+                }
+                var parent = Directory.GetParent(current);
+                if (parent == null) break;
+                current = parent.FullName;
+            }
+
+            appDir.Should().NotBeEmpty("App directory must be located");
+
+            var xamlFiles = Directory.GetFiles(appDir, "*.xaml", SearchOption.AllDirectories);
+            var styles = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var styleRegex = new System.Text.RegularExpressions.Regex(@"<Style\s+[^>]*x:Key=""([^""]+)""", System.Text.RegularExpressions.RegexOptions.Compiled);
+            foreach (var file in xamlFiles)
+            {
+                string text = File.ReadAllText(file);
+                foreach (System.Text.RegularExpressions.Match match in styleRegex.Matches(text))
+                {
+                    styles.Add(match.Groups[1].Value);
+                }
+            }
+
+            var propRegex = new System.Text.RegularExpressions.Regex(@"(Background|Foreground|BorderBrush|Fill|Stroke)=""\{(DynamicResource|StaticResource)\s+([^}]+)\}""", System.Text.RegularExpressions.RegexOptions.Compiled);
+            var violations = new System.Collections.Generic.List<string>();
+
+            foreach (var file in xamlFiles)
+            {
+                string text = File.ReadAllText(file);
+                foreach (System.Text.RegularExpressions.Match match in propRegex.Matches(text))
+                {
+                    string prop = match.Groups[1].Value;
+                    string key = match.Groups[3].Value.Trim();
+                    if (styles.Contains(key))
+                    {
+                        violations.Add($"{Path.GetFileName(file)}: Property '{prop}' is set to Style resource '{key}' instead of a Brush or Style property");
+                    }
+                }
+            }
+
+            violations.Should().BeEmpty();
+        }
     }
 }

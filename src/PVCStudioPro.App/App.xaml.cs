@@ -46,11 +46,24 @@ namespace PVCStudioPro.App
                 Log($"CRITICAL AppDomain UnhandledException: {args.ExceptionObject}");
             };
 
+            bool isHandlingException = false;
             DispatcherUnhandledException += (s, args) =>
             {
                 Log($"CRITICAL DispatcherUnhandledException: {args.Exception}");
                 args.Handled = true;
-                MessageBox.Show($"Startup Error:\n{args.Exception.Message}\n\n{args.Exception.StackTrace}", "PVC Studio Pro");
+                if (!isHandlingException)
+                {
+                    isHandlingException = true;
+                    try
+                    {
+                        MessageBox.Show($"Startup Error:\n{args.Exception.Message}\n\n{args.Exception.StackTrace}", "PVC Studio Pro");
+                    }
+                    catch { }
+                    finally
+                    {
+                        isHandlingException = false;
+                    }
+                }
             };
 
             TaskScheduler.UnobservedTaskException += (s, args) =>
