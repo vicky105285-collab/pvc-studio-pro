@@ -129,7 +129,7 @@ namespace PVCStudioPro.Core.Services.Implementations
                 }
 
                 using var fgBitmap = MatToSkBitmap(bgraMat);
-                canvas.DrawBitmap(fgBitmap, 0, 0);
+                canvas.DrawBitmap(fgBitmap, 0, 0, SKSamplingOptions.Default, null);
                 canvas.Flush();
                 return segmented;
             });

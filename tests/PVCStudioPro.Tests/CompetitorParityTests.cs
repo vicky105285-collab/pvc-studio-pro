@@ -6,6 +6,7 @@ using FluentAssertions;
 using SkiaSharp;
 using Xunit;
 using PVCStudioPro.Core.Models;
+using PVCStudioPro.Core.Services;
 using PVCStudioPro.Core.Services.Implementations;
 
 namespace PVCStudioPro.Tests
@@ -181,7 +182,9 @@ namespace PVCStudioPro.Tests
 
             try
             {
-                var fakeDiscovery = new PrinterDiscoveryService();
+                IPrinterDiscoveryService fakeDiscovery = OperatingSystem.IsWindows()
+                    ? new PrinterDiscoveryService()
+                    : null!;
                 var trayService = new PrinterTrayService(fakeDiscovery, profilePath);
 
                 var profiles = await trayService.GetAllProfilesAsync();

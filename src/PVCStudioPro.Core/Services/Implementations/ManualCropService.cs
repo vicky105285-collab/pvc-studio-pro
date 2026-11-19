@@ -131,7 +131,7 @@ namespace PVCStudioPro.Core.Services.Implementations
             canvas.Translate(newW / 2f, newH / 2f);
             canvas.RotateDegrees(normDeg);
             canvas.Translate(-source.Width / 2f, -source.Height / 2f);
-            canvas.DrawBitmap(source, 0, 0);
+            canvas.DrawBitmap(source, 0, 0, SKSamplingOptions.Default, null);
 
             return rotated;
         }
@@ -143,7 +143,7 @@ namespace PVCStudioPro.Core.Services.Implementations
             using var canvas = new SKCanvas(flipped);
             canvas.Clear(SKColors.Transparent);
             canvas.Scale(-1, 1, source.Width / 2f, 0);
-            canvas.DrawBitmap(source, 0, 0);
+            canvas.DrawBitmap(source, 0, 0, SKSamplingOptions.Default, null);
             return flipped;
         }
 
