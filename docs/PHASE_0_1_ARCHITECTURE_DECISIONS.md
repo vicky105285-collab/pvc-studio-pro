@@ -3,7 +3,7 @@
 
 - **Document:** `docs/PHASE_0_1_ARCHITECTURE_DECISIONS.md`
 - **Date:** 2026-11-19
-- **Status:** Approved Architectural Baseline for Phase 1 Preparation
+- **Status:** Architectural Decisions (Refined & Validated in Phase 0.2: see [`docs/PHASE_0_2_FINAL_VALIDATION.md`](file:///d:/pvc%20card%20pro/docs/PHASE_0_2_FINAL_VALIDATION.md))
 - **Auditor:** Senior Windows Desktop Systems & Print Engine Architect
 
 ---

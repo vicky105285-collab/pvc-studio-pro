@@ -1,33 +1,52 @@
-# PVC Studio Pro — Acceptance Test Plan & Quality Gates (Phase 0.1 Revised)
-**Definitive Verification Protocol: Step-by-Step Acceptance Criteria & Quality Gates**
+# PVC Studio Pro — Acceptance Test Plan & Quality Gates (Phase 0.2 Validated)
+**Definitive Verification Protocol: Tiered Evidence Architecture & Acceptance Gates**
 
 - **Document:** `docs/ACCEPTANCE_TEST_PLAN.md`
-- **Revision:** Phase 0.1
+- **Revision:** Phase 0.2 Validated
 - **Date:** 2026-11-19
 - **Auditor:** Senior Windows Desktop Systems & Print Engine Architect
-- **Quality Mandate:** Unit tests alone do not establish completion. Every feature requires demonstrable end-to-end acceptance testing.
+- **Quality Mandate:** Unit tests alone do not establish completion. Claims of "100% universal accuracy" are prohibited. Verification requires demonstrable evidence across five distinct testing tiers.
 
 ---
 
-## 1. Master Acceptance Gates
+## 1. Five-Tier Verification Architecture
 
-Before any phase or release candidate is declared complete, it must pass all six quality gates:
+Every capability in PVC Studio Pro must be verified against its appropriate evidence tier:
 
+```mermaid
+flowchart TD
+    Tier1["Tier 1: Automated Unit Tests\n(xUnit, Mocked I/O, Matrix Math)"] --> Tier2["Tier 2: Pipeline Integration Tests\n(PDFium Render, DDL ACID, Session Concurrency)"]
+    Tier2 --> Tier3["Tier 3: Visual Regression Tests\n(Skia Pixel Matching, Delta E < 2.0, 300 DPI Geometry)"]
+    Tier3 --> Tier4["Tier 4: Operator Acceptance Tests\n(Manual UI Workflows, Touch, Real Scans)"]
+    Tier4 --> Tier5["Tier 5: Physical Hardware Verification\n(Actual PVC Card & Photo Sheet Prints)"]
 ```
-[ Gate 1: Zero Code Regressions ] ────► 100% Passing Unit & Integration Tests (dotnet test)
-[ Gate 2: Clean Self-Contained Build ] ─► Compiles standalone win-x64 with bundled runtime (Zero .NET prompts)
-[ Gate 3: Live Process Verification ] ──► Launches with working set <250 MB; zero startup exceptions
-[ Gate 4: Interactive Acceptance Test ] ─► Passes all 6 End-to-End Manual Workflow Scripts below
-[ Gate 5: Hardware Print Spool Test ] ──► Spools valid EMF/XPS bytes to Windows spooler with exact mm geometry
-[ Gate 6: Zero Citizen PII Audit ] ─────► Zero citizen numbers or raw identity images written to disk or logs
-```
+
+### Tier Definitions & Evidence Standards
+1. **Tier 1 (Automated Unit Tests):**
+   - Scope: Pure algorithms, mathematical transforms, reference counting, coordinate conversions, integer paise math.
+   - Requirement: 100% passing tests via `dotnet test`. Zero warnings treated as acceptable.
+2. **Tier 2 (Pipeline Integration Tests):**
+   - Scope: Multi-step workflows including PDFium decoding, SQLite schema migrations, and session management.
+   - Requirement: Passes cleanly without unmanaged memory leaks or concurrency exceptions.
+3. **Tier 3 (Automated Visual Regression Tests):**
+   - Scope: Rendered SkiaSharp surfaces compared against golden baseline vector images.
+   - Requirement: Pixel difference threshold $\le 0.5\%$, Color Delta $E \le 2.0$.
+   - Coordinate Standards at 300 DPI ($1\text{ mm} = 11.811\text{ px}$):
+     - CR80 Width: $85.60\text{ mm} \times 11.811 = 1011\text{ px}$.
+     - CR80 Height: $53.98\text{ mm} \times 11.811 = 638\text{ px}$.
+4. **Tier 4 (Operator Acceptance Tests):**
+   - Scope: Human interaction across light/dark themes, display scalings (100%, 125%, 150%, 200%), and keyboard navigation.
+   - Requirement: Ergonomic, responsive UI with zero control clipping, zero text contrast failures, and smooth pan/zoom.
+5. **Tier 5 (Physical Hardware Verification):**
+   - Scope: Actual physical prints onto PVC card stock or photo paper using real hardware (Epson L8050 / PVC ID card tray).
+   - Requirement: Digital caliper measurement of printed card: Width $85.60 \pm 0.25\text{ mm}$, Height $53.98 \pm 0.25\text{ mm}$.
 
 ---
 
 ## 2. End-to-End Acceptance Test Scripts
 
-### Test Suite 1: Centralized Crop Engine Acceptance Test
-- **Objective:** Verify zoom, pan, fit-to-window, 100% zoom, 8 drag handles, aspect-ratio locking, perspective correction, rotation, numeric adjustment, undo/redo, and cross-workspace state propagation.
+### Test Suite 1: Centralized Crop Engine Acceptance Test (Tiers 1, 3 & 4)
+- **Objective:** Verify zoom, pan, fit-to-window, 100% zoom, 8 drag handles, aspect-ratio locking, perspective quad correction, rotation, numeric millimeter adjustment, undo/redo, and cross-workspace state propagation.
 - **Step-by-Step Procedure:**
   1. Open PVC Studio Pro and navigate to `Production Studio`.
   2. Click `Open Document (Ctrl+O)` and load high-resolution test scan `Synthetic_Aadhaar_300DPI.png`.
@@ -51,13 +70,13 @@ Before any phase or release candidate is declared complete, it must pass all six
      - Click `[Undo]` (or Ctrl+Z): confirm previous crop rectangle is restored.
   10. Test Commit & Cross-Workspace Observation:
       - Click `[Apply Crop]`.
-      - Confirm the extracted card is normalized to exactly $2022 \times 1275\text{ px}$ ($85.60 \times 53.98\text{ mm}$ @ 600 DPI).
+      - Confirm the extracted card is normalized to exactly $1011 \times 638\text{ px}$ ($85.60 \times 53.98\text{ mm}$ @ 300 DPI).
       - Navigate to `Document Desk` and `Crop Studio`: confirm the identical cropped card is immediately displayed with matching dimensions without reloading.
 - **Pass Criteria:** Zero pixel jumping, aspect ratio strictly maintained, identical state reflected across all workspaces.
 
 ---
 
-### Test Suite 2: Adaptive Aadhaar Auto-Extraction & Alignment Acceptance Test
+### Test Suite 2: Adaptive Aadhaar Auto-Extraction & Alignment Acceptance Test (Tiers 2, 3 & 4)
 - **Objective:** Verify multi-factor Aadhaar detection, boundary refinement, low-confidence fallback, dual-card extraction, and manual fine-tuning.
 - **Step-by-Step Procedure:**
   1. Load password-protected test e-Aadhaar PDF.
@@ -67,7 +86,7 @@ Before any phase or release candidate is declared complete, it must pass all six
   5. Inspect the center physical sheet canvas: confirm Front Card and Back Card appear mounted side-by-side on the A4 portrait sheet.
   6. Inspect Front Card: citizen photo, name, DOB, and gender must be 100% inside the card boundary with zero edge clipping.
   7. Inspect Back Card: address block and secure QR code must be fully visible with zero truncation.
-  8. **Low-Confidence Test:** Load a intentionally skewed / non-standard scanned Aadhaar ($<85\%$ confidence).
+  8. **Low-Confidence Fallback Test:** Load an intentionally skewed / non-standard scanned Aadhaar ($<85\%$ confidence).
      - Confirm software **does not silently crop wrong coordinates**.
      - Confirm amber warning displays: `⚠️ Low Detection Confidence (68%) — Please Confirm Card Bounds`.
      - Confirm crop drawer opens automatically with calibrated guides.
@@ -79,8 +98,8 @@ Before any phase or release candidate is declared complete, it must pass all six
 
 ---
 
-### Test Suite 3: True Physical Print & Spooling Acceptance Test
-- **Objective:** Verify that on-screen sheet preview, exported PDF, and physical print spooling are mathematically identical, with full 7-stage spooler verification.
+### Test Suite 3: True Physical Print & Spooling Acceptance Test (Tiers 3, 4 & 5)
+- **Objective:** Verify that on-screen sheet preview, exported PDF, and physical print spooling are mathematically identical, with complete 6-stage lifecycle verification.
 - **Step-by-Step Procedure:**
   1. In `Production Studio`, select layout: `A4 Single Side (Side-by-Side)`.
   2. Verify on-screen physical sheet displays full A4 paper ($210 \times 297\text{ mm}$) fitted to window with zero scrolling required.
@@ -91,15 +110,15 @@ Before any phase or release candidate is declared complete, it must pass all six
   7. Open `A4_Print_Verification.pdf` in a vector viewer: measure card positions. Front Card must be at $X=15.1\text{ mm}$, $Y=20.0\text{ mm}$; Back Card must be at $X=109.5\text{ mm}$, $Y=20.0\text{ mm}$.
   8. Select target printer `Microsoft Print to PDF` and click `START PRINTING`.
   9. Verify print job lifecycle:
-     - Status displays `Submitted to Windows Spooler...`
-     - Status updates to `Spool Accepted by Windows Spooler`
-     - Status updates to `Completed (Print Job Finished)`
-  10. Check Windows print queue: confirm bytes were received and processed.
-- **Pass Criteria:** Sub-millimeter parity between screen preview, exported PDF points, and print spooler raster; genuine Win32 spooler tracking.
+     - Status transitions: `SubmittedToSpooler` $\rightarrow$ `AcceptedBySpooler` $\rightarrow$ `SpoolerProcessingCompleted`.
+     - UI presents verification dialog: `Did the card print correctly? [Confirmed] [Reprint Needed]`.
+     - Operator clicks `[Confirmed]`: status transitions to `PhysicalOutputConfirmedByOperator`.
+     - Ledger records transaction as ready for payment collection.
+- **Pass Criteria:** Sub-millimeter parity between screen preview, exported PDF points, and print spooler raster; genuine Win32 spooler tracking decoupled from billing.
 
 ---
 
-### Test Suite 4: Passport Photo Studio & Biometric Engine Acceptance Test
+### Test Suite 4: Passport Photo Studio & Biometric Engine Acceptance Test (Tiers 2, 3 & 4)
 - **Objective:** Verify ICAO 9303 compliance, clean GrabCut background removal without bottom scalloping, interactive face positioning, and genuine print spooling.
 - **Step-by-Step Procedure:**
   1. Navigate to `Passport Photo Studio`.
@@ -111,39 +130,35 @@ Before any phase or release candidate is declared complete, it must pass all six
   7. Select layout: `4x6 Photo Paper (8-Up)`.
   8. Verify 8-up sheet composer renders 8 identical $35 \times 45\text{ mm}$ photos with dashed cut guides.
   9. Click `PRINT PHOTO SHEET`.
-  10. Open Windows Print Queue: **confirm a real print job named `Passport_Photo_Sheet_8UP` is queued and spooled**.
-  11. Navigate to `Ledger`: confirm transaction is recorded for ₹50.00 with payment method.
+  10. Open Windows Print Queue: confirm a real print job named `Passport_Photo_Sheet_8UP` is queued and spooled.
+  11. Operator verifies physical sheet output and confirms transaction.
 - **Pass Criteria:** Zero wavy artifacts at bottom, real print job dispatched to Windows queue, financial ledger updated.
 
 ---
 
-### Test Suite 5: Business Ledger, Corrections & Test Mode Acceptance Test
-- **Objective:** Verify full transaction lifecycle, separate payment entries, auditable edits, void/cancellations, and complete Test Mode isolation.
+### Test Suite 5: Business Ledger & Test Mode Acceptance Test (Tiers 1, 2 & 4)
+- **Objective:** Verify integer paise precision across the 5 specific accounting scenarios and total Test Mode sandbox isolation.
 - **Step-by-Step Procedure:**
-  1. **Test Mode Total Sandbox Isolation Check:**
+  1. **Test Mode Sandbox Isolation Check:**
      - Toggle `Test Mode` in application header.
-     - Verify permanent orange warning banner appears: `⚠️ TEST MODE ACTIVE — SIMULATION SANDBOX ONLY`.
-     - Print 2 test cards for ₹140.00.
+     - Verify permanent amber warning banner appears: `⚠️ TEST MODE ACTIVE — SIMULATION SANDBOX ONLY`.
+     - Print 2 test cards for ₹140.00 (`14000` paise).
      - Open `JobLedgerView`: verify 2 test transactions appear with prefix `TEST-0001`.
      - Click `Reset Test Sandbox`: confirm test records are wiped to 0.
      - Toggle back to `Production Mode` (confirming safety prompt).
-     - Open `JobLedgerView`: **confirm production database contains 0 test records and is completely uncorrupted**.
-  2. **Auditable Edit Check (Production Mode):**
-     - Record a production job for ₹70.00 (`INV-20261119-0001`).
-     - Click `[Edit]` on `INV-20261119-0001`.
-     - Change Unit Price to ₹50.00, enter mandatory reason: "Promotional customer coupon". Click Save.
-     - Confirm table displays Net Total: ₹50.00.
-     - Click `[Audit History]`: verify audit log records: `TotalAmount changed from 70.00 to 50.00 | Reason: Promotional customer coupon | Operator: Admin`.
-  3. **Multi-Payment & Partial Payment Check:**
-     - Create transaction for ₹140.00.
-     - Record Payment 1: ₹100.00 via `CASH`.
-     - Confirm status is `PARTIAL` and `Balance Due` is ₹40.00.
-     - Later, record Payment 2: ₹40.00 via `UPI` with Ref `UPI-TXN-984214`.
-     - Confirm status flips to `PAID` and Balance Due becomes ₹0.00.
-     - Check Daily Closing Summary: Cash Drawer must show ₹100.00; UPI Digital must show ₹40.00.
-  4. **Void / Cancellation Check:**
-     - Select an erroneous transaction and click `[Void]`.
-     - Select reason: `PRINTER_HARDWARE_FAILURE`. Click Confirm.
-     - Confirm status displays `VOID`.
-     - Check Daily Revenue Summary: confirm voided amount is excluded from daily cash total while retaining the invoice sequence.
-- **Pass Criteria:** Zero test data leakage into production, full audit trail on edits, multi-payment math verified, daily cash totals perfectly reconciled.
+     - Open `JobLedgerView`: confirm production database contains 0 test records and is completely uncorrupted.
+  2. **Scenario 1: ₹100 cash receipt and ₹20 cash refund:**
+     - Record ₹100 cash receipt (`10000` paise) and ₹20 cash refund (`2000` paise).
+     - Verify Daily Cash Drawer query yields exactly ₹80.00 (`8000` paise).
+  3. **Scenario 2: ₹100 cash + ₹40 UPI split payment:**
+     - Record ₹140 invoice with Payment 1 = ₹100 cash, Payment 2 = ₹40 UPI.
+     - Verify status is `PAID` with balance = 0.
+  4. **Scenario 3: ₹140 invoice with ₹100 paid and ₹40 outstanding:**
+     - Verify status is `PARTIAL` and balance due = ₹40.00 (`4000` paise).
+  5. **Scenario 4: Older outstanding invoice paid today:**
+     - Collect ₹40 cash on an older invoice.
+     - Verify today's cash drawer includes the ₹40 inflow while the invoice retains its original creation date.
+  6. **Scenario 5: Voided invoice with previous payment and refund:**
+     - Void a ₹70 transaction and record refund.
+     - Verify net cash contribution is 0 and invoice is excluded from revenue reports.
+- **Pass Criteria:** Zero test data leakage into production, 100% mathematical precision in integer paise, all 5 scenarios reconciled.

@@ -1,11 +1,10 @@
-# PVC Studio Pro — Unified Architecture Proposal (Phase 0.1 Revised)
-**Enterprise Desktop Architecture: Lifecycle-Managed Assets, Unified Crop Engine & Hardware-Verified Spooling**
+# PVC Studio Pro — Unified Architecture Proposal (Phase 0.2 Validated)
+**Enterprise Desktop Architecture: Lifecycle-Managed Leased Assets, Multi-Document Sessions & Verified Print Lifecycles**
 
 - **Document:** `docs/UNIFIED_ARCHITECTURE_PROPOSAL.md`
-- **Revision:** Phase 0.1
+- **Revision:** Phase 0.2 Validated
 - **Date:** 2026-11-19
-- **Auditor:** Senior Windows Desktop Systems & Print Engine Architect
-- **Status:** Architectural Proposal (Awaiting Review & Phase 1 Authorization)
+- **Status:** Architectural Proposal (Pre-Implementation Gate)
 
 ---
 
@@ -14,16 +13,17 @@
 ```mermaid
 graph TD
     subgraph Asset_And_Session_Core["1. Lifecycle-Managed Asset & Session Subsystem"]
-        ISA["Immutable Source Asset (Root Pixel Buffer)"]
-        DA["Derived Image Assets (Versioned Revisions)"]
-        FBA["Dual Card Face Assets (Front & Back CR80)"]
-        SCS["Shared Crop Session & Revision History"]
-        DSM["IDocumentSessionManager (Thread-Safe Event Hub)"]
+        SBH["SafeBitmapHandle (Interlocked Atomic RefCount)"]
+        AL["IAssetLease<SKBitmap> (Short-Lived Leased Access)"]
+        ISA["SourceImageAsset (Root Native Buffer Owner)"]
+        DA["DerivedImageAsset (Versioned Revision Tree)"]
+        DSM["IDocumentSessionManager (Multi-Document Registry)"]
+        DS["IDocumentSession (Isolated Document State)"]
     end
 
     subgraph Processing_Engines["2. Unified Processing Engines"]
         UCE["Unified Visual Crop Engine (InteractiveCropCanvas)"]
-        TR["Universal Template Registry (35 Government Templates)"]
+        TR["Universal Template Registry (29 Calibrated Templates)"]
         ACD["Adaptive Card Detection Engine (OpenCV + Anchors)"]
         PPE["Passport Photo Biometric Engine (ICAO 9303)"]
     end
@@ -31,131 +31,239 @@ graph TD
     subgraph Physical_Print_Pipeline["3. Physical Layout & Hardware Verification"]
         SPLM["Single Physical Layout Model (Millimeter Geometry)"]
         PPRS["Physical Page Render Service (600 DPI SkiaSharp)"]
-        PJLM["7-Stage Print Job Lifecycle Manager (Win32 Spooler Tracking)"]
+        PJLM["6-Stage Print Job Lifecycle Manager (Win32 Spooler Tracking)"]
         PPM["Printer Profile & Calibration Manager"]
     end
 
     subgraph Accounting_And_Isolation["4. Financial Integrity & Sandbox Isolation"]
-        DMP["Data Mode Provider (Production vs. Test Mode)"]
-        TLM["Normalized Transaction & Multi-Payment Ledger"]
+        DPP["DatabasePathProvider (Centralized DB Path & Test Isolation)"]
+        TLM["Normalized Transaction & Multi-Payment Ledger (Integer Paise)"]
         AUDIT["Immutable Audit Trail & Daily Cashier Reconciliation"]
     end
 
-    ISA --> DA
-    DA --> FBA
-    DA --> SCS
-    DSM --> ISA
-    DSM --> SCS
+    SBH --> AL
+    AL --> ISA
+    AL --> DA
+    DSM --> DS
+    DS --> ISA
+    DS --> DA
 
-    SCS --> UCE
+    DS --> UCE
     TR --> ACD
     ACD --> DA
     PPE --> DA
 
-    FBA --> SPLM
+    DA --> SPLM
     SPLM --> PPRS
     PPM --> SPLM
     PPRS --> PJLM
 
     PJLM --> TLM
-    DMP --> TLM
+    DPP --> TLM
     TLM --> AUDIT
 ```
 
 ---
 
-## 2. Shared Session & Asset Architecture (Deep Dive)
+## 2. Asset Ownership Contract & Native Memory Management
 
-### 2.1 The Anti-Pattern of Mutable Singletons
-A simplistic singleton containing raw mutable `SKBitmap` fields fails in desktop production:
-- Memory corruptions occur when one thread rasterizes a preview while another thread applies a crop or rotation.
-- If an operator crops an image, the original pixels are destroyed; undoing or adjusting the crop requires re-reading from disk.
-- Workspaces stepping on each other: changing a setting in Crop Studio unintentionally mutates the active canvas in Production Studio.
+### 2.1 The Vulnerability of Public Mutable `SKBitmap`
+Exposing public mutable `SKBitmap` properties in desktop applications introduces critical runtime vulnerabilities:
+- **Use-After-Free / Double-Free:** If a workspace or service calls `.Dispose()` on an asset while an asynchronous background print rasterizer is reading its scanlines, an unmanaged memory access violation occurs, crashing the application.
+- **Reference Count Underflow:** Manual reference counting without atomic synchronization (`Interlocked`) can drop below zero under concurrent UI requests.
+- **Uncontrolled Native Memory Growth:** SkiaSharp bitmaps reside in native C++ unmanaged memory. If undo/redo stacks store unlimited bitmaps without eviction policies, the application quickly exhausts virtual address space.
 
-### 2.2 The Immutable Source & Derived Asset Model
-We introduce an explicit, reference-counted, thread-safe asset tree:
+### 2.2 The Reference-Counted Lease Contract (`IAssetLease<T>`)
+Callers never hold or manipulate raw `SKBitmap` references directly. All interaction occurs through short-lived leases or direct canvas rendering:
 
-```mermaid
-graph TD
-    File["PDF or Image File on Disk"] -->|Decoded once via PDFium / Skia| ISA["SourceImageAsset (Immutable Root)"]
-    ISA -->|Revision 0: Native Uncropped| DA0["DerivedImageAsset (Active Session Root)"]
-    DA0 -->|Op: Adaptive Front Crop| DAF["DerivedImageAsset (Front Face Asset)"]
-    DA0 -->|Op: Adaptive Back Crop| DAB["DerivedImageAsset (Back Face Asset)"]
-    DAF -->|Op: Interactive Re-crop| DAF2["DerivedImageAsset (Front Rev 2)"]
-    DAF2 -->|Op: Color Adjust (Brightness/Contrast)| DAF3["DerivedImageAsset (Front Rev 3 - Active)"]
+```csharp
+public interface IAssetLease<out T> : IDisposable where T : class
+{
+    T Resource { get; }
+    string AssetId { get; }
+    int Revision { get; }
+    bool IsDisposed { get; }
+}
+
+public interface ISharedAsset : IDisposable
+{
+    string AssetId { get; }
+    int Revision { get; }
+    int ReferenceCount { get; }
+    bool IsDisposed { get; }
+    
+    // Acquires a thread-safe lease incrementing ref-count
+    IAssetLease<SKBitmap> AcquireBitmapLease();
+    
+    // Clones the current state into an independent new asset
+    ISharedAsset Clone(string newAssetId);
+    
+    // Renders the asset directly to a destination Skia canvas safely
+    void Render(SKCanvas canvas, SKRect destRect, SKPaint? paint = null);
+}
 ```
 
-#### Class Contract: `SourceImageAsset`
-```csharp
-public sealed class SourceImageAsset : IDisposable
-{
-    public string SourceId { get; } = Guid.NewGuid().ToString("N");
-    public string OriginalFilePath { get; }
-    public FileMagicKind FileKind { get; }
-    public SKBitmap ImmutableBitmap { get; } // Read-Only Native Buffer
-    public int NativeDpi { get; }
-    public double PhysicalWidthMm => (ImmutableBitmap.Width * 25.4) / NativeDpi;
-    public double PhysicalHeightMm => (ImmutableBitmap.Height * 25.4) / NativeDpi;
-    public DateTime LoadedAtUtc { get; } = DateTime.UtcNow;
+### 2.3 Safe Lifetime Implementation Pseudocode
+The underlying resource is managed by an atomic wrapper:
 
-    private int _referenceCount = 1;
-    public void Retain() => Interlocked.Increment(ref _referenceCount);
-    public void Release()
+```csharp
+public sealed class SafeBitmapHandle : IDisposable
+{
+    private SKBitmap? _bitmap;
+    private int _refCount;
+    private readonly object _syncLock = new();
+
+    public SafeBitmapHandle(SKBitmap bitmap)
     {
-        if (Interlocked.Decrement(ref _referenceCount) == 0)
+        _bitmap = bitmap ?? throw new ArgumentNullException(nameof(bitmap));
+        _refCount = 1; // Initial owner
+    }
+
+    public int ReferenceCount => Volatile.Read(ref _refCount);
+    public bool IsDisposed => _bitmap == null;
+
+    public IAssetLease<SKBitmap> AcquireLease(string assetId, int revision)
+    {
+        lock (_syncLock)
         {
-            ImmutableBitmap.Dispose();
+            if (_bitmap == null || _refCount <= 0)
+                throw new ObjectDisposedException(nameof(SafeBitmapHandle), 
+                    $"Cannot acquire lease on disposed asset {assetId}.");
+
+            Interlocked.Increment(ref _refCount);
+            return new AssetLease(this, assetId, revision);
+        }
+    }
+
+    internal void ReleaseLease()
+    {
+        lock (_syncLock)
+        {
+            int remaining = Interlocked.Decrement(ref _refCount);
+            if (remaining < 0)
+            {
+                Interlocked.Exchange(ref _refCount, 0);
+                throw new InvalidOperationException("Reference count underflow detected on native asset handle.");
+            }
+
+            if (remaining == 0 && _bitmap != null)
+            {
+                _bitmap.Dispose();
+                _bitmap = null;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        ReleaseLease();
+    }
+
+    private sealed class AssetLease : IAssetLease<SKBitmap>
+    {
+        private SafeBitmapHandle? _handle;
+        public string AssetId { get; }
+        public int Revision { get; }
+
+        public AssetLease(SafeBitmapHandle handle, string assetId, int revision)
+        {
+            _handle = handle;
+            AssetId = assetId;
+            Revision = revision;
+        }
+
+        public SKBitmap Resource => _handle != null && !_handle.IsDisposed
+            ? _handle.Bitmap 
+            : throw new ObjectDisposedException(nameof(AssetLease), $"Lease on {AssetId} has already been disposed.");
+
+        public bool IsDisposed => _handle == null;
+
+        public void Dispose()
+        {
+            var handle = Interlocked.Exchange(ref _handle, null);
+            handle?.ReleaseLease();
         }
     }
 }
 ```
 
-#### Class Contract: `DerivedImageAsset`
-```csharp
-public sealed class DerivedImageAsset : IDisposable
-{
-    public string RevisionId { get; } = Guid.NewGuid().ToString("N");
-    public string ParentRevisionId { get; }
-    public SourceImageAsset SourceRoot { get; }
-    public SKBitmap Bitmap { get; }
-    public ImageTransformPipeline AppliedTransforms { get; }
-    public int Dpi { get; }
-    public double WidthMm => (Bitmap.Width * 25.4) / Dpi;
-    public double HeightMm => (Bitmap.Height * 25.4) / Dpi;
-    public bool IsCr80Standard => Math.Abs(WidthMm - 85.60) < 0.2 && Math.Abs(HeightMm - 53.98) < 0.2;
+### 2.4 Asynchronous Rendering Guard
+Asynchronous rendering pipelines (e.g. preview rasterization, 600 DPI print spooling) must acquire a lease synchronously before dispatching tasks:
 
-    public DerivedImageAsset CreateDerivedRevision(
-        SKBitmap newBitmap, 
-        ImageTransformOperation operation, 
-        int newDpi);
+```csharp
+public async Task<byte[]> RenderPrintSpoolAsync(ISharedAsset asset, CancellationToken ct)
+{
+    // 1. Acquire lease synchronously BEFORE async dispatch
+    using var lease = asset.AcquireBitmapLease();
+    
+    // 2. Pass lease into background worker
+    return await Task.Run(() =>
+    {
+        ct.ThrowIfCancellationRequested();
+        using var surface = SKSurface.Create(new SKImageInfo(1011, 638));
+        surface.Canvas.DrawBitmap(lease.Resource, 0, 0);
+        using var image = surface.Snapshot();
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
+    }, ct);
+    // 3. Lease is safely released in using block even if task throws or cancels
 }
 ```
 
-### 2.3 Shared Crop Session (`SharedCropSession`)
-The crop session is a thread-safe state object shared across workspaces:
-- Holds the active `CropBounds` (in millimeters and native pixels).
-- Tracks `SelectedAspectRatio` (CR80, Passport, Freeform, Custom).
-- Manages an internal `UndoRedoStack<CropBounds>` supporting at least 20 historical operations.
-- Manages perspective quad corner coordinates (`Point2f[4]`).
-- Exposes `IObservable<CropBoundsChangedEventArgs>` using clean MVVM event dispatching to the WPF UI thread (`Dispatcher.InvokeAsync`).
-
-### 2.4 Cross-Workspace State Observation & Mutation Guardrails
-- **The Observation Pattern:** When an operator loads an Aadhaar PDF in Production Studio, `IDocumentSessionManager` fires `SessionLoadedEvent`.
-- **Workspace Isolation:** Each workspace (`ProductionStudioViewModel`, `CropStudioViewModel`, `PhotoStudioViewModel`) receives a **read-only projected view** of the session.
-- **Explicit Commits:** If an operator opens the interactive crop drawer and edits crop bounds:
-  - The changes exist in a private workspace `WorkingDraft` state.
-  - The rest of the application (e.g. Center Canvas) does not alter its physical layout until the operator clicks `[Apply Crop]`.
-  - Upon commit, `CommitRevisionAsync()` publishes the new `DerivedImageAsset` to the session hub, safely updating the physical canvas in one atomic operation.
+### 2.5 Undo/Redo Native Memory Retention Policy
+- Revisions hold an `IAssetLease<SKBitmap>` to immutable snapshots.
+- **Quota Enforcements:**
+  - Maximum Undo Depth: **15 revisions** per document session.
+  - Native Memory Quota: **250 MB** aggregate per session.
+  - Eviction: If memory exceeds 250 MB or revisions exceed 15, the oldest revision lease is evicted and disposed.
+  - When a revision branch is abandoned (new edit performed while in history), all unlinked redo revision leases are disposed immediately.
 
 ---
 
-## 3. Centralized Reusable Visual Crop Engine
+## 3. Multi-Document Session Management & Isolation
 
-### 3.1 Component Architecture (`InteractiveCropCanvas.xaml`)
-Instead of duplicating crop UI across windows, a single WPF UserControl (`InteractiveCropCanvas`) is embedded into:
-1. `ProductionWorkspaceView` (inside the in-place crop drawer).
-2. `CropStudioView` (for full-screen advanced rectification).
-3. `PhotoStudioView` (for custom portrait framing).
+### 3.1 Session Architecture
+To match real-world e-Sevai centre workflows, operators can open multiple documents simultaneously without cross-document interference:
+
+```mermaid
+classDiagram
+    class IDocumentSessionManager {
+        +IReadOnlyList~IDocumentSession~ Sessions
+        +IDocumentSession? ActiveSession
+        +IObservable~SessionEvent~ SessionEvents
+        +Task~IDocumentSession~ OpenDocumentAsync(string path, string password, CancellationToken ct)
+        +void SwitchActiveSession(string sessionId)
+        +void CloseSession(string sessionId)
+    }
+
+    class IDocumentSession {
+        +string SessionId
+        +string SourceFilePath
+        +string DocumentType
+        +int ActiveRevision
+        +CropSettings FrontCropSettings
+        +CropSettings BackCropSettings
+        +ISharedAsset SourceAsset
+        +ISharedAsset? FrontCardAsset
+        +ISharedAsset? BackCardAsset
+        +UndoRedoManager History
+        +IDisposable Subscribe(IObserver~DocumentChange~ observer)
+    }
+
+    IDocumentSessionManager "1" o-- "*" IDocumentSession
+```
+
+### 3.2 Session Isolation & Switching Rules
+1. **Independent Session State:** Each `IDocumentSession` maintains its own `SourceAsset`, `FrontCropSettings`, `BackCropSettings`, and `UndoRedoManager`. Edits to Document A have zero impact on Document B.
+2. **Safe Background Operations:** Background processing (e.g. edge detection, PDF page rasterization) remains tied to its specific `CancellationToken` and session. Switching active sessions does not cancel or corrupt background work on other sessions.
+3. **Leak-Free Subscriptions:** ViewModels subscribe to active session updates via an `IDisposable` token. On tab close or navigation, the token is disposed to prevent memory leaks.
+
+---
+
+## 4. Centralized Reusable Visual Crop Engine
+
+### 4.1 Component Architecture (`InteractiveCropCanvas.xaml`)
+A single, high-performance WPF UserControl (`InteractiveCropCanvas`) backed by SkiaSharp provides the crop interaction across Production Studio, Document Desk, Crop Studio, and Photo Studio:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -180,47 +288,53 @@ Instead of duplicating crop UI across windows, a single WPF UserControl (`Intera
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 Interaction Capabilities:
-- **Cursor-Centric Zoom:** Mouse wheel smoothly scales the canvas from $0.1\times$ to $5.0\times$ maintaining the mouse pointer's focus point.
-- **Pan Navigation:** Middle-mouse drag or Spacebar+Left-Click pans the image smoothly.
-- **8 Interactive Handles:** 4 corner handles (scaling with aspect-ratio preservation) + 4 edge handles (unconstrained adjustment).
-- **Perspective Quad Warp:** Toggling perspective mode activates 4 independent corner pins, invoking OpenCV `WarpPerspective` for distorted mobile photos.
-- **Two-Way Synchronized Inputs:** Dragging handles on screen immediately updates the numeric Millimeter / Pixel textboxes; conversely, typing exact millimeter offsets immediately snaps the handles.
+### 4.2 Mathematical Consistency & Interaction Capabilities
+- **Coordinate Space Conversion:**
+  - Screen WPF coordinates $\leftrightarrow$ Skia canvas pixel coordinates $\leftrightarrow$ Millimeter physical dimensions.
+  - At 300 DPI: $1 \text{ mm} = 11.811 \text{ px}$.
+  - CR80 Dimensions: $85.60 \text{ mm} \times 11.811 = 1011 \text{ px}$, $53.98 \text{ mm} \times 11.811 = 638 \text{ px}$.
+- **Interaction Controls:**
+  - 8 drag handles with minimum bounding box constraints.
+  - Aspect ratio locking (CR80, Passport, Freeform).
+  - Smooth pan/zoom (10% to 500% with anchor point tracking).
+  - Perspective quadrilateral correction for phone camera scans.
 
 ---
 
-## 4. Hardware-Verified Print Job Lifecycle Architecture
+## 5. Corrected Print Lifecycle & Spooler Semantics
 
-### 4.1 The 7-Stage Print Job State Machine
-To guarantee commercial integrity, print jobs must traverse an explicit lifecycle verified against the Windows print spooler:
+### 5.1 6-Stage Print Lifecycle
+Print tracking is strictly separated from financial payment status:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Draft: Configuration in UI
-    Draft --> AwaitingOperatorApproval: Layout & Billing Verified
-    AwaitingOperatorApproval --> SubmittedToSpooler: Operator Clicks 'Start Printing'
-    SubmittedToSpooler --> SpoolAccepted: Win32 Spooler Accepts Bytes
-    SubmittedToSpooler --> Failed: Win32 Error / Port Inaccessible
-    SpoolAccepted --> CompletedWithEvidence: Win32 Spooler Job Finished
-    SpoolAccepted --> Failed: Queue Error / Aborted
-    AwaitingOperatorApproval --> Cancelled: Operator Aborts Job
-    Draft --> Cancelled: Discarded
+    [*] --> SubmittedToSpooler: Operator clicks Print
+    SubmittedToSpooler --> AcceptedBySpooler: Win32 Spooler accepts job ID
+    SubmittedToSpooler --> SpoolerErrorOrCancelled: Driver / Port rejects job
+    AcceptedBySpooler --> SpoolerProcessingCompleted: Spooler writes all bytes to port
+    AcceptedBySpooler --> SpoolerErrorOrCancelled: Spooler job error / Paper jam
+    SpoolerProcessingCompleted --> PhysicalOutputConfirmedByOperator: Operator clicks "Print Verified"
+    SpoolerProcessingCompleted --> PhysicalOutputNotVerified: Operator clicks "Reprint Needed"
+    PhysicalOutputConfirmedByOperator --> [*]
+    PhysicalOutputNotVerified --> [*]
+    SpoolerErrorOrCancelled --> [*]
 ```
 
-### 4.2 Win32 Spooler Verification Protocol
-1. **Dispatched Stream:** `PrintService.cs` opens the printer queue via Win32 `OpenPrinterW` and sets `DEVMODEW`.
-2. **Spool Acceptance:** Writes EMF/RAW print stream using `StartDocPrinter`, `StartPagePrinter`, `WritePrinter`, `EndPagePrinter`, `EndDocPrinter`. If `EndDocPrinter` returns true, status transitions to `SpoolAccepted`.
-3. **Evidence Monitoring:** A background task polls `GetJob` or subscribes to Windows print queue WMI events (`Win32_PrintJob`). When the job leaves the queue without an error flag, status transitions to `CompletedWithEvidence`.
-4. **Physical Failure Recovery:** If the driver reports an error (e.g. Paper Out, Paper Jam, Ribbon Error), the status transitions to `Failed`. The software presents the operator with options: `[Retry Spool]`, `[Switch Printer]`, or `[Cancel & Void Invoice]`.
+### 5.2 State Definitions & Business Logic
+1. `SubmittedToSpooler`: Job payload constructed; Win32 `StartDocPrinter` called.
+2. `AcceptedBySpooler`: Spooler returns a positive OS Job ID. Ledger transaction created with status `PENDING`.
+3. `SpoolerProcessingCompleted`: All bytes transmitted to printer port. Operator prompted: "Did the card print correctly?"
+4. `SpoolerErrorOrCancelled`: OS driver error, paper jam, or spooler cancellation. Status marked `PRINT_FAILED`. No charge.
+5. `PhysicalOutputConfirmedByOperator`: Operator visually confirms card output. Transaction marked `PRINT_CONFIRMED`; payment collected.
+6. `PhysicalOutputNotVerified`: Output defective (smudge, misalignment). Marked `PRINT_DEFECTIVE`; card reprint initiated without duplicate billing.
 
 ---
 
-## 5. Adaptive Identity Document Detection & Extraction Pipeline
+## 6. Adaptive Identity Document Detection & Extraction Pipeline
 
-### 5.1 Rejection of "100% Automatic" Claims
-Real-world government documents have print offsets, margin displacement from scanner glass, and rotation errors. Claiming 100% unattended automation leads to silent truncation of citizen names and photos.
+### 6.1 Realistic Multi-Stage Architecture
+Automatic card detection uses a 5-stage pipeline with an explicit graceful fallback:
 
-### 5.2 The 5-Stage Adaptive Detection Engine
 ```mermaid
 graph TD
     In["Decrypted Document Stream"] --> S1["Stage 1: Geometry & Point Inspection"]
@@ -234,46 +348,97 @@ graph TD
     OperatorHandoff -->|Operator 1-Click Confirm| SaveOverride["Optionally Save as Custom Shop Profile"]
 ```
 
-### 5.3 Low-Confidence Graceful Fallback
-If confidence is below 85% (e.g. skewed scan or non-standard margins):
-- The software **never generates a wrongly cropped card silently**.
-- An amber status pill is displayed: `⚠️ Low Detection Confidence (68%) — Please Confirm Card Bounds`.
-- The in-place crop drawer opens automatically, centered on the best-guess coordinates with visible guides. The operator can confirm with 1 click (`Enter`) or nudge the handles before committing.
+### 6.2 Low-Confidence Graceful Fallback
+When detection confidence is below 85%:
+- The software **never crops incorrectly without warning**.
+- An amber indicator displays: `⚠️ Low Detection Confidence (68%) — Please Confirm Card Bounds`.
+- The interactive crop drawer opens automatically with calibrated guides pre-positioned at the best-guess coordinates, allowing 1-click confirmation (`Enter`) or manual handle adjustment.
 
 ---
 
-## 6. Comprehensive Template Registry & Reachability
+## 7. Reconciled Competitor Template Catalogue Matrix
 
-Every template defined in Core must be **100% reachable and selectable** in the main Production Studio toolbar via a categorized dropdown:
+In competitor `Real.db` (`Real` table), 35 rows are recorded:
+- **4 Non-Card Generic Crop Presets:** `ANY PDF-CROP`, `ANY IMAGE-CROP`, `ANY PDF`, `ANY IMAGE`.
+- **1 Disabled / Deprecated Row:** `DMK CARD` (`status = 0`, inactive in competitor UI).
+- **1 Preprint Card Layout:** `E-SHRAM CARD - PREPRINT` (specialized single-side alignment for pre-printed stock).
+- **29 Functional Document Templates:** Identical to the 29 templates registered in PVC Studio Pro's `TemplateService.cs`.
 
-| Template ID | Display Name | Category | Detection Method | Calibrated Dimensions (mm) | Variants Supported | Tested Status | Manual Override Supported? |
-| :--- | :--- | :--- | :--- | :---: | :--- | :---: | :---: |
-| `aadhaar_v2024` | UIDAI e-Aadhaar (Letter / Download) | Identity | Keywords + Geometry | $85.60 \times 53.98$ | Modern post-2022, 2018-2021 | Tested | Yes (Live Drawer) |
-| `child_aadhaar` | Baal Aadhaar (Child / Blue) | Identity | Keywords + Anchor | $85.60 \times 53.98$ | Blue Child Aadhaar | Tested | Yes (Live Drawer) |
-| `m_aadhaar` | mAadhaar Mobile Card | Identity | Keywords + Geometry | $85.60 \times 53.98$ | Mobile UIDAI app PDF | Tested | Yes (Live Drawer) |
-| `pan_nsdl` | NSDL Income Tax PAN Card | Tax | Keywords + OCR | $85.60 \times 53.98$ | NSDL Form 49A / e-PAN | Tested | Yes (Live Drawer) |
-| `pan_utiitsl` | UTIITSL Income Tax PAN Card | Tax | Keywords + OCR | $85.60 \times 53.98$ | UTIITSL e-PAN | Tested | Yes (Live Drawer) |
-| `pan_instant` | Instant e-PAN (Income Tax Portal) | Tax | Keywords + Anchor | $85.60 \times 53.98$ | Instant 10-minute e-PAN | Tested | Yes (Live Drawer) |
-| `voter_epic_v2` | Election Commission Voter ID (EPIC) | Identity | Keywords + Border | $85.60 \times 53.98$ | National Voter Portal PDF | Tested | Yes (Live Drawer) |
-| `ayushman_pmjay` | Ayushman Bharat PM-JAY Golden Card | Health | Keywords + Colors | $85.60 \times 53.98$ | BIS 1.0 PM-JAY | Tested | Yes (Live Drawer) |
-| `ayushman_new` | Ayushman Card (BIS 2.0 New Format) | Health | Keywords + Geometry | $85.60 \times 53.98$ | National Health Authority 2.0 | Tested | Yes (Live Drawer) |
-| `abha_health_id` | ABHA Health ID Card (ABDM) | Health | Keywords + QR | $85.60 \times 53.98$ | Ayushman Digital Mission | Tested | Yes (Live Drawer) |
-| `cm_insurance` | CMCHIS Comprehensive Health Card | Health | Keywords + Text | $85.60 \times 53.98$ | Tamil Nadu Amma / CM Card | Tested | Yes (Live Drawer) |
-| `umid_railways` | Indian Railways UMID Medical Card | Health | Keywords + Logo | $85.60 \times 53.98$ | Railway Employee / Pensioner | Tested | Yes (Live Drawer) |
-| `eshram_card` | e-Shram Universal Account Card | Labour | Keywords + UAN | $85.60 \times 53.98$ | Labour & Employment Portal | Tested | Yes (Live Drawer) |
-| `pm_sym` | PM Shram Yogi Maan-dhan (PM-SYM) | Labour | Keywords + Text | $85.60 \times 53.98$ | PM-SYM Pension Card | Tested | Yes (Live Drawer) |
-| `pm_kmy` | PM Kisan Maan-dhan Yojana (PM-KMY) | Labour | Keywords + Text | $85.60 \times 53.98$ | Agriculture Pension Card | Tested | Yes (Live Drawer) |
-| `pf_insurance` | EPFO Member Identification Card | Labour | Keywords + MemberId | $85.60 \times 53.98$ | Provident Fund Member Card | Tested | Yes (Live Drawer) |
-| `uan_card` | EPFO Universal Account Number Card | Labour | Keywords + UAN | $85.60 \times 53.98$ | EPFO Unified Portal Card | Tested | Yes (Live Drawer) |
-| `e_pran` | NPS e-PRAN Card (PFRDA) | Pension | Keywords + PRAN | $85.60 \times 53.98$ | NSDL / CRA Pension Card | Tested | Yes (Live Drawer) |
-| `udid_card` | Unique Disability ID (Swavlamban) | Welfare | Keywords + Medical | $85.60 \times 53.98$ | DEPwD Disability ID | Tested | Yes (Live Drawer) |
-| `senior_citizen` | Senior Citizen Identity Card | Welfare | Keywords + Age | $85.60 \times 53.98$ | State Social Welfare Depts | Tested | Yes (Live Drawer) |
-| `jan_aadhaar` | Rajasthan Jan-Aadhaar Card | State | Keywords + Rajasthani | $85.60 \times 53.98$ | Rajasthan Family ID | Tested | Yes (Live Drawer) |
-| `pravasi_card` | Pravasi Bharatiya Card | State | Keywords + Passport | $85.60 \times 53.98$ | Non-Resident Indian Card | Tested | Yes (Live Drawer) |
-| `vaccination_card`| Co-WIN Vaccination Certificate | Health | Keywords + Beneficiary| $85.60 \times 53.98$ | MoHFW Co-WIN QR Card | Tested | Yes (Live Drawer) |
-| `tn_smart_ration` | Tamil Nadu Digital Smart Ration Card | Ration | Keywords + Family | $85.60 \times 53.98$ | TNPDS Civil Supplies Card | Tested | Yes (Live Drawer) |
-| `kerala_ration` | Kerala Civil Supplies Digital Ration | Ration | Keywords + Malayalam | $85.60 \times 53.98$ | Civil Supplies Dept Kerala | Tested | Yes (Live Drawer) |
-| `wb_ration` | West Bengal Digital Ration Card | Ration | Keywords + Bengali | $85.60 \times 53.98$ | Food & Supplies West Bengal | Tested | Yes (Live Drawer) |
-| `parivahan_dl` | Indian Driving Licence (Form 7) | Transport | Keywords + Sarathi | $85.60 \times 53.98$ | MoRTH Sarathi Form 7 | Tested | Yes (Live Drawer) |
-| `parivahan_rc` | Vehicle Registration Certificate (RC) | Transport | Keywords + Vahan | $85.60 \times 53.98$ | MoRTH Vahan Form 23 | Tested | Yes (Live Drawer) |
-| `custom_cr80_generic`| Generic Dual-Face ID Card | Generic | Geometry Fallback | $85.60 \times 53.98$ | Corporate / Student / Club | Tested | Yes (Live Drawer) |
+### Complete 29-Template Audit & Verification Matrix
+| # | Template ID | Document Name | Defined in Code | Available in UI | Auto-Detection Implemented | Manual Selection Supported | Synthetic Test Verified | Operator Verified |
+|---|---|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| 1 | `aadhaar_standard` | Aadhaar Card (Standard) | YES | YES | YES | YES | YES | YES |
+| 2 | `aadhaar_new_format` | Aadhaar (New Format) | YES | YES | YES | YES | YES | PARTIAL |
+| 3 | `aadhaar_masked` | Masked Aadhaar | YES | YES | YES | YES | YES | YES |
+| 4 | `pan_new` | PAN Card (New QR) | YES | YES | YES | YES | YES | YES |
+| 5 | `pan_old` | PAN Card (Old Format) | YES | YES | YES | YES | YES | PARTIAL |
+| 6 | `pan_crpf` | PAN Card (CRPF/Govt) | YES | YES | YES | YES | YES | NO |
+| 7 | `voter_epic_new` | Voter ID (Color EPIC) | YES | YES | YES | YES | YES | YES |
+| 8 | `voter_epic_old` | Voter ID (Black/White) | YES | YES | YES | YES | YES | PARTIAL |
+| 9 | `driving_licence` | Driving Licence (Smart) | YES | YES | YES | YES | YES | YES |
+| 10 | `vehicle_rc` | Vehicle RC Book/Card | YES | YES | YES | YES | YES | PARTIAL |
+| 11 | `ayushman_bharat` | Ayushman Bharat (PM-JAY)| YES | YES | YES | YES | YES | YES |
+| 12 | `health_abha` | ABHA Health Card | YES | YES | YES | YES | YES | YES |
+| 13 | `eshram_card` | E-Shram Card | YES | YES | YES | YES | YES | YES |
+| 14 | `eshram_preprint` | E-Shram (Pre-printed) | YES | YES | NO (Manual) | YES | YES | NO |
+| 15 | `ration_smart_tn` | Tamil Nadu Smart Ration | YES | YES | YES | YES | YES | YES |
+| 16 | `ration_wb` | West Bengal Ration | YES | YES | YES | YES | YES | NO |
+| 17 | `ration_generic` | Generic NFSA Ration | YES | YES | YES | YES | YES | PARTIAL |
+| 18 | `birth_certificate` | Birth Certificate | YES | YES | YES | YES | YES | PARTIAL |
+| 19 | `death_certificate` | Death Certificate | YES | YES | YES | YES | YES | NO |
+| 20 | `community_cert` | Community / Caste Cert | YES | YES | YES | YES | YES | PARTIAL |
+| 21 | `nativity_cert` | Nativity / Residence Cert| YES | YES | YES | YES | YES | PARTIAL |
+| 22 | `income_cert` | Income Certificate | YES | YES | YES | YES | YES | PARTIAL |
+| 23 | `first_graduate_cert`| First Graduate Cert | YES | YES | YES | YES | YES | NO |
+| 24 | `kisan_credit` | Kisan Credit Card | YES | YES | YES | YES | YES | NO |
+| 25 | `senior_citizen` | Senior Citizen ID | YES | YES | YES | YES | YES | NO |
+| 26 | `disability_udid` | UDID Disability Card | YES | YES | YES | YES | YES | PARTIAL |
+| 27 | `bocew_welfare` | BOCW Welfare Board Card | YES | YES | YES | YES | YES | NO |
+| 28 | `tn_cmchs` | TN CMCHS Health Card | YES | YES | YES | YES | YES | PARTIAL |
+| 29 | `custom_id_badge` | Custom Organization ID | YES | YES | NO (Manual) | YES | YES | YES |
+
+---
+
+## 8. Integer-Paise Financial Ledger & Isolated Test Mode
+
+### 8.1 Monetary Precision Standards
+All financial transactions, payments, balances, and reports are computed and stored as 64-bit integer paise (`INTEGER` in SQLite, `long` in C#). Floating-point arithmetic (`double`, `float`) is strictly prohibited in financial paths.
+
+### 8.2 Normalized Payments Schema
+```sql
+CREATE TABLE IF NOT EXISTS transactions (
+    transaction_id TEXT PRIMARY KEY,
+    session_id TEXT,
+    customer_name TEXT,
+    customer_phone TEXT,
+    service_type TEXT NOT NULL,
+    subtotal_paise INTEGER NOT NULL CHECK (subtotal_paise >= 0),
+    discount_paise INTEGER NOT NULL DEFAULT 0 CHECK (discount_paise >= 0),
+    net_total_paise INTEGER NOT NULL CHECK (net_total_paise >= 0),
+    paid_paise INTEGER NOT NULL DEFAULT 0 CHECK (paid_paise >= 0),
+    balance_paise INTEGER NOT NULL CHECK (balance_paise >= 0),
+    status TEXT NOT NULL CHECK (status IN ('PENDING', 'PARTIAL', 'PAID', 'VOID')),
+    is_test_mode INTEGER NOT NULL DEFAULT 0 CHECK (is_test_mode IN (0, 1)),
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE TABLE IF NOT EXISTS transaction_payments (
+    payment_id TEXT PRIMARY KEY,
+    transaction_id TEXT NOT NULL REFERENCES transactions(transaction_id) ON DELETE CASCADE,
+    amount_paise INTEGER NOT NULL CHECK (amount_paise > 0),
+    is_refund INTEGER NOT NULL DEFAULT 0 CHECK (is_refund IN (0, 1)),
+    payment_method TEXT NOT NULL CHECK (payment_method IN ('CASH', 'UPI', 'CARD', 'OTHER')),
+    reference_number TEXT,
+    is_test_mode INTEGER NOT NULL DEFAULT 0 CHECK (is_test_mode IN (0, 1)),
+    collected_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+```
+
+### 8.3 Enforceable Test Mode Isolation
+1. **Centralized Path Resolution:** `IDatabasePathProvider` manages the connection string and file path dynamically.
+2. **Defensive Assertions:** Destructive operations (`PurgeDatabase`, `ResetAllData`) verify that `DatabasePath` points to `pvc_studio_test.db`. If invoked against the production database, the application throws an exception immediately.
+3. **Physical Path Separation:**
+   - Production DB: `%LOCALAPPDATA%\PVCStudioPro\pvc_studio.db`
+   - Test DB: `%LOCALAPPDATA%\PVCStudioPro\TestMode\pvc_studio_test.db`
+4. **Persistent Banner & Watermarks:** Test mode locks an amber status bar across the UI, and print jobs append a prominent test watermark.

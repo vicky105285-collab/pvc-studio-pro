@@ -1,12 +1,12 @@
 # PVC Studio Pro — Master Product Audit & Forensic Reality Report
-**Phase 0.1 Revised | Architecture Review | Product Baseline**
+**Phase 0.2 Validated | Final Architecture Review | Pre-Implementation Gate**
 
 - **Document:** `docs/MASTER_PRODUCT_AUDIT.md`
-- **Revision:** Phase 0.1
+- **Revision:** Phase 0.2 Validated
 - **Date:** 2026-11-19
 - **Auditor:** Senior Windows Desktop Systems & Print Engine Architect
 - **Current Branch:** `competitor-feature-parity`
-- **Latest Commit SHA:** `9ddc138` (Phase 0 Audit Deliverables)
+- **Baseline Commit SHA:** `1da2db5`
 - **Reference Competitor:** Real Softwares PVC Card Pro v8.8 (`C:\Program Files (x86)\Real Softwares\PVC Card Pro\`)
 - **Target Platform:** Windows 11 x64 (.NET 8.0 Desktop Runtime, WPF, SkiaSharp 4.x, OpenCvSharp 4.x, Dapper, SQLite)
 - **Constraint Compliance:** Strictly Forensic Audit only. Zero source code modifications, zero build modifications, zero release packaging.
@@ -32,26 +32,28 @@ While individual low-level algorithms (such as PDFium rasterization, basic SkiaS
 
 ---
 
-## 2. Phase 0.1 Architectural Revisions & Resolutions
+## 2. Phase 0.2 Architectural Revisions & Resolutions
 
-Based on executive review, the Phase 0 audit has been upgraded to **Phase 0.1** with the following definitive architectural commitments (documented in detail in [`docs/PHASE_0_1_ARCHITECTURE_DECISIONS.md`](file:///d:/pvc%20card%20pro/docs/PHASE_0_1_ARCHITECTURE_DECISIONS.md)):
+Based on executive review, the Phase 0/0.1 audit has been upgraded to **Phase 0.2 Validated** with the following definitive architectural commitments (documented in detail in [`docs/PHASE_0_2_FINAL_VALIDATION.md`](file:///d:/pvc%20card%20pro/docs/PHASE_0_2_FINAL_VALIDATION.md)):
 
-1. **Lifecycle-Managed Asset Tree (`IDocumentSessionManager`):**
-   Replaces simplistic mutable bitmap singletons with immutable `SourceImageAsset` root buffers, functional derived revisions (`DerivedImageAsset`), reference-counted native memory management, and clean read-only workspace projections.
-2. **Unified Visual Crop Engine (`InteractiveCropCanvas`):**
+1. **Asset Ownership Contract (`SafeBitmapHandle` & `IAssetLease`):**
+   Replaces exposed mutable `SKBitmap` fields with reference-counted, lease-based access (`IAssetLease<SKBitmap>`) and atomic lifetime guards (`SafeBitmapHandle`) to eliminate underflow, double-free, and use-after-free bugs.
+2. **Multi-Document Session Architecture (`IDocumentSessionManager`):**
+   Supports multiple loaded documents concurrently, active document switching without re-reading from disk, isolated revision histories, and cancelable asynchronous loading pipelines.
+3. **Unified Visual Crop Engine (`InteractiveCropCanvas`):**
    Consolidates all crop logic into a single reusable WPF control with cursor-centric zoom ($0.1\times$ to $5.0\times$), smooth pan, 8 interactive handles, aspect-ratio locking (CR80, Passport), perspective quad warping, two-way synchronized numeric millimeter inputs, and multi-level undo/redo.
-3. **7-Stage Print Job Lifecycle & Win32 Spooler Tracking:**
-   Eliminates deceptive button-click success claims. Implements an explicit state machine (`Draft` $\rightarrow$ `AwaitingApproval` $\rightarrow$ `SubmittedToSpooler` $\rightarrow$ `SpoolAccepted` $\rightarrow$ `CompletedWithEvidence` $\rightarrow$ `Failed` $\rightarrow$ `Cancelled`).
-4. **Normalized Multi-Payment Ledger (`transaction_payments`):**
-   Decomposes transactions into master invoices and individual payment entries to support split payments (Cash + UPI), partial payments, discounts, refunds, voids, and an immutable audit trail. End-of-day cash reconciliation is derived mathematically from payment rows. Includes a 3-step automatic SQLite schema migration with rollback protection.
-5. **Total Test Mode Sandbox Isolation (`IDataModeProvider`):**
-   Isolates all test files, test settings, test calibration offsets, and disposable test invoices (`TEST-0001`) into a completely separate SQLite file (`pvc_studio_test.db`), guaranteed never to touch `pvc_studio_prod.db`.
-6. **Adaptive Confidence-Based Aadhaar Detection:**
-   Rejects the unrealistic promise of "100% automated extraction". Combines PDF point geometry, visual anchor keywords, template seeds, and OpenCV adaptive edge refinement with a confidence score. If confidence is below 85%, the software provides an amber warning and opens the visual crop drawer with calibrated guides rather than silently generating a miscrop.
-7. **Complete Template Registry Reachability:**
-   Connects all 29+ templates in `TemplateService` directly into the top toolbar of `ProductionWorkspaceView` via a categorized dropdown with manual override and custom profile saving.
-8. **WPF-UI v3 Standardization with Material Design 3 Tokens:**
-   Standardizes on the existing, verified WPF-UI library augmented with a dedicated M3 token resource dictionary (`M3Tokens.xaml`), avoiding multi-framework bloat.
+4. **6-Stage Print Job Lifecycle & Spooler Tracking:**
+   Strictly separates Windows Print Spooler transmission from operator physical confirmation (`PhysicalOutputConfirmedByOperator`), decoupling print verification from billing status.
+5. **Integer-Paise Financial Ledger (`INTEGER` in SQLite):**
+   All monetary amounts are represented in integer paise (₹1.00 = 100 paise) avoiding IEEE 754 float drift. Supported across split payments, refunds, partial balances, and void adjustments with exact SQL formulas for all 5 specific accounting scenarios.
+6. **Enforceable Test Mode Isolation:**
+   Centralizes database and directory path resolution through `IDatabasePathProvider` with defensive assertions that prevent accidental deletion or pollution of the production database.
+7. **Reconciled Competitor Template Catalogue:**
+   Formally audits the 35 rows in competitor `Real.db` (identifying 4 generic crop tools, 1 disabled template, and 1 preprint layout) and reconciles the 29 functional document templates matched 1:1 with `TemplateService.cs`.
+8. **5-Tier Acceptance Testing Framework:**
+   Replaces all claims of "100% universal accuracy" with 5 strictly defined evidence tiers: Unit, Integration, Visual Regression, Operator Manual Verification, and Hardware Print Verification.
+9. **Phased Milestone Deconstruction:**
+   Decomposes Phase 1 into three sequential sub-milestones: Phase 1A (Native Memory & Asset Lifecycle), Phase 1B (Multi-Document Session Manager), and Phase 1C (Workspace Integration & Synchronization).
 
 ---
 
@@ -98,23 +100,23 @@ Reverse engineering of the installed competitor at `C:\Program Files (x86)\Real 
 
 ---
 
-## 4. Summary of Systemic Deficiencies & Phase 0.1 Resolution Plan
+## 4. Summary of Systemic Deficiencies & Phase 0.2 Resolution Plan
 
-| Defect Category | Initial Audit Finding | Phase 0.1 Resolution Specification |
+| Defect Category | Initial Audit Finding | Phase 0.2 Validated Resolution Specification |
 | :--- | :--- | :--- |
-| **Workspace Architecture** | 4 competing document models; zero shared session context. | `IDocumentSessionManager` with immutable source assets and versioned derived revisions. |
+| **Workspace Architecture** | 4 competing document models; zero shared session context. | `IDocumentSessionManager` supporting multi-document tabs, leased bitmaps, and isolated revision histories. |
 | **Document Extraction** | Static box slicing without contour detection; non-uniform scaling distorts card proportions. | Adaptive Canny/Hough line search with confidence scoring, uniform CR80 padding, and low-confidence fallback. |
 | **Crop Engine** | Three separate crop implementations; adjustments do not sync across screens. | Single authoritative `InteractiveCropCanvas` control with cursor-centric zoom, 8 handles, and aspect locks. |
 | **Passport Photo Engine** | Print button is a placeholder (does not spool); bottom edge exhibits wavy GrabCut scalloping. | Fixed GrabCut bottom boundary condition; interactive face positioning; real spooling via `IPrintService`. |
-| **Template Catalogue** | 29 templates defined in Core, but 0 reachable from `ProductionWorkspaceViewModel`. | Universal categorized template selector in top toolbar across all 29+ templates with custom profile overrides. |
-| **Print Layout Pipeline** | `PhotoStudio` bypasses `PageLayoutModel`; `ProductionWorkspace` and `PrintPreview` maintain separate layout builders. | Single source of truth layout engine backed by a 7-stage Win32 spooler tracking lifecycle. |
-| **Financial Ledger** | Read-only and insert-only; test operations pollute production records. | Normalized `transaction_payments` schema with auditable edits, voids, daily closing, and 100% Test Mode sandbox. |
+| **Template Catalogue** | 29 templates defined in Core, but 0 reachable from `ProductionWorkspaceViewModel`. | Universal categorized template selector in top toolbar across all 29 templates reconciled against competitor `Real.db`. |
+| **Print Layout Pipeline** | `PhotoStudio` bypasses `PageLayoutModel`; `ProductionWorkspace` and `PrintPreview` maintain separate layout builders. | Single source of truth layout engine backed by a 6-stage lifecycle with operator physical verification. |
+| **Financial Ledger** | Read-only and insert-only; test operations pollute production records. | Integer-paise normalized `transaction_payments` schema with auditable edits, voids, daily closing, and isolated Test Mode. |
 | **UI Design & Ergonomics** | Inconsistent styling, lack of clear visual hierarchy, missing status feedback. | WPF-UI v3 standardized with Material Design 3 token hierarchy (`M3Tokens.xaml`) and collapsible responsive panels. |
 
 ---
 
 ## 5. Audit Conclusion & Phase 1 Readiness Gate
 
-PVC Studio Pro's core libraries possess the necessary mathematical and native foundations. The Phase 0.1 revisions establish an enterprise-grade architectural blueprint that eliminates all identified failure points.
+PVC Studio Pro's core libraries possess the necessary mathematical and native foundations. The Phase 0.2 validations establish an enterprise-grade architectural blueprint that eliminates all identified failure points and ensures strict native memory safety and financial integrity.
 
-**Phase 0 is complete. Zero application code has been modified. All documentation is committed and pushed to origin on `competitor-feature-parity`. We are awaiting user authorization before commencing Phase 1.**
+**Phase 0.2 is complete. Zero application code has been modified. All documentation is committed and pushed to origin on `competitor-feature-parity`. We are awaiting user authorization before commencing Phase 1A.**
