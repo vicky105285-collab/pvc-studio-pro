@@ -9,6 +9,8 @@ namespace PVCStudioPro.Core.Services
     {
         Task InitializeTemplatesAsync();
         IReadOnlyList<CardTemplate> GetAllTemplates();
+        IReadOnlyList<TemplateCategoryGroup> GetCategorizedTemplates();
+        IReadOnlyList<TemplateOptionItem> GetTemplateOptions();
         CardTemplate? GetTemplateById(string templateId);
         TemplateMatchResult MatchTemplate(string extractedText, double pageWidthMm = 0, double pageHeightMm = 0);
         TemplateMatchResult MatchTemplateByText(string extractedText);

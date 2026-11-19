@@ -96,6 +96,100 @@ namespace PVCStudioPro.Core.Services.Implementations
 
         public IReadOnlyList<CardTemplate> GetAllTemplates() => _templates.AsReadOnly();
 
+        public IReadOnlyList<TemplateCategoryGroup> GetCategorizedTemplates()
+        {
+            var identityTemplates = new List<CardTemplate>();
+            var healthTemplates = new List<CardTemplate>();
+            var labourTemplates = new List<CardTemplate>();
+            var stateTemplates = new List<CardTemplate>();
+            var transportTemplates = new List<CardTemplate>();
+
+            foreach (var t in _templates)
+            {
+                string id = t.TemplateId.ToLowerInvariant();
+                string cat = t.Category.ToUpperInvariant();
+
+                if (id.Contains("dl") || id.Contains("driving") || id.Contains("rc") || cat.Contains("TRANSPORT"))
+                {
+                    transportTemplates.Add(t);
+                }
+                else if (id.Contains("ayushman") || id.Contains("abha") || id.Contains("insurance") || id.Contains("umid") || cat == "HEALTHCARE_WELFARE" || cat == "HEALTH_IDENTITY")
+                {
+                    healthTemplates.Add(t);
+                }
+                else if (id.Contains("shram") || id.Contains("sym") || id.Contains("kmy") || id.Contains("uan") || id.Contains("pran") || id.Contains("pf") || cat == "LABOUR_PENSION")
+                {
+                    labourTemplates.Add(t);
+                }
+                else if (id.Contains("ration") || id.Contains("jan_aadhaar") || id.Contains("udid") || id.Contains("senior") || id.Contains("pravasi") || id.Contains("vaccination") || cat == "STATE_CIVIL_WELFARE")
+                {
+                    stateTemplates.Add(t);
+                }
+                else
+                {
+                    identityTemplates.Add(t);
+                }
+            }
+
+            var groups = new List<TemplateCategoryGroup>
+            {
+                new TemplateCategoryGroup
+                {
+                    CategoryKey = "IDENTITY",
+                    CategoryDisplayName = "Identity",
+                    Templates = identityTemplates
+                },
+                new TemplateCategoryGroup
+                {
+                    CategoryKey = "HEALTHCARE",
+                    CategoryDisplayName = "Health",
+                    Templates = healthTemplates
+                },
+                new TemplateCategoryGroup
+                {
+                    CategoryKey = "LABOUR",
+                    CategoryDisplayName = "Labour",
+                    Templates = labourTemplates
+                },
+                new TemplateCategoryGroup
+                {
+                    CategoryKey = "STATE_RATIONS",
+                    CategoryDisplayName = "State Rations",
+                    Templates = stateTemplates
+                },
+                new TemplateCategoryGroup
+                {
+                    CategoryKey = "TRANSPORT",
+                    CategoryDisplayName = "Transport",
+                    Templates = transportTemplates
+                }
+            };
+
+            return groups.AsReadOnly();
+        }
+
+        public IReadOnlyList<TemplateOptionItem> GetTemplateOptions()
+        {
+            var options = new List<TemplateOptionItem>();
+            var groups = GetCategorizedTemplates();
+
+            foreach (var g in groups)
+            {
+                foreach (var t in g.Templates)
+                {
+                    options.Add(new TemplateOptionItem
+                    {
+                        TemplateId = t.TemplateId,
+                        CategoryDisplayName = g.CategoryDisplayName,
+                        DisplayName = t.DisplayName,
+                        Template = t
+                    });
+                }
+            }
+
+            return options.AsReadOnly();
+        }
+
         public CardTemplate? GetTemplateById(string templateId) =>
             _templates.FirstOrDefault(t => t.TemplateId == templateId);
 
@@ -769,8 +863,8 @@ namespace PVCStudioPro.Core.Services.Implementations
         {
             return new CardTemplate
             {
-                TemplateId = "ayushman_pmjay",
-                DisplayName = "Ayushman Bharat PM-JAY Golden Card",
+                TemplateId = "ayushman_pmjay_state",
+                DisplayName = "Ayushman Bharat PM-JAY (State Scheme)",
                 Category = "HEALTH_IDENTITY",
                 DocumentType = "PDF",
                 Identification = new TemplateIdentification

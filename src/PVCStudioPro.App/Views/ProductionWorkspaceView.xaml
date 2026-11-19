@@ -63,6 +63,16 @@
                         <TextBlock Text="{Binding DetectedDocTitle}" FontWeight="SemiBold" FontSize="12.5" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="320"/>
                     </StackPanel>
 
+                    <!-- Universal 29-Template Categorized Selector & Override -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,16,0">
+                        <TextBlock Text="Template:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0" FontSize="11.5"/>
+                        <ComboBox ItemsSource="{Binding TemplateOptions}"
+                                  SelectedItem="{Binding SelectedTemplateOption}"
+                                  DisplayMemberPath="FormattedLabel"
+                                  Width="260" Height="34"
+                                  ToolTip="Select or override with any of the 29 calibrated government templates (Identity, Health, Labour, State Rations, Transport)"/>
+                    </StackPanel>
+
                     <!-- Quick Workspace Switcher for Secondary Tools -->
                     <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                         <ui:Button Command="{Binding OpenCropDrawerCommand}" CommandParameter="Front Card" Style="{StaticResource SecondaryActionButtonStyle}" Height="34" Margin="0,0,6,0" ToolTip="Open fine-tuned interactive crop adjustment drawer">

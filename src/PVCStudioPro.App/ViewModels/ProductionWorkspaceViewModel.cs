@@ -113,6 +113,12 @@ namespace PVCStudioPro.App.ViewModels
         [ObservableProperty]
         private PrintJobAttempt? _activePrintAttempt;
 
+        [ObservableProperty]
+        private ObservableCollection<TemplateOptionItem> _templateOptions = new();
+
+        [ObservableProperty]
+        private TemplateOptionItem? _selectedTemplateOption;
+
         #endregion
 
         #region Physical Sheet Canvas State
@@ -282,6 +288,7 @@ namespace PVCStudioPro.App.ViewModels
             }
 
             _ = InitializePrintersAsync();
+            LoadTemplateOptions();
             BuildPhysicalSheetLayout();
         }
 
@@ -481,6 +488,14 @@ namespace PVCStudioPro.App.ViewModels
                     {
                         // Single card image
                         SetExtractedCards(_cachedPageBitmap.Copy(), null);
+                    }
+                    if (extraction.MatchedTemplate != null)
+                    {
+                        var opt = TemplateOptions.FirstOrDefault(o => o.TemplateId == extraction.MatchedTemplate.TemplateId);
+                        if (opt != null)
+                        {
+                            SelectedTemplateOption = opt;
+                        }
                     }
                 }
 
@@ -819,6 +834,78 @@ namespace PVCStudioPro.App.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"Render notice: {ex.Message}";
+            }
+        }
+
+        partial void OnSelectedTemplateOptionChanged(TemplateOptionItem? value)
+        {
+            if (value?.Template != null && HasLoadedDocument)
+            {
+                ApplyTemplateCoordinates(value.Template);
+            }
+        }
+
+        public void LoadTemplateOptions()
+        {
+            var options = _templateService.GetTemplateOptions();
+            TemplateOptions = new ObservableCollection<TemplateOptionItem>(options);
+            if (TemplateOptions.Count > 0 && SelectedTemplateOption == null)
+            {
+                SelectedTemplateOption = TemplateOptions[0];
+            }
+        }
+
+        public void ApplyTemplateCoordinates(CardTemplate template)
+        {
+            if (template == null || _cachedPageBitmap == null) return;
+
+            try
+            {
+                IsProcessing = true;
+                double pageW = 210.0;
+                double pageH = 297.0;
+                double scaleX = (double)_cachedPageBitmap.Width / pageW;
+                double scaleY = (double)_cachedPageBitmap.Height / pageH;
+
+                var frontMm = template.Faces.Front.CropRectMm;
+                int fx = Math.Clamp((int)Math.Round(frontMm.X * scaleX), 0, _cachedPageBitmap.Width - 10);
+                int fy = Math.Clamp((int)Math.Round(frontMm.Y * scaleY), 0, _cachedPageBitmap.Height - 10);
+                int fw = Math.Clamp((int)Math.Round(frontMm.Width * scaleX), 10, _cachedPageBitmap.Width - fx);
+                int fh = Math.Clamp((int)Math.Round(frontMm.Height * scaleY), 10, _cachedPageBitmap.Height - fy);
+
+                var frontRect = new SKRectI(fx, fy, fx + fw, fy + fh);
+                using var frontSubset = new SKBitmap(fw, fh, _cachedPageBitmap.ColorType, _cachedPageBitmap.AlphaType);
+                using (var c = new SKCanvas(frontSubset))
+                {
+                    c.DrawBitmap(_cachedPageBitmap, frontRect, new SKRect(0, 0, fw, fh), SKSamplingOptions.Default);
+                }
+
+                SKBitmap? backSubset = null;
+                if (template.Faces.Back != null)
+                {
+                    var backMm = template.Faces.Back.CropRectMm;
+                    int bx = Math.Clamp((int)Math.Round(backMm.X * scaleX), 0, _cachedPageBitmap.Width - 10);
+                    int by = Math.Clamp((int)Math.Round(backMm.Y * scaleY), 0, _cachedPageBitmap.Height - 10);
+                    int bw = Math.Clamp((int)Math.Round(backMm.Width * scaleX), 10, _cachedPageBitmap.Width - bx);
+                    int bh = Math.Clamp((int)Math.Round(backMm.Height * scaleY), 10, _cachedPageBitmap.Height - by);
+
+                    var backRect = new SKRectI(bx, by, bx + bw, by + bh);
+                    backSubset = new SKBitmap(bw, bh, _cachedPageBitmap.ColorType, _cachedPageBitmap.AlphaType);
+                    using var cb = new SKCanvas(backSubset);
+                    cb.DrawBitmap(_cachedPageBitmap, backRect, new SKRect(0, 0, bw, bh), SKSamplingOptions.Default);
+                }
+
+                SetExtractedCards(frontSubset, backSubset);
+                backSubset?.Dispose();
+
+                DetectedDocTitle = template.DisplayName;
+                DetectedBadge = $"{template.Category.Replace("_", " ")} • OVERRIDE";
+                BuildPhysicalSheetLayout();
+                StatusMessage = $"✓ Applied template '{template.DisplayName}' ({frontMm.Width:F1}x{frontMm.Height:F1} mm).";
+            }
+            finally
+            {
+                IsProcessing = false;
             }
         }
 
