@@ -18,6 +18,10 @@ Write-Host "==========================================" -ForegroundColor Cyan
 # 0. Publish self-contained if requested or missing
 if ($Rebuild -or (-not (Test-Path (Join-Path $sourceDir "coreclr.dll")))) {
     Write-Host "[0/6] Publishing self-contained release package (Zero .NET prerequisites required)..." -ForegroundColor Yellow
+    if (Test-Path "$env:LOCALAPPDATA\Microsoft\dotnet") {
+        $env:DOTNET_ROOT = "$env:LOCALAPPDATA\Microsoft\dotnet"
+        $env:PATH = "$env:LOCALAPPDATA\Microsoft\dotnet;$env:PATH"
+    }
     $dotnetExe = if (Test-Path "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe") {
         "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe"
     } else {
