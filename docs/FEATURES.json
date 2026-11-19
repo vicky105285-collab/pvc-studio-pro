@@ -1,0 +1,342 @@
+[
+  {
+    "id": "F-IMPORT-PDF",
+    "name": "600 DPI Vector PDF Import (PDFium)",
+    "category": "Document Ingestion",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:LoadDocumentAsync",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PdfService.cs:RenderPageAsync",
+    "evidence": "tests/PVCStudioPro.Tests/DocumentEngineTests.cs:DetectionService_ShouldIdentify_Modern2022Layout"
+  },
+  {
+    "id": "F-IMPORT-IMG",
+    "name": "Multi-Format Raster Image Import (PNG, JPG, TIFF, BMP, WebP)",
+    "category": "Document Ingestion",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:LoadDocumentAsync",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/DocumentImportService.cs:SniffFile",
+    "evidence": "tests/PVCStudioPro.Tests/ColorPreservationAndAdvancedCropTests.cs:ToBitmapSource_FromRasterSurface_DirectPixelByteInspection"
+  },
+  {
+    "id": "F-IMPORT-PWD",
+    "name": "Password-Protected PDF Ingestion & Unlock Dialog",
+    "category": "Document Ingestion",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (IsPasswordPromptVisible)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:UnlockPasswordAsync",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PdfService.cs:TryUnlockPasswordAsync",
+    "evidence": "tests/PVCStudioPro.Tests/DocumentEngineTests.cs:PdfService_PasswordProtectedPdf_ReturnsPasswordRequired"
+  },
+  {
+    "id": "F-DETECT-ADAPTIVE",
+    "name": "5-Stage Adaptive Card Detection & Confidence Scoring",
+    "category": "Recognition Engine",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (DetectionBadge, ConfidenceBar)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:LoadDocumentAsync",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/CardDetectionService.cs:DetectAndExtractAdaptiveAsync",
+    "evidence": "tests/PVCStudioPro.Tests/CardDetectionAdaptiveTests.cs:AdaptiveEngine_ShouldFallBackGracefully_OnLowConfidenceNoise"
+  },
+  {
+    "id": "F-TEMPLATES-29",
+    "name": "29 Indian Identity Card Templates",
+    "category": "Template Engine",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (TemplateOptions)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:LoadTemplateOptions",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/TemplateService.cs:GetAllTemplates",
+    "evidence": "tests/PVCStudioPro.Tests/CompetitorParityTests.cs:GetAllTemplates_ShouldReturnAll29CompetitorTemplates"
+  },
+  {
+    "id": "F-TEMPLATES-PRESETS",
+    "name": "6 Custom & Institutional Card Presets",
+    "category": "Template Engine",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (OtherCardOptions)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:SelectOtherCardOption",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/TemplateService.cs:GetOtherCardTemplates",
+    "evidence": "tests/PVCStudioPro.Tests/ColorPreservationAndAdvancedCropTests.cs:All29OriginalTemplates_AndSixPresets_AreSelectableAndHaveValidConfigurations"
+  },
+  {
+    "id": "F-COLOR-BGRA",
+    "name": "Native BGRA Color Preservation (Zero Channel Swapping)",
+    "category": "Color & Rendering",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Converters/ImageExtensions.cs:ToBitmapSource",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:FrontCardImage",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PhysicalPageRenderService.cs:RenderPhysicalPage",
+    "evidence": "tests/PVCStudioPro.Tests/ColorPreservationAndAdvancedCropTests.cs:ExportLayoutToPdf_AndRenderBackToBitmap_MustPreserveColorsWithinTolerance"
+  },
+  {
+    "id": "F-CROP-STRAIGHTEN",
+    "name": "Fine Sub-Degree Tilt Straighten (-45° to +45°)",
+    "category": "Crop Studio",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (StraightenSlider)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:StraightenAngle",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/ManualCropService.cs:RotateBitmap",
+    "evidence": "tests/PVCStudioPro.Tests/ColorPreservationAndAdvancedCropTests.cs:AdvancedCrop_StraightenTilt_RotatesSmoothlyAtFineAngles"
+  },
+  {
+    "id": "F-CROP-ROTATE90",
+    "name": "Lossless Right-Angle Rotation (90° / 180° / 270°)",
+    "category": "Crop Studio",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (RotateCcw, RotateCw)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:RotateCropCwCommand",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/ManualCropService.cs:RotateBitmap",
+    "evidence": "tests/PVCStudioPro.Tests/CropEngineTests.cs:Crop_With90DegreeRotation_ProducesExpectedOrientedDimensions"
+  },
+  {
+    "id": "F-CROP-PERSPECTIVE",
+    "name": "4-Corner Perspective Unwarp (OpenCV Homography)",
+    "category": "Crop Studio",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Controls/InteractiveCropCanvas.xaml (4 Corner Pins)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:TogglePerspectiveCropModeCommand",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/ManualCropService.cs:UnwarpPerspective",
+    "evidence": "tests/PVCStudioPro.Tests/CropEngineTests.cs:Crop_WithPerspectiveQuad_ProducesUnwarpedOutput"
+  },
+  {
+    "id": "F-CROP-PRESETS",
+    "name": "Aspect Ratio Presets (Freeform, CR80, Passport, Stamp, Custom mm)",
+    "category": "Crop Studio",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (RatioButtons)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:SetCropRatioCommand",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/ManualCropService.cs:GetInitialCropBox",
+    "evidence": "tests/PVCStudioPro.Tests/CropEngineTests.cs:CropService_AspectRatioPresets_ComputeCorrectProportions"
+  },
+  {
+    "id": "F-CROP-INTERACTIVE",
+    "name": "Interactive Crop Canvas with 8 Draggable Handles & Grid",
+    "category": "Crop Studio",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Controls/InteractiveCropCanvas.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:CropX",
+    "coreService": "src/PVCStudioPro.App/Controls/InteractiveCropCanvas.xaml.cs:OnHandleDragDelta",
+    "evidence": "tests/PVCStudioPro.Tests/ScreenshotHarnessTests.cs:ScreenshotHarness_RendersAllPrimaryViewsAt100And150Dpi"
+  },
+  {
+    "id": "F-LAYOUT-A4-DUAL",
+    "name": "SingleSideA4 Layout (Upper Dual Cards, Symmetrical 15mm Margins)",
+    "category": "Layout & Geometry",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (SelectedSheetLayoutMode)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:BuildPhysicalSheetLayout",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PhysicalPageLayoutEngine.cs:SetupSingleSideA4",
+    "evidence": "tests/PVCStudioPro.Tests/PhysicalPageRenderTests.cs:LayoutEngine_SingleSideA4_GeneratesSymmetricalMargins"
+  },
+  {
+    "id": "F-LAYOUT-A4-FOLD",
+    "name": "DoubleSideFoldA4 Layout (Centered Front & Back with Fold Line)",
+    "category": "Layout & Geometry",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (SelectedSheetLayoutMode)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:BuildPhysicalSheetLayout",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PhysicalPageLayoutEngine.cs:SetupDoubleSideFoldA4",
+    "evidence": "tests/PVCStudioPro.Tests/PhysicalPageRenderTests.cs:LayoutEngine_DoubleSideFoldA4_CentersCardsOnA4"
+  },
+  {
+    "id": "F-LAYOUT-A4-6UP",
+    "name": "SixCardSheetA4 Layout (3 Rows × 2 Columns for Batch)",
+    "category": "Layout & Geometry",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (SelectedSheetLayoutMode)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:BuildPhysicalSheetLayout",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PhysicalPageLayoutEngine.cs:SetupSixCardSheetA4",
+    "evidence": "tests/PVCStudioPro.Tests/PageDesignerAndTruePrintTests.cs:LayoutEngine_SixCardSheetA4_PositionsAllSixSlotsCorrectly"
+  },
+  {
+    "id": "F-LAYOUT-CUSTOM-MM",
+    "name": "Non-CR80 Aspect Ratio Preservation (Zero Squishing/Stretching)",
+    "category": "Layout & Geometry",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (CustomCardWidthMm, CustomCardHeightMm)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:OnCustomCardWidthMmChanged",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PhysicalPageLayoutEngine.cs:GetItemDimensionsMm",
+    "evidence": "tests/PVCStudioPro.Tests/ColorPreservationAndAdvancedCropTests.cs:PhysicalPageLayoutEngine_CustomCardDimensions_PreservedWithoutStretching"
+  },
+  {
+    "id": "F-TRAY-PRINT",
+    "name": "Direct Win32 GDI StretchDIBits Print Spooler",
+    "category": "Hardware & Printing",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (PrintTrayCommand)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:StartPrintingAsync",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PrintService.cs:PrintTrayAsync",
+    "evidence": "tests/PVCStudioPro.Tests/PrintServiceTests.cs:PrintService_PrintTrayAsync_SendsValidGdiSpoolJob"
+  },
+  {
+    "id": "F-TRAY-MANAGER",
+    "name": "Printer Tray Attachment Manager (Epson L805, L8050, Canon CD)",
+    "category": "Hardware & Printing",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/PrinterTrayManagerView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/PrinterTrayManagerViewModel.cs",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PrinterTrayService.cs:GetAllProfilesAsync",
+    "evidence": "tests/PVCStudioPro.Tests/RedesignServicesTests.cs:PrinterTrayService_ShouldLoadAndSaveProfiles"
+  },
+  {
+    "id": "F-TRAY-CALIB",
+    "name": "Mechanical Stop Offset Calibration (X/Y mm Sliders & Test Sheet)",
+    "category": "Hardware & Printing",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/CalibrationView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/CalibrationViewModel.cs:SaveCalibrationAsync",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PrinterTrayService.cs:SaveCalibrationOffsetsAsync",
+    "evidence": "tests/PVCStudioPro.Tests/RedesignServicesTests.cs:Calibration_ShouldUpdateOffsetAndPersist"
+  },
+  {
+    "id": "F-PHOTO-STUDIO",
+    "name": "ICAO Biometric Passport Photo Engine (35×45mm & Multi-Up Sheet)",
+    "category": "Photo Studio",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/PhotoStudioView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/PhotoStudioViewModel.cs:GenerateMultiUpSheetCommand",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PassportPhotoEngine.cs:GeneratePassportSheet",
+    "evidence": "tests/PVCStudioPro.Tests/PassportPhotoEngineTests.cs:PassportEngine_GenerateSheet_SpoolsExactIcaoDimensions"
+  },
+  {
+    "id": "F-LEDGER-ACID",
+    "name": "Integer-Paise Financial Cash Ledger & Audit Trail",
+    "category": "Business & Accounting",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/BusinessLedgerView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/BusinessLedgerViewModel.cs:SubmitPaymentAsync",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/TransactionPaymentService.cs:RecordPaymentAsync",
+    "evidence": "tests/PVCStudioPro.Tests/TransactionLedgerTests.cs:JobLedger_ShouldStoreAndQueryTransactions_WithIntegerPaise"
+  },
+  {
+    "id": "F-LEDGER-IST",
+    "name": "IST Business-Day Boundaries (Asia/Kolkata Daily Reports)",
+    "category": "Business & Accounting",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/BusinessLedgerView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/BusinessLedgerViewModel.cs:LoadLedgerAsync",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/JobLedgerService.cs:GetDailySummaryAsync",
+    "evidence": "tests/PVCStudioPro.Tests/TransactionLedgerTests.cs:JobLedger_IstDailySummary_PartitionsTransactionsCorrectly"
+  },
+  {
+    "id": "F-LEDGER-TESTMODE",
+    "name": "Test Mode Isolation (Zero Production Database Pollution)",
+    "category": "Business & Accounting",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/MainWindow.xaml (Test Mode Banner)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/BusinessLedgerViewModel.cs:ToggleTestMode",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/DatabasePathProvider.cs:SetTestMode",
+    "evidence": "tests/PVCStudioPro.Tests/TransactionLedgerTests.cs:TestMode_SwitchesDatabasePath_IsolatesProductionData"
+  },
+  {
+    "id": "F-BACKUP-RESTORE",
+    "name": "Local Database & Config Backup/Restore Archives",
+    "category": "Utilities",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/BackupRestoreView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/BackupRestoreViewModel.cs:CreateBackupCommand",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/BackupService.cs:CreateBackupAsync",
+    "evidence": "tests/PVCStudioPro.Tests/RedesignServicesTests.cs:BackupService_ShouldCreateAndVerifyArchive"
+  },
+  {
+    "id": "F-BUSINESS-PROFILE",
+    "name": "Business Profile, GSTIN, and Shop Branding",
+    "category": "Settings",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/BusinessProfileView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/BusinessProfileViewModel.cs:SaveCommand",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/BusinessProfileService.cs:SaveProfileAsync",
+    "evidence": "tests/PVCStudioPro.Tests/RedesignServicesTests.cs:BusinessProfile_ShouldPersistAndLoad"
+  },
+  {
+    "id": "F-EXPORT-PDF",
+    "name": "600 DPI Print-Ready Vector PDF Export",
+    "category": "Export",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (ExportPdfCommand)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:ExportPdfAsync",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PhysicalPageRenderService.cs:ExportLayoutToPdf",
+    "evidence": "tests/PVCStudioPro.Tests/ColorPreservationAndAdvancedCropTests.cs:ExportLayoutToPdf_AndRenderBackToBitmap_MustPreserveColorsWithinTolerance"
+  },
+  {
+    "id": "F-I18N-TAMIL",
+    "name": "Bilingual Interface (English and Tamil தமிழ்)",
+    "category": "Localization",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/MainWindow.xaml (Language Switcher Button)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/MainViewModel.cs:ToggleLanguageCommand",
+    "coreService": "src/PVCStudioPro.App/I18n/Strings.ta.xaml",
+    "evidence": "tests/PVCStudioPro.Tests/ThemeResourceTests.cs:StringsTa_LoadsAndContainsAllExpectedTamilKeys"
+  },
+  {
+    "id": "F-THEME-TOGGLE",
+    "name": "Light & Dark Mode Theme Switcher",
+    "category": "UI & Design System",
+    "status": "Working",
+    "xaml": "src/PVCStudioPro.App/MainWindow.xaml (Theme Toggle Button)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/MainViewModel.cs:ToggleThemeCommand",
+    "coreService": "src/PVCStudioPro.App/Themes/ThemeTokens.xaml",
+    "evidence": "tests/PVCStudioPro.Tests/ThemeResourceTests.cs:M3Tokens_ContainsAllKeyPaletteColorsAndBrushes"
+  },
+  {
+    "id": "F-MEMORY-LEASES",
+    "name": "Native Safe SKBitmap Memory Leases (IAssetLease)",
+    "category": "Infrastructure",
+    "status": "Working",
+    "xaml": "N/A (Memory Layer)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:SyncFromSession",
+    "coreService": "src/PVCStudioPro.Core/Models/SafeNativeBitmap.cs",
+    "evidence": "tests/PVCStudioPro.Tests/NativeAssetLifecycleTests.cs:AssetLease_Disposal_IsObservedCrossThread_AndThrowsOnAccess"
+  },
+  {
+    "id": "F-AADHAAR-MASK",
+    "name": "UIDAI Masked Aadhaar Mode (First 8 Digits Redaction)",
+    "category": "Compliance",
+    "status": "Partial",
+    "xaml": "src/PVCStudioPro.App/Views/ProductionWorkspaceView.xaml (MaskCheckBox)",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs:ToggleMaskAadhaarAsync",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PdfService.cs:ExtractCardFacesAsync",
+    "evidence": "Working in PdfService and CardPrintViewModel, but disconnected from CardDetectionEngine.DetectAndExtractAdaptiveAsync in ProductionWorkspaceViewModel."
+  },
+  {
+    "id": "F-BATCH-SPOOL",
+    "name": "Batch Multi-Document Production Queue & Spooling",
+    "category": "Batch Processing",
+    "status": "Partial",
+    "xaml": "src/PVCStudioPro.App/Views/BatchProcessingView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/BatchProcessingViewModel.cs:StartBatchCommand",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/BatchProcessingService.cs:ProcessQueueAnalysisAsync",
+    "evidence": "Analysis and queue management implemented; batch automatic spooling to physical printer requires manual confirmation per item."
+  },
+  {
+    "id": "F-PAGE-DESIGNER",
+    "name": "Document Page Designer Freeform Studio",
+    "category": "Page Design",
+    "status": "Partial",
+    "xaml": "src/PVCStudioPro.App/Views/DocumentPageDesignerView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/DocumentPageDesignerViewModel.cs:AddItemCommand",
+    "coreService": "src/PVCStudioPro.Core/Services/Implementations/PhysicalPageLayoutEngine.cs:CreateLayout",
+    "evidence": "Fixed layouts fully operational; interactive multi-object dragging on canvas is partially tied to manual offset inputs."
+  },
+  {
+    "id": "F-THERMAL-RECEIPT",
+    "name": "58mm/80mm ESC/POS Thermal Receipt Hardware Output",
+    "category": "Business & Accounting",
+    "status": "UI-only",
+    "xaml": "src/PVCStudioPro.App/Views/BusinessLedgerView.xaml",
+    "viewModel": "src/PVCStudioPro.App/ViewModels/BusinessLedgerViewModel.cs",
+    "coreService": "Local SQLite transaction logging only; direct COM/USB ESC/POS binary spooling is simulated.",
+    "evidence": "BusinessLedgerViewModel.cs records payments to SQLite but does not transmit ESC/POS raw bytes."
+  },
+  {
+    "id": "F-AUTO-UPDATE",
+    "name": "MSIX / Velopack Background Auto-Updater",
+    "category": "Packaging & Deployment",
+    "status": "Missing",
+    "xaml": "N/A",
+    "viewModel": "N/A",
+    "coreService": "scripts/install_local.ps1 (Local installer script and portable ZIP distribution only; no in-app background auto-updater)",
+    "evidence": "No updater service or manifest polling implemented."
+  }
+]

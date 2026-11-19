@@ -3,9 +3,9 @@
 **Professional Windows Desktop PVC Card Production Suite for e-Sevai Centres & Commercial Print Shops**
 
 [![Platform: Windows 11 / 10](https://img.shields.io/badge/Platform-Windows%2011%20%7C%2010-0078D4?logo=windows)](https://microsoft.com)
-[![Framework: .NET 8 LTS](https://img.shields.io/badge/Framework-.NET%208%20LTS-512BD4?logo=dotnet)](https://dotnet.microsoft.com)
+[![Framework: .NET 11](https://img.shields.io/badge/Framework-.NET%2011-512BD4?logo=dotnet)](https://dotnet.microsoft.com)
 [![UI: WPF UI Fluent Design](https://img.shields.io/badge/UI-Fluent%20Design%20(Mica)-0067B8)](https://github.com/lepoco/wpfui)
-[![Tests: 16 Passing](https://img.shields.io/badge/Tests-16%20Passed-107C41)](tests/PVCStudioPro.Tests)
+[![Tests: 164 Passing](https://img.shields.io/badge/Tests-164%20Passed-107C41)](tests/PVCStudioPro.Tests)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Offline: 100% Local](https://img.shields.io/badge/Operation-100%25%20Offline-green)](#privacy--compliance)
 
@@ -15,25 +15,43 @@
 
 **PVC Studio Pro** is an independent, 100% offline Windows desktop application engineered to replace proprietary subscription-locked card printing software (such as Real PVC Card Pro). It is specifically tailored for commercial e-Sevai centres, CSC kiosks, and photo studios in Tamil Nadu and across India.
 
-### Key Highlights
-- **Zero Recurring Fees:** 100% offline local operation without mandatory annual subscription locks.
-- **600 DPI Vector Output:** Precision vector extraction via Google PDFium engine, preventing pixelation on fine text, micro-security lines, and QR codes.
-- **10 Indian Identity Templates:** Instant auto-recognition and dual-face cropping for:
-  - e-Aadhaar (UIDAI)
-  - NSDL / UTIITSL PAN Card
-  - e-EPIC (Election Commission of India Voter ID)
-  - Ayushman Bharat (PM-JAY / ABHA)
-  - Tamil Nadu Smart Ration Card (TNPDS)
-  - Parivahan Driving Licence (DL)
-  - Parivahan Registration Certificate (RC)
-  - e-Shram Card
-  - ABHA Health ID
-  - Custom CR80 Staff / School ID Cards
-- **UIDAI Masked Aadhaar Mode:** 1-click masking of the first 8 digits (`XXXX-XXXX-1234`) in strict compliance with Aadhaar regulations.
-- **Hardware Tray Calibration:** Millimeter slider controls ($X$ and $Y$ offsets) with on-demand physical calibration test sheet printing to eliminate mechanical tray drift on Epson L805, L8050, L18050, and Canon printers.
-- **Offline Business Ledger:** Built-in daily cash transaction accounting, card volume metrics, and 58mm/80mm ESC/POS thermal receipt printing.
-- **Bilingual Interface:** Instant live toggle between English and Tamil (தமிழ்).
-- **DPDP Act 2023 Compliance:** Zero-citizen-PII policy. Plaintext identity data is never stored on disk. Decrypted memory buffers are sanitized using Win32 `SecureZeroMemory` and `VirtualLock`.
+### Verified Working Features (Generated from `docs/FEATURES.json`)
+
+All features listed below are verified Working via automated unit/integration tests and traceable from XAML through ViewModels to Core engine services:
+
+- **600 DPI Vector PDF & Image Ingestion:** Precision vector rasterization via PDFium (`PdfService.RenderPageAsync`) and multi-format raster image decoding (PNG, JPEG, TIFF, BMP, WebP) with interactive password unlock for protected PDFs.
+- **5-Stage Adaptive Card Detection:** Automatic document categorization and confidence scoring (`CardDetectionService.DetectAndExtractAdaptiveAsync`) with fallback bounds estimation.
+- **29 Competitor-Parity Government Templates:** Full coverage across 5 official categories:
+  - *Identity:* e-Aadhaar (UIDAI), NSDL PAN, UTIITSL PAN, e-EPIC Voter ID (Modern & Legacy)
+  - *Healthcare:* Ayushman Bharat (PM-JAY), ABHA Digital Health ID
+  - *Labour & Social:* e-Shram National Database, State Labour Welfare cards
+  - *State Rations:* Tamil Nadu Smart Ration Card (TNPDS) & regional PDS cards
+  - *Transport:* Parivahan Driving Licence (DL) & Registration Certificate (RC)
+- **6 Custom & Institutional Card Presets:** Direct selection for generic dual/single cards, student IDs, staff badges, and membership cards (`TemplateService.GetOtherCardTemplates`).
+- **True Native BGRA Color Preservation:** End-to-end 32bpp BGRA pipeline (`PhysicalPageRenderService`) guaranteeing identical color rendering across WPF displays, PDF exports, and direct GDI printer spooling.
+- **Advanced Crop Studio & Geometry:**
+  - Interactive 8-handle crop canvas with rule-of-thirds grid
+  - Sub-degree fine tilt straighten slider ($-45^\circ$ to $+45^\circ$ with $0.1^\circ$ precision)
+  - Lossless exact $90^\circ$ right-angle rotations with zero pixel drift
+  - 4-corner perspective unwarping via OpenCV homography (`ManualCropService.UnwarpPerspective`)
+  - Aspect ratio presets (CR80 $85.60 \times 53.98\text{ mm}$, Passport $35 \times 45\text{ mm}$, Stamp $25 \times 30\text{ mm}$, Freeform, and Custom mm)
+- **Physical Sheet & Tray Layout Engine:**
+  - SingleSideA4 (upper dual cards with symmetrical 15mm margins)
+  - DoubleSideFoldA4 (centered front and back cards with fold guide)
+  - SixCardSheetA4 (3 rows $\times$ 2 columns for batch production)
+  - Non-CR80 aspect ratio preservation (zero card squishing or stretching)
+- **Direct Win32 GDI Hardware Spooler:** Direct unmanaged `Gdi32.StretchDIBits` driver transmission for Epson L805, EcoTank L8050/L18050, and Canon CD tray attachments without Windows print dialog distortion.
+- **Hardware Tray & Offset Calibration Manager:** Independent hardware attachment profiles with millimeter $X/Y$ mechanical offset calibration and test sheet printing.
+- **ICAO Biometric Passport Photo Engine:** Multi-up passport photo sheet generation ($35 \times 45\text{ mm}$) with facial alignment and customizable sheet grids.
+- **Integer-Paise Financial Cash Ledger:** ACID transactional accounting stored strictly as integer paise with explicit Indian Standard Time (`Asia/Kolkata`) day boundaries.
+- **Test Mode Sandbox:** Instant sandbox toggle isolating test transactions into `pvc_ledger_test.db` with zero production database contamination.
+- **Local Backup & Restore:** Zero-cloud encrypted database and profile backup archive generator and restore manager.
+- **Shop Profile & Branding:** Custom business details, GSTIN, and receipt header configuration.
+- **Bilingual Interface:** Live dynamic switcher between English and Tamil (தமிழ்).
+- **Light & Dark Theme Engine:** Full theme token parity across all views.
+- **Native Memory Leases:** Thread-safe `IAssetLease<SKBitmap>` reference counting preventing use-after-free or native memory leaks.
+
+*(Note: Features currently classified as Partial or UI-only—such as UIDAI first-8-digits redaction in the adaptive pipeline, automated batch physical spooling, and raw ESC/POS thermal receipt streaming—are documented in `docs/FEATURES.json` and scheduled for completion in subsequent phases).*
 
 ---
 
