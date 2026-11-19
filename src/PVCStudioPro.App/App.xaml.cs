@@ -93,6 +93,7 @@ namespace PVCStudioPro.App
                 services.AddSingleton<IManualCropService, ManualCropService>();
                 services.AddSingleton<IPrintPreviewService, PrintPreviewService>();
                 services.AddSingleton<IPhysicalPageRenderService, PhysicalPageRenderService>();
+                services.AddSingleton<IPhysicalPageLayoutEngine, PhysicalPageLayoutEngine>();
                 services.AddSingleton<IPrinterDiscoveryService, PrinterDiscoveryService>();
                 services.AddSingleton<IPrintService, PrintService>();
                 services.AddSingleton<ISecurityService, SecurityService>();

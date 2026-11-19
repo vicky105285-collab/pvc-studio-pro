@@ -34,6 +34,24 @@ namespace PVCStudioPro.Core.Services
         /// Exports the composed tray canvas to an image file or PDF for visual verification.
         /// </summary>
         Task<string> ExportPreviewAsync(SKBitmap trayBitmap, string outputPath);
+
+        /// <summary>
+        /// Executes a tracked print attempt through the 6-stage lifecycle.
+        /// </summary>
+        Task<PrintJobAttempt> ExecutePrintJobAsync(
+            PrintSpoolJob job,
+            PageLayoutModel layout,
+            string printerName,
+            bool isReprint = false,
+            string? defectReason = null);
+
+        /// <summary>
+        /// Records operator physical output verification (Confirmed Successful or Defective Reprint Needed).
+        /// </summary>
+        Task RecordOperatorConfirmationAsync(
+            PrintJobAttempt attempt,
+            bool confirmedSuccessful,
+            string? defectReason = null);
     }
 
     public enum TrayLayoutMode

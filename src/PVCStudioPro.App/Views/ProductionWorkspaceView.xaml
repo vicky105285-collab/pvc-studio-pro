@@ -109,6 +109,27 @@
                     <ui:Button Grid.Column="4" Command="{Binding DismissLowConfidenceBannerCommand}" Content="Accept Auto Bounds" Height="30" Padding="12,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
                 </Grid>
             </Border>
+
+            <!-- OPERATOR PRINT VERIFICATION BANNER (Conditional - Appears after SpoolerProcessingCompleted) -->
+            <Border Background="#EFF6FF" BorderBrush="#3B82F6" BorderThickness="1.5" CornerRadius="6" Padding="12,8" Margin="0,0,0,6"
+                    Visibility="{Binding IsReprintVerificationPromptVisible, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="🖨️" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Print Spooled to Hardware — Please Verify Physical Card Output" FontWeight="Bold" Foreground="#1E40AF" FontSize="12"/>
+                        <TextBlock Text="Check physical print quality for ribbon scuffs, banding, or misalignment before billing customer." Foreground="#1D4ED8" FontSize="11"/>
+                    </StackPanel>
+                    <ui:Button Grid.Column="2" Command="{Binding ConfirmPrintOutputCommand}" Content="✓ Print Verified (Confirm &amp; Bill)" Height="30" Padding="14,0" Background="#16A34A" Foreground="White" FontWeight="Bold" CornerRadius="4"/>
+                    <ui:Button Grid.Column="4" Command="{Binding ReportDefectAndReprintCommand}" CommandParameter="MisalignedOrDefective" Content="⚠️ Defect / Reprint Needed" Height="30" Padding="14,0" Background="#DC2626" Foreground="White" FontWeight="SemiBold" CornerRadius="4"/>
+                </Grid>
+            </Border>
         </StackPanel>
 
         <!-- ROW 1: 3-COLUMN TASK WORKSPACE (Zero scrolling, fully responsive) -->
@@ -186,8 +207,20 @@
                             <ui:Button Grid.Column="2" Command="{Binding RotateCards90Command}" Content="Rotate 90°" Height="30" FontSize="11" Style="{StaticResource SecondaryActionButtonStyle}"/>
                         </Grid>
 
-                        <CheckBox IsChecked="{Binding IsMaskAadhaar}" Command="{Binding ToggleMaskAadhaarCommand}" Margin="0,0,0,10">
+                        <CheckBox IsChecked="{Binding IsMaskAadhaar}" Command="{Binding ToggleMaskAadhaarCommand}" Margin="0,0,0,6">
                             <TextBlock Text="Mask Aadhaar (Hide First 8 Digits)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        </CheckBox>
+
+                        <CheckBox IsChecked="{Binding ShowCutMarks}" Margin="0,0,0,6">
+                            <TextBlock Text="Cut Guidelines (0.2 mm Crop Lines)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        </CheckBox>
+
+                        <CheckBox IsChecked="{Binding ShowFoldLine}" Margin="0,0,0,6">
+                            <TextBlock Text="Center Folding Line (Crease Guide)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        </CheckBox>
+
+                        <CheckBox IsChecked="{Binding MirrorMode}" Margin="0,0,0,10">
+                            <TextBlock Text="Mirror Mode (Dragon Sheet Reverse)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </CheckBox>
 
                         <Separator Margin="0,0,0,10"/>

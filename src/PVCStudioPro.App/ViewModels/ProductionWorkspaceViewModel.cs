@@ -16,17 +16,6 @@ using PVCStudioPro.Core.Services.Implementations;
 
 namespace PVCStudioPro.App.ViewModels
 {
-    public enum SheetLayoutMode
-    {
-        SingleSideA4,       // Front and Back side-by-side on upper A4
-        CenterFoldA4,       // Front and Back stacked vertically with center crease line
-        DoubleSideDuplexA4, // Front on Sheet 1, Back on Sheet 2
-        Epson2CardTray,     // Standard Epson tray (L805, L8050, L18050)
-        CanonMultiTray,     // Canon G-series PVC tray
-        Photo4x6Sheet,      // 4x6 inch photo paper
-        DirectCr80          // Single CR80 direct card
-    }
-
     public partial class ProductionWorkspaceViewModel : ObservableObject
     {
         private readonly IDocumentImportService _importService;
@@ -36,6 +25,7 @@ namespace PVCStudioPro.App.ViewModels
         private readonly ICardDetectionEngine _cardDetectionEngine;
         private readonly IManualCropService _cropService;
         private readonly IPhysicalPageRenderService _renderService;
+        private readonly IPhysicalPageLayoutEngine _layoutEngine;
         private readonly IPrinterDiscoveryService _printerDiscovery;
         private readonly IPrintService _printService;
         private readonly IJobLedgerService _jobLedger;
@@ -108,6 +98,21 @@ namespace PVCStudioPro.App.ViewModels
         [ObservableProperty]
         private bool _hasBackCard = false;
 
+        [ObservableProperty]
+        private PrintJobLifecycleStatus _currentPrintStatus = PrintJobLifecycleStatus.SubmittedToSpooler;
+
+        [ObservableProperty]
+        private string _printStatusText = "IDLE";
+
+        [ObservableProperty]
+        private bool _isReprintVerificationPromptVisible = false;
+
+        [ObservableProperty]
+        private PrintSpoolJob? _activePrintJob;
+
+        [ObservableProperty]
+        private PrintJobAttempt? _activePrintAttempt;
+
         #endregion
 
         #region Physical Sheet Canvas State
@@ -141,6 +146,9 @@ namespace PVCStudioPro.App.ViewModels
 
         [ObservableProperty]
         private bool _showCutMarks = true;
+
+        [ObservableProperty]
+        private bool _showFoldLine = false;
 
         [ObservableProperty]
         private bool _mirrorMode = false;
@@ -247,7 +255,8 @@ namespace PVCStudioPro.App.ViewModels
             IPrintService printService,
             IJobLedgerService jobLedger,
             ITemplateService templateService,
-            IDocumentSessionManager? sessionManager = null)
+            IDocumentSessionManager? sessionManager = null,
+            IPhysicalPageLayoutEngine? layoutEngine = null)
         {
             _importService = importService;
             _pdfDocumentService = pdfDocumentService;
@@ -256,6 +265,7 @@ namespace PVCStudioPro.App.ViewModels
             _cardDetectionEngine = cardDetection as ICardDetectionEngine ?? new CardDetectionService(_templateService, _detectionService);
             _cropService = cropService;
             _renderService = renderService;
+            _layoutEngine = layoutEngine ?? new PhysicalPageLayoutEngine();
             _printerDiscovery = printerDiscovery;
             _printService = printService;
             _jobLedger = jobLedger;
@@ -778,225 +788,26 @@ namespace PVCStudioPro.App.ViewModels
             BuildPhysicalSheetLayout();
         }
 
+        partial void OnShowCutMarksChanged(bool value) => BuildPhysicalSheetLayout();
+        partial void OnShowFoldLineChanged(bool value) => BuildPhysicalSheetLayout();
+        partial void OnMirrorModeChanged(bool value) => BuildPhysicalSheetLayout();
+        partial void OnOffsetXMmChanged(double value) => BuildPhysicalSheetLayout();
+        partial void OnOffsetYMmChanged(double value) => BuildPhysicalSheetLayout();
+
         public void BuildPhysicalSheetLayout()
         {
-            var model = new PageLayoutModel
-            {
-                ShowCutMarks = ShowCutMarks,
-                MirrorMode = MirrorMode,
-                OffsetXMm = OffsetXMm,
-                OffsetYMm = OffsetYMm,
-                TargetDpi = 600
-            };
+            var model = _layoutEngine.CreateLayout(
+                SelectedSheetLayout,
+                _cachedFrontBitmap,
+                _cachedBackBitmap,
+                ShowCutMarks,
+                ShowFoldLine,
+                MirrorMode,
+                OffsetXMm,
+                OffsetYMm,
+                targetDpi: 600);
 
-            switch (SelectedSheetLayout)
-            {
-                case SheetLayoutMode.SingleSideA4:
-                    // Competitor Single Side A4: Front at X=15.0 mm, Back at X=109.4 mm on upper half
-                    model.Title = "A4 Single Side (Side-by-Side)";
-                    model.Preset = PaperPreset.A4;
-                    model.PageWidthMm = 210.0;
-                    model.PageHeightMm = 297.0;
-                    PageDimensionsText = "A4 Portrait: 210.0 x 297.0 mm";
-
-                    if (_cachedFrontBitmap != null)
-                    {
-                        model.Items.Add(new PageLayoutItem
-                        {
-                            Label = "Front Face",
-                            Kind = LayoutItemKind.FrontCard,
-                            XPositionMm = 15.0,
-                            YPositionMm = 20.0,
-                            WidthMm = 85.60,
-                            HeightMm = 53.98,
-                            Bitmap = _cachedFrontBitmap
-                        });
-                    }
-                    if (_cachedBackBitmap != null)
-                    {
-                        model.Items.Add(new PageLayoutItem
-                        {
-                            Label = "Back Face",
-                            Kind = LayoutItemKind.BackCard,
-                            XPositionMm = 109.4,
-                            YPositionMm = 20.0,
-                            WidthMm = 85.60,
-                            HeightMm = 53.98,
-                            Bitmap = _cachedBackBitmap
-                        });
-                    }
-                    break;
-
-                case SheetLayoutMode.CenterFoldA4:
-                    // Competitor Double Side Center Fold: Center horizontally, stacked vertically with fold crease
-                    model.Title = "A4 Center Fold (Crease Fold Line)";
-                    model.Preset = PaperPreset.A4;
-                    model.PageWidthMm = 210.0;
-                    model.PageHeightMm = 297.0;
-                    model.ShowFoldLine = true;
-                    PageDimensionsText = "A4 Center Fold: 210.0 x 297.0 mm";
-
-                    double centerXMm = (210.0 - 85.60) / 2.0; // 62.2 mm
-                    if (_cachedFrontBitmap != null)
-                    {
-                        model.Items.Add(new PageLayoutItem
-                        {
-                            Label = "Front Face",
-                            Kind = LayoutItemKind.FrontCard,
-                            XPositionMm = centerXMm,
-                            YPositionMm = 20.0,
-                            WidthMm = 85.60,
-                            HeightMm = 53.98,
-                            Bitmap = _cachedFrontBitmap
-                        });
-                    }
-                    if (_cachedBackBitmap != null)
-                    {
-                        model.Items.Add(new PageLayoutItem
-                        {
-                            Label = "Back Face",
-                            Kind = LayoutItemKind.BackCard,
-                            XPositionMm = centerXMm,
-                            YPositionMm = 76.0,
-                            WidthMm = 85.60,
-                            HeightMm = 53.98,
-                            Bitmap = _cachedBackBitmap
-                        });
-                    }
-                    break;
-
-                case SheetLayoutMode.Epson2CardTray:
-                    // Competitor Epson Tray: Slot 1 and Slot 2
-                    model.Title = "Epson Direct 2-Card Tray";
-                    model.Preset = PaperPreset.EpsonTray;
-                    model.PageWidthMm = 140.0;
-                    model.PageHeightMm = 297.0;
-                    PageDimensionsText = "Epson Tray: 140.0 x 297.0 mm";
-
-                    double epsonSlotX = (140.0 - 85.60) / 2.0; // 27.2 mm
-                    if (_cachedFrontBitmap != null)
-                    {
-                        model.Items.Add(new PageLayoutItem
-                        {
-                            Label = "Slot 1 (Front)",
-                            Kind = LayoutItemKind.FrontCard,
-                            XPositionMm = epsonSlotX,
-                            YPositionMm = 18.0,
-                            WidthMm = 85.60,
-                            HeightMm = 53.98,
-                            Bitmap = _cachedFrontBitmap
-                        });
-                    }
-                    if (_cachedBackBitmap != null)
-                    {
-                        model.Items.Add(new PageLayoutItem
-                        {
-                            Label = "Slot 2 (Back)",
-                            Kind = LayoutItemKind.BackCard,
-                            XPositionMm = epsonSlotX,
-                            YPositionMm = 110.0,
-                            WidthMm = 85.60,
-                            HeightMm = 53.98,
-                            Bitmap = _cachedBackBitmap
-                        });
-                    }
-                    break;
-
-                case SheetLayoutMode.CanonMultiTray:
-                    model.Title = "Canon Multi-Card Tray";
-                    model.Preset = PaperPreset.CanonTray;
-                    model.PageWidthMm = 130.0;
-                    model.PageHeightMm = 220.0;
-                    PageDimensionsText = "Canon Tray: 130.0 x 220.0 mm";
-
-                    double canonSlotX = (130.0 - 85.60) / 2.0; // 22.2 mm
-                    if (_cachedFrontBitmap != null)
-                    {
-                        model.Items.Add(new PageLayoutItem
-                        {
-                            Label = "Slot 1 (Front)",
-                            Kind = LayoutItemKind.FrontCard,
-                            XPositionMm = canonSlotX,
-                            YPositionMm = 25.0,
-                            WidthMm = 85.60,
-                            HeightMm = 53.98,
-                            Bitmap = _cachedFrontBitmap
-                        });
-                    }
-                    if (_cachedBackBitmap != null)
-                    {
-                        model.Items.Add(new PageLayoutItem
-                        {
-                            Label = "Slot 2 (Back)",
-                            Kind = LayoutItemKind.BackCard,
-                            XPositionMm = canonSlotX,
-                            YPositionMm = 115.0,
-                            WidthMm = 85.60,
-                            HeightMm = 53.98,
-                            Bitmap = _cachedBackBitmap
-                        });
-                    }
-                    break;
-
-                case SheetLayoutMode.Photo4x6Sheet:
-                    model.Title = "4x6 Photo Sheet (2 Cards)";
-                    model.Preset = PaperPreset.Photo4x6;
-                    model.PageWidthMm = 101.6;
-                    model.PageHeightMm = 152.4;
-                    PageDimensionsText = "Photo 4x6: 101.6 x 152.4 mm";
-
-                    double photoSlotX = (101.6 - 85.60) / 2.0; // 8.0 mm
-                    if (_cachedFrontBitmap != null)
-                    {
-                        model.Items.Add(new PageLayoutItem
-                        {
-                            Label = "Top Card",
-                            Kind = LayoutItemKind.FrontCard,
-                            XPositionMm = photoSlotX,
-                            YPositionMm = 15.0,
-                            WidthMm = 85.60,
-                            HeightMm = 53.98,
-                            Bitmap = _cachedFrontBitmap
-                        });
-                    }
-                    if (_cachedBackBitmap != null)
-                    {
-                        model.Items.Add(new PageLayoutItem
-                        {
-                            Label = "Bottom Card",
-                            Kind = LayoutItemKind.BackCard,
-                            XPositionMm = photoSlotX,
-                            YPositionMm = 75.0,
-                            WidthMm = 85.60,
-                            HeightMm = 53.98,
-                            Bitmap = _cachedBackBitmap
-                        });
-                    }
-                    break;
-
-                default: // Direct CR80
-                    model.Title = "Single CR80 Card";
-                    model.Preset = PaperPreset.DirectCr80;
-                    model.PageWidthMm = 85.60;
-                    model.PageHeightMm = 53.98;
-                    PageDimensionsText = "Direct CR80: 85.60 x 53.98 mm";
-
-                    if (_cachedFrontBitmap != null)
-                    {
-                        model.Items.Add(new PageLayoutItem
-                        {
-                            Label = "Single Face",
-                            Kind = LayoutItemKind.FrontCard,
-                            XPositionMm = 0.0,
-                            YPositionMm = 0.0,
-                            WidthMm = 85.60,
-                            HeightMm = 53.98,
-                            Bitmap = _cachedFrontBitmap
-                        });
-                    }
-                    break;
-            }
-
+            PageDimensionsText = $"{model.Title}: {model.PageWidthMm:0.0} x {model.PageHeightMm:0.0} mm";
             ActivePageLayout = model;
 
             // Render physical sheet at 150 DPI for smooth, high-fidelity UI display
@@ -1057,31 +868,113 @@ namespace PVCStudioPro.App.ViewModels
             try
             {
                 IsProcessing = true;
-                StatusMessage = $"Spooling 600 DPI print job to '{SelectedPrinter}'...";
+                string printer = string.IsNullOrEmpty(SelectedPrinter) ? "Virtual Tray Spooler" : SelectedPrinter;
+                StatusMessage = $"Spooling 600 DPI print job to '{printer}'...";
 
-                // Create audit job record (Strict Zero-Citizen-PII)
+                ActivePrintJob = new PrintSpoolJob
+                {
+                    DocumentTitle = !string.IsNullOrEmpty(FileName) ? FileName : "PVC Studio Pro Card Print",
+                    CustomerName = "Walk-in Customer"
+                };
+
+                ActivePrintAttempt = await _printService.ExecutePrintJobAsync(
+                    ActivePrintJob,
+                    ActivePageLayout,
+                    printer,
+                    isReprint: false);
+
+                CurrentPrintStatus = ActivePrintAttempt.Status;
+
+                if (ActivePrintAttempt.Status == PrintJobLifecycleStatus.SpoolerProcessingCompleted)
+                {
+                    IsReprintVerificationPromptVisible = true;
+                    PrintStatusText = "SPOOLER COMPLETED • PLEASE VERIFY OUTPUT";
+                    StatusMessage = $"Spooler transmitted job to '{printer}'. Please visually verify printed output.";
+                }
+                else if (ActivePrintAttempt.Status == PrintJobLifecycleStatus.SpoolerErrorOrCancelled)
+                {
+                    IsReprintVerificationPromptVisible = false;
+                    PrintStatusText = $"ERROR: {ActivePrintAttempt.DefectReason}";
+                    StatusMessage = $"Print failed: {ActivePrintAttempt.DefectReason}";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Print error: {ex.Message}";
+            }
+            finally
+            {
+                IsProcessing = false;
+            }
+        }
+
+        [RelayCommand]
+        public async Task ConfirmPrintOutputAsync()
+        {
+            if (ActivePrintAttempt == null) return;
+
+            await _printService.RecordOperatorConfirmationAsync(ActivePrintAttempt, confirmedSuccessful: true);
+            CurrentPrintStatus = PrintJobLifecycleStatus.PhysicalOutputConfirmedByOperator;
+            IsReprintVerificationPromptVisible = false;
+            PrintStatusText = "OUTPUT CONFIRMED";
+
+            // Record transaction in ledger only upon operator visual confirmation!
+            if (ActivePrintAttempt.IsBillable)
+            {
                 var record = new PrintJobRecord
                 {
-                    JobId = Guid.NewGuid().ToString("N"),
+                    JobId = ActivePrintJob?.JobId ?? Guid.NewGuid().ToString("N"),
                     JobNumber = $"JOB-{DateTime.UtcNow:yyyyMMdd-HHmmss}",
                     CreatedAt = DateTime.UtcNow,
                     DocumentType = _detectedKind.ToString(),
                     Quantity = Copies * (_cachedBackBitmap != null ? 2 : 1),
-                    PrinterName = string.IsNullOrEmpty(SelectedPrinter) ? "Virtual Tray Spooler" : SelectedPrinter,
+                    PrinterName = ActivePrintAttempt.PrinterName,
                     TotalAmount = CardFee * Copies,
                     AmountPaid = CardFee * Copies,
                     PaymentMode = SelectedPaymentMode,
                     Status = "COMPLETED"
                 };
-
                 await _jobLedger.RecordJobAsync(record);
+            }
 
-                PrintSuccessAlert = true;
-                StatusMessage = $"✓ Spooled job {record.JobNumber} to '{record.PrinterName}' | ₹{record.TotalAmount} ({SelectedPaymentMode}).";
+            PrintSuccessAlert = true;
+            StatusMessage = $"✓ Physical card output confirmed on '{ActivePrintAttempt.PrinterName}'. Total: ₹{CardFee * Copies} ({SelectedPaymentMode}).";
+        }
+
+        [RelayCommand]
+        public async Task ReportDefectAndReprintAsync(string? defectReason = null)
+        {
+            if (ActivePrintAttempt == null || ActivePrintJob == null) return;
+
+            string reason = string.IsNullOrWhiteSpace(defectReason) ? "Defective Print Output" : defectReason;
+            await _printService.RecordOperatorConfirmationAsync(ActivePrintAttempt, confirmedSuccessful: false, reason);
+            CurrentPrintStatus = PrintJobLifecycleStatus.PhysicalOutputNotVerified;
+
+            IsProcessing = true;
+            try
+            {
+                string printer = ActivePrintAttempt.PrinterName;
+                StatusMessage = $"Spooling non-billable hardware reprint to '{printer}' ({reason})...";
+
+                ActivePrintAttempt = await _printService.ExecutePrintJobAsync(
+                    ActivePrintJob,
+                    ActivePageLayout,
+                    printer,
+                    isReprint: true,
+                    defectReason: reason);
+
+                CurrentPrintStatus = ActivePrintAttempt.Status;
+
+                if (ActivePrintAttempt.Status == PrintJobLifecycleStatus.SpoolerProcessingCompleted)
+                {
+                    IsReprintVerificationPromptVisible = true;
+                    PrintStatusText = $"REPRINT #{ActivePrintAttempt.AttemptNumber} SPOOLED • PLEASE VERIFY OUTPUT";
+                    StatusMessage = $"Reprint #{ActivePrintAttempt.AttemptNumber} transmitted ({reason}). Please verify physical output.";
+                }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Print error: {ex.Message}";
+                StatusMessage = $"Reprint error: {ex.Message}";
             }
             finally
             {

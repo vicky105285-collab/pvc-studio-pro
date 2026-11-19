@@ -25,6 +25,17 @@ namespace PVCStudioPro.Core.Models
         Custom
     }
 
+    public enum SheetLayoutMode
+    {
+        SingleSideA4,       // Front and Back side-by-side on upper A4
+        CenterFoldA4,       // Front and Back stacked vertically with center crease line
+        DoubleSideDuplexA4, // Front on Sheet 1, Back on Sheet 2
+        Epson2CardTray,     // Standard Epson tray (L805, L8050, L18050)
+        CanonMultiTray,     // Canon G-series PVC tray
+        Photo4x6Sheet,      // 4x6 inch photo paper
+        DirectCr80          // Single CR80 direct card
+    }
+
     public class PageLayoutItem
     {
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
