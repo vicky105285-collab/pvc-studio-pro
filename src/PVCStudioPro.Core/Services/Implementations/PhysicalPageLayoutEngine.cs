@@ -70,6 +70,20 @@ namespace PVCStudioPro.Core.Services.Implementations
             return model;
         }
 
+        private static (double WidthMm, double HeightMm) GetItemDimensionsMm(SKBitmap? bitmap, int dpi)
+        {
+            if (bitmap == null) return (Cr80WidthMm, Cr80HeightMm);
+            double effectiveDpi = dpi > 0 ? dpi : 600.0;
+            double wMm = bitmap.Width * MmPerInch / effectiveDpi;
+            double hMm = bitmap.Height * MmPerInch / effectiveDpi;
+            // If within standard CR80 tolerance (within 1mm), snap to exact CR80 specification
+            if (Math.Abs(wMm - Cr80WidthMm) < 1.0 && Math.Abs(hMm - Cr80HeightMm) < 1.0)
+            {
+                return (Cr80WidthMm, Cr80HeightMm);
+            }
+            return (Math.Round(wMm, 2), Math.Round(hMm, 2));
+        }
+
         private static void SetupSingleSideA4(PageLayoutModel model, SKBitmap? frontCard, SKBitmap? backCard)
         {
             model.Title = "A4 Upper Dual Cards";
@@ -77,8 +91,11 @@ namespace PVCStudioPro.Core.Services.Implementations
             model.PageWidthMm = 210.0;
             model.PageHeightMm = 297.0;
 
-            // Strict single-source millimeter geometry:
-            // Front at X=15.0 mm, Back at X=109.4 mm. Symmetrical 15.0 mm outer margins.
+            var (fW, fH) = GetItemDimensionsMm(frontCard, model.TargetDpi);
+            var (bW, bH) = GetItemDimensionsMm(backCard, model.TargetDpi);
+            double backX = Math.Abs(fW - Cr80WidthMm) < 1.0 ? 109.4 : (15.0 + fW + 8.8);
+
+            // Symmetrical 15.0 mm outer margins
             if (frontCard != null)
             {
                 model.Items.Add(new PageLayoutItem
@@ -87,8 +104,8 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Kind = LayoutItemKind.FrontCard,
                     XPositionMm = 15.0,
                     YPositionMm = 15.0,
-                    WidthMm = Cr80WidthMm,
-                    HeightMm = Cr80HeightMm,
+                    WidthMm = fW,
+                    HeightMm = fH,
                     Bitmap = frontCard
                 });
             }
@@ -99,10 +116,10 @@ namespace PVCStudioPro.Core.Services.Implementations
                 {
                     Label = "Back Card Face",
                     Kind = LayoutItemKind.BackCard,
-                    XPositionMm = 109.4,
+                    XPositionMm = backX,
                     YPositionMm = 15.0,
-                    WidthMm = Cr80WidthMm,
-                    HeightMm = Cr80HeightMm,
+                    WidthMm = bW,
+                    HeightMm = bH,
                     Bitmap = backCard
                 });
             }
@@ -116,9 +133,11 @@ namespace PVCStudioPro.Core.Services.Implementations
             model.PageHeightMm = 297.0;
             model.ShowFoldLine = true;
 
-            double centeredX = (210.0 - Cr80WidthMm) / 2.0; // 62.20 mm
+            var (fW, fH) = GetItemDimensionsMm(frontCard, model.TargetDpi);
+            var (bW, bH) = GetItemDimensionsMm(backCard, model.TargetDpi);
+            double centeredX = (210.0 - fW) / 2.0;
             double topY = 15.0;
-            double foldY = topY + Cr80HeightMm; // 68.98 mm
+            double foldY = topY + fH;
 
             if (frontCard != null)
             {
@@ -128,8 +147,8 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Kind = LayoutItemKind.FrontCard,
                     XPositionMm = centeredX,
                     YPositionMm = topY,
-                    WidthMm = Cr80WidthMm,
-                    HeightMm = Cr80HeightMm,
+                    WidthMm = fW,
+                    HeightMm = fH,
                     Bitmap = frontCard
                 });
             }
@@ -142,8 +161,8 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Kind = LayoutItemKind.BackCard,
                     XPositionMm = centeredX,
                     YPositionMm = foldY,
-                    WidthMm = Cr80WidthMm,
-                    HeightMm = Cr80HeightMm,
+                    WidthMm = bW,
+                    HeightMm = bH,
                     Bitmap = backCard,
                     RotationDegrees = 180.0 // Rotated 180° so both faces read right-side-up when folded
                 });
@@ -157,10 +176,11 @@ namespace PVCStudioPro.Core.Services.Implementations
             model.PageWidthMm = 210.0;
             model.PageHeightMm = 297.0;
 
-            double centeredX = (210.0 - Cr80WidthMm) / 2.0;
-            double centeredY = (297.0 - Cr80HeightMm) / 2.0;
-
             var activeFace = frontCard ?? backCard;
+            var (w, h) = GetItemDimensionsMm(activeFace, model.TargetDpi);
+            double centeredX = (210.0 - w) / 2.0;
+            double centeredY = (297.0 - h) / 2.0;
+
             if (activeFace != null)
             {
                 model.Items.Add(new PageLayoutItem
@@ -169,8 +189,8 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Kind = LayoutItemKind.FrontCard,
                     XPositionMm = centeredX,
                     YPositionMm = centeredY,
-                    WidthMm = Cr80WidthMm,
-                    HeightMm = Cr80HeightMm,
+                    WidthMm = w,
+                    HeightMm = h,
                     Bitmap = activeFace
                 });
             }
@@ -255,6 +275,9 @@ namespace PVCStudioPro.Core.Services.Implementations
             model.PageWidthMm = 101.6;
             model.PageHeightMm = 152.4;
 
+            var (fW, fH) = GetItemDimensionsMm(frontCard, model.TargetDpi);
+            var (bW, bH) = GetItemDimensionsMm(backCard, model.TargetDpi);
+
             if (frontCard != null)
             {
                 model.Items.Add(new PageLayoutItem
@@ -263,8 +286,8 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Kind = LayoutItemKind.FrontCard,
                     XPositionMm = 8.00,
                     YPositionMm = 10.00,
-                    WidthMm = Cr80WidthMm,
-                    HeightMm = Cr80HeightMm,
+                    WidthMm = fW,
+                    HeightMm = fH,
                     Bitmap = frontCard
                 });
             }
@@ -276,9 +299,9 @@ namespace PVCStudioPro.Core.Services.Implementations
                     Label = "Back Card Face",
                     Kind = LayoutItemKind.BackCard,
                     XPositionMm = 8.00,
-                    YPositionMm = 68.00,
-                    WidthMm = Cr80WidthMm,
-                    HeightMm = Cr80HeightMm,
+                    YPositionMm = 10.00 + fH + 4.0,
+                    WidthMm = bW,
+                    HeightMm = bH,
                     Bitmap = backCard
                 });
             }
@@ -286,22 +309,23 @@ namespace PVCStudioPro.Core.Services.Implementations
 
         private static void SetupDirectCr80(PageLayoutModel model, SKBitmap? frontCard)
         {
-            model.Title = "Single CR80 Direct Card";
+            var (w, h) = GetItemDimensionsMm(frontCard, model.TargetDpi);
+            model.Title = "Single Direct Card";
             model.Preset = PaperPreset.DirectCr80;
-            model.PageWidthMm = Cr80WidthMm;
-            model.PageHeightMm = Cr80HeightMm;
+            model.PageWidthMm = w;
+            model.PageHeightMm = h;
             model.ShowCutMarks = false;
 
             if (frontCard != null)
             {
                 model.Items.Add(new PageLayoutItem
                 {
-                    Label = "Direct CR80 Card",
+                    Label = "Direct Card",
                     Kind = LayoutItemKind.FrontCard,
                     XPositionMm = 0.0,
                     YPositionMm = 0.0,
-                    WidthMm = Cr80WidthMm,
-                    HeightMm = Cr80HeightMm,
+                    WidthMm = w,
+                    HeightMm = h,
                     Bitmap = frontCard
                 });
             }

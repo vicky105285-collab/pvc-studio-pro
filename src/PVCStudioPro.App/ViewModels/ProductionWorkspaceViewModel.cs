@@ -1053,6 +1053,8 @@ namespace PVCStudioPro.App.ViewModels
         partial void OnMirrorModeChanged(bool value) => BuildPhysicalSheetLayout();
         partial void OnOffsetXMmChanged(double value) => BuildPhysicalSheetLayout();
         partial void OnOffsetYMmChanged(double value) => BuildPhysicalSheetLayout();
+        partial void OnCustomCardWidthMmChanged(double value) => BuildPhysicalSheetLayout();
+        partial void OnCustomCardHeightMmChanged(double value) => BuildPhysicalSheetLayout();
 
         public void BuildPhysicalSheetLayout()
         {
