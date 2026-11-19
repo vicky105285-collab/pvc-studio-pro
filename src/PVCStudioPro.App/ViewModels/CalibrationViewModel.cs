@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -13,6 +14,7 @@ namespace PVCStudioPro.App.ViewModels
     {
         private readonly IPrinterDiscoveryService _printerDiscovery;
         private readonly IPrintService _printService;
+        private readonly IPrinterTrayService _trayService;
 
         [ObservableProperty]
         private ObservableCollection<string> _printerList = new();
@@ -33,17 +35,22 @@ namespace PVCStudioPro.App.ViewModels
         private double _offsetY = 0.0;
 
         [ObservableProperty]
-        private string _statusMessage = "Ready | Print the test sheet and measure any edge shift with a millimeter ruler";
+        private bool _isPhysicallyVerified = false;
+
+        [ObservableProperty]
+        private string _statusMessage = "Ready | Print the calibration test sheet and measure any edge shift with a precision caliper or millimeter ruler.";
 
         [ObservableProperty]
         private bool _isBusy = false;
 
         public CalibrationViewModel(
             IPrinterDiscoveryService printerDiscovery,
-            IPrintService printService)
+            IPrintService printService,
+            IPrinterTrayService trayService)
         {
             _printerDiscovery = printerDiscovery;
             _printService = printService;
+            _trayService = trayService;
 
             TrayList.Add("EPSON_2CARD_TRAY");
             TrayList.Add("CANON_MULTI_TRAY");
@@ -58,6 +65,7 @@ namespace PVCStudioPro.App.ViewModels
         {
             try
             {
+                await _trayService.InitializeAsync();
                 var printers = await _printerDiscovery.GetInstalledPrintersAsync();
                 PrinterList.Clear();
                 foreach (var p in printers)
@@ -68,11 +76,66 @@ namespace PVCStudioPro.App.ViewModels
                 if (PrinterList.Count > 0)
                 {
                     SelectedPrinter = PrinterList[0];
+                    await LoadExistingCalibrationAsync();
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Printer error: {ex.Message}";
+                StatusMessage = $"Printer discovery error: {ex.Message}";
+            }
+        }
+
+        [RelayCommand]
+        public async Task LoadExistingCalibrationAsync()
+        {
+            if (string.IsNullOrWhiteSpace(SelectedPrinter)) return;
+
+            try
+            {
+                var profiles = await _trayService.GetProfilesForPrinterAsync(SelectedPrinter);
+                var match = profiles.FirstOrDefault(p => p.TrayType == SelectedTray);
+                if (match != null)
+                {
+                    OffsetX = match.OffsetXMm;
+                    OffsetY = match.OffsetYMm;
+                    IsPhysicallyVerified = match.IsPhysicallyVerified;
+                    StatusMessage = $"Loaded profile '{match.ProfileName}' (Offset X: {OffsetX:F2}mm, Y: {OffsetY:F2}mm, Verified: {IsPhysicallyVerified}).";
+                }
+                else
+                {
+                    OffsetX = 0.0;
+                    OffsetY = 0.0;
+                    IsPhysicallyVerified = false;
+                    StatusMessage = $"Default zero offset for {SelectedTray} on {SelectedPrinter}.";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Load profile error: {ex.Message}";
+            }
+        }
+
+        [RelayCommand]
+        public void NudgeOffset(string direction)
+        {
+            switch (direction)
+            {
+                case "LEFT":
+                    OffsetX = Math.Round(OffsetX - 0.10, 2);
+                    break;
+                case "RIGHT":
+                    OffsetX = Math.Round(OffsetX + 0.10, 2);
+                    break;
+                case "UP":
+                    OffsetY = Math.Round(OffsetY - 0.10, 2);
+                    break;
+                case "DOWN":
+                    OffsetY = Math.Round(OffsetY + 0.10, 2);
+                    break;
+                case "RESET":
+                    OffsetX = 0.0;
+                    OffsetY = 0.0;
+                    break;
             }
         }
 
@@ -82,16 +145,15 @@ namespace PVCStudioPro.App.ViewModels
             try
             {
                 IsBusy = true;
-                StatusMessage = "Generating 600 DPI calibration pattern with millimeter rulers...";
+                StatusMessage = "Generating 600 DPI calibration pattern with millimeter vernier scales...";
 
                 using var sheet = _printService.GenerateCalibrationSheet(SelectedTray, dpi: 600);
 
                 if (string.IsNullOrWhiteSpace(SelectedPrinter))
                 {
-                    // Export to desktop preview file
                     string exportPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Calibration_Sheet.png");
                     string saved = await _printService.ExportPreviewAsync(sheet, exportPath);
-                    StatusMessage = $"Calibration sheet saved to desktop: {saved}";
+                    StatusMessage = $"Physical printer not selected. Calibration sheet exported to desktop: {saved}";
                     return;
                 }
 
@@ -107,7 +169,7 @@ namespace PVCStudioPro.App.ViewModels
                 var result = await _printService.PrintTrayAsync(sheet, profile, "PVC Studio Pro - Calibration Sheet");
                 if (result.Success)
                 {
-                    StatusMessage = "Calibration sheet sent to printer successfully!";
+                    StatusMessage = "Calibration sheet sent to printer successfully! Check alignment with caliper.";
                 }
                 else
                 {
@@ -116,7 +178,7 @@ namespace PVCStudioPro.App.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Error: {ex.Message}";
+                StatusMessage = $"Print error: {ex.Message}";
             }
             finally
             {
@@ -125,9 +187,46 @@ namespace PVCStudioPro.App.ViewModels
         }
 
         [RelayCommand]
-        public void SaveCalibration()
+        public async Task SaveCalibrationAsync()
         {
-            StatusMessage = $"Calibration saved! Offset X: {OffsetX:F2} mm, Offset Y: {OffsetY:F2} mm for {SelectedTray}";
+            try
+            {
+                IsBusy = true;
+                var profiles = await _trayService.GetProfilesForPrinterAsync(SelectedPrinter);
+                var match = profiles.FirstOrDefault(p => p.TrayType == SelectedTray);
+
+                if (match != null)
+                {
+                    match.OffsetXMm = OffsetX;
+                    match.OffsetYMm = OffsetY;
+                    match.IsPhysicallyVerified = IsPhysicallyVerified;
+                    await _trayService.SaveProfileAsync(match);
+                }
+                else
+                {
+                    var newProfile = new PrinterProfile
+                    {
+                        ProfileName = $"{SelectedPrinter} - {SelectedTray}",
+                        PrinterDeviceName = SelectedPrinter,
+                        TrayType = SelectedTray,
+                        OffsetXMm = OffsetX,
+                        OffsetYMm = OffsetY,
+                        IsPhysicallyVerified = IsPhysicallyVerified,
+                        TargetDpi = 600
+                    };
+                    await _trayService.SaveProfileAsync(newProfile);
+                }
+
+                StatusMessage = $"Calibration successfully saved to database! Offset X: {OffsetX:F2} mm, Y: {OffsetY:F2} mm for {SelectedTray} on {SelectedPrinter}.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Save error: {ex.Message}";
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
     }
 }

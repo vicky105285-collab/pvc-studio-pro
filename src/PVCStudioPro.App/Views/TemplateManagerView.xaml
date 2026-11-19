@@ -1,0 +1,198 @@
+<UserControl x:Class="PVCStudioPro.App.Views.TemplateManagerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="1100">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="{DynamicResource TemplateHeader}" Style="{StaticResource WorkspaceTitleStyle}"/>
+                <TextBlock Text="{DynamicResource TemplateSubHeader}" Style="{StaticResource FormHelpStyle}" Margin="0,4,0,0"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <ui:Button Command="{Binding ImportTemplateCommand}" Content="{DynamicResource BtnImportTemplate}" Style="{StaticResource SecondaryActionButtonStyle}" Margin="0,0,10,0"/>
+                <ui:Button Command="{Binding ExportTemplateCommand}" Content="{DynamicResource BtnExportTemplates}" Style="{StaticResource PrimaryActionButtonStyle}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Main Body: 2 Columns (Left: Templates List, Right: Coordinates Inspector) -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="380"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Templates List -->
+            <Border Grid.Column="0" Style="{StaticResource SurfaceCardStyle}" Margin="0,0,16,0" Padding="14">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="SUPPORTED DOCUMENT FORMATS" Style="{StaticResource SectionHeaderStyle}"/>
+
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Templates}" SelectedItem="{Binding SelectedTemplate}" Background="Transparent" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,8" BorderThickness="1" BorderBrush="{DynamicResource BorderSubtleBrush}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Text="{Binding DisplayName}" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,4,0,0">
+                                            <Border Background="#EBF3FC" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                                <TextBlock Text="{Binding Category}" Foreground="#0067B8" FontSize="10" FontWeight="Bold"/>
+                                            </Border>
+                                            <Border Background="#F1F5F9" CornerRadius="4" Padding="6,2">
+                                                <TextBlock Text="{Binding TemplateId}" Foreground="#475569" FontSize="10"/>
+                                            </Border>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- Right: Template Inspector & Visual Coordinates -->
+            <Border Grid.Column="1" Style="{StaticResource SurfaceCardStyle}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel DataContext="{Binding SelectedTemplate}">
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding DisplayName}" FontWeight="Bold" FontSize="18" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                            <ui:Button Grid.Column="1" Command="{Binding DataContext.ValidateTemplateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" Content="Validate Schema" Style="{StaticResource SecondaryActionButtonStyle}"/>
+                        </Grid>
+
+                        <!-- Template ID & Category -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Template ID:" Style="{StaticResource FormLabelStyle}"/>
+                                <TextBox Text="{Binding TemplateId}" IsReadOnly="True" Height="38" VerticalContentAlignment="Center" Background="{DynamicResource CardSubtleBackgroundBrush}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Category Code:" Style="{StaticResource FormLabelStyle}"/>
+                                <TextBox Text="{Binding Category}" IsReadOnly="True" Height="38" VerticalContentAlignment="Center" Background="{DynamicResource CardSubtleBackgroundBrush}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Front Face Crop Coordinates -->
+                        <Border Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="6" Padding="14" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="FRONT FACE EXTRACTION BOUNDS (Millimeters)" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="X (mm):" Style="{StaticResource FormLabelStyle}"/>
+                                        <TextBox Text="{Binding Faces.Front.CropRectMm.X, StringFormat='F1'}" Height="38" VerticalContentAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Y (mm):" Style="{StaticResource FormLabelStyle}"/>
+                                        <TextBox Text="{Binding Faces.Front.CropRectMm.Y, StringFormat='F1'}" Height="38" VerticalContentAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="Width (mm):" Style="{StaticResource FormLabelStyle}"/>
+                                        <TextBox Text="{Binding Faces.Front.CropRectMm.Width, StringFormat='F1'}" Height="38" VerticalContentAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="6">
+                                        <TextBlock Text="Height (mm):" Style="{StaticResource FormLabelStyle}"/>
+                                        <TextBox Text="{Binding Faces.Front.CropRectMm.Height, StringFormat='F1'}" Height="38" VerticalContentAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Back Face Crop Coordinates -->
+                        <Border Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="6" Padding="14" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="BACK FACE EXTRACTION BOUNDS (Millimeters)" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="X (mm):" Style="{StaticResource FormLabelStyle}"/>
+                                        <TextBox Text="{Binding Faces.Back.CropRectMm.X, StringFormat='F1'}" Height="38" VerticalContentAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Y (mm):" Style="{StaticResource FormLabelStyle}"/>
+                                        <TextBox Text="{Binding Faces.Back.CropRectMm.Y, StringFormat='F1'}" Height="38" VerticalContentAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="Width (mm):" Style="{StaticResource FormLabelStyle}"/>
+                                        <TextBox Text="{Binding Faces.Back.CropRectMm.Width, StringFormat='F1'}" Height="38" VerticalContentAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="6">
+                                        <TextBlock Text="Height (mm):" Style="{StaticResource FormLabelStyle}"/>
+                                        <TextBox Text="{Binding Faces.Back.CropRectMm.Height, StringFormat='F1'}" Height="38" VerticalContentAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Identification Anchor Keywords -->
+                        <Border Background="{DynamicResource CardSubtleBackgroundBrush}" CornerRadius="6" Padding="14">
+                            <StackPanel>
+                                <TextBlock Text="AUTOMATIC IDENTIFICATION ANCHOR KEYWORDS" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                                <ItemsControl ItemsSource="{Binding Identification.AnchorKeywords}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,0,4" BorderThickness="1" BorderBrush="{DynamicResource BorderSubtleBrush}">
+                                                <TextBlock Text="{Binding}" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Status -->
+        <Border Grid.Row="2" Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,16,0,0">
+            <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Medium"/>
+        </Border>
+    </Grid>
+</UserControl>

@@ -5,88 +5,374 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="900">
-    <Grid Margin="24">
+             d:DesignHeight="780" d:DesignWidth="1200">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <Grid Grid.Row="0" Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="{DynamicResource LedgerHeader}" FontSize="20" FontWeight="Bold" Foreground="#1A1A1A"/>
-                <TextBlock Text="Local Offline Accounting | Zero Citizen Identity PII Retained" Foreground="#5C5C5C" Margin="0,4,0,0"/>
-            </StackPanel>
-            <ui:Button Grid.Column="1" Command="{Binding LoadLedgerCommand}" Height="40" Padding="14,0" Background="#F0F0F0" BorderBrush="#D1D1D1" BorderThickness="1" CornerRadius="4">
-                <StackPanel Orientation="Horizontal">
-                    <ui:SymbolIcon Symbol="ArrowClockwise24" Margin="0,0,6,0"/>
-                    <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+        <!-- Test Mode Alert Banner (Conditional) -->
+        <Border Grid.Row="0" Background="#FEF3C7" BorderBrush="#F59E0B" BorderThickness="1.5" CornerRadius="6" Padding="12,8" Margin="0,0,0,12"
+                Visibility="{Binding IsTestMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="⚠️" FontSize="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="TEST SANDBOX ENVIRONMENT ACTIVE" FontWeight="Bold" Foreground="#92400E" FontSize="12.5"/>
+                    <TextBlock Text="Financial transactions recorded here are isolated in pvc_studio_test.db and do not affect production records." Foreground="#B45309" FontSize="11"/>
                 </StackPanel>
-            </ui:Button>
-        </Grid>
+                <ui:Button Grid.Column="2" Command="{Binding ResetTestModeDatabaseCommand}" Content="Clear Sandbox Database" Height="30" Padding="12,0" Background="#DC2626" Foreground="White" FontWeight="Bold" CornerRadius="4"/>
+            </Grid>
+        </Border>
 
-        <!-- KPI Metric Cards -->
-        <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,20">
-            <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,8,0">
+        <!-- Header with Environment Toggle & Controls -->
+        <Border Grid.Row="1" Style="{DynamicResource SurfaceCardStyle}" Margin="0,0,0,14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{DynamicResource LedgerHeader}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="Enterprise Financial Ledger | Integer Paise Precision | Strict IST Business Day" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0" FontSize="11.5"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Test Mode Toggle Button -->
+                    <ui:Button Command="{Binding ToggleTestModeCommand}" Height="34" Padding="12,0" Margin="0,0,8,0"
+                               Background="{Binding IsTestMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="DeveloperBoard24" Margin="0,0,6,0"/>
+                            <TextBlock Text="{Binding IsTestMode, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue='Switch to Test Mode'}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </ui:Button>
+
+                    <!-- Export to CSV -->
+                    <ui:Button Command="{Binding ExportCsvCommand}" Height="34" Padding="14,0" Background="{DynamicResource NeutralSurfaceBrush}" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,6,0"/>
+                            <TextBlock Text="Export CSV" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </ui:Button>
+
+                    <!-- Refresh -->
+                    <ui:Button Command="{Binding LoadLedgerCommand}" Height="34" Padding="14,0" Background="{DynamicResource NeutralSurfaceBrush}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ArrowClockwise24" Margin="0,0,6,0"/>
+                            <TextBlock Text="Refresh" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </ui:Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- KPI Metric Cards Grid (5-column summary) -->
+        <UniformGrid Grid.Row="2" Columns="5" Margin="0,0,0,14">
+            <Border Style="{DynamicResource SurfaceCardStyle}" Margin="0,0,6,0">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LblTodayCards}" Foreground="#5C5C5C" FontSize="11" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding TodayCards}" FontSize="28" FontWeight="Bold" Foreground="#0067B8" Margin="0,6,0,0"/>
+                    <TextBlock Text="Net Sales Revenue (IST)" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11.5" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding TodayRevenue, StringFormat='₹ {0:N2}'}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource BrandSuccessBrush}" Margin="0,4,0,0"/>
+                    <TextBlock Text="{Binding TodayCards, StringFormat='Across {0} transactions'}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" Margin="0,2,0,0"/>
                 </StackPanel>
             </Border>
 
-            <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16" Margin="4,0,4,0">
+            <Border Style="{DynamicResource SurfaceCardStyle}" Margin="3,0,3,0">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LblTodayRevenue}" Foreground="#5C5C5C" FontSize="11" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding TodayRevenue, StringFormat='₹ {0:N2}'}" FontSize="28" FontWeight="Bold" Foreground="#107C41" Margin="0,6,0,0"/>
+                    <TextBlock Text="Total Gross Receipts" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11.5" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding TotalCollected, StringFormat='₹ {0:N2}'}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource BrandPrimaryBrush}" Margin="0,4,0,0"/>
+                    <TextBlock Text="Gross Collected Inflow" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" Margin="0,2,0,0"/>
                 </StackPanel>
             </Border>
 
-            <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16" Margin="4,0,4,0">
+            <Border Style="{DynamicResource SurfaceCardStyle}" Margin="3,0,3,0">
                 <StackPanel>
-                    <TextBlock Text="Aadhaar Cards Today" Foreground="#5C5C5C" FontSize="11" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding TodayAadhaarCount}" FontSize="28" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,6,0,0"/>
+                    <TextBlock Text="Cash in Drawer" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11.5" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding CashRevenue, StringFormat='₹ {0:N2}'}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,4,0,0"/>
+                    <TextBlock Text="Net Physical Currency" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" Margin="0,2,0,0"/>
                 </StackPanel>
             </Border>
 
-            <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="16" Margin="8,0,0,0">
+            <Border Style="{DynamicResource SurfaceCardStyle}" Margin="3,0,3,0">
                 <StackPanel>
-                    <TextBlock Text="PAN Cards Today" Foreground="#5C5C5C" FontSize="11" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding TodayPanCount}" FontSize="28" FontWeight="Bold" Foreground="#1A1A1A" Margin="0,6,0,0"/>
+                    <TextBlock Text="Digital Payments" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11.5" FontWeight="SemiBold"/>
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{Binding UpiRevenue, StringFormat='₹ {0:N0}'}" FontSize="16" FontWeight="Bold" Foreground="#2563EB"/>
+                            <TextBlock Text="UPI" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="{Binding CardRevenue, StringFormat='₹ {0:N0}'}" FontSize="16" FontWeight="Bold" Foreground="#7C3AED"/>
+                            <TextBlock Text="Card" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{DynamicResource SurfaceCardStyle}" Margin="6,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="Total Refunds" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11.5" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding TotalRefunded, StringFormat='₹ {0:N2}'}" FontSize="24" FontWeight="Bold" Foreground="#DC2626" Margin="0,4,0,0"/>
+                    <TextBlock Text="Audited Disbursements" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" Margin="0,2,0,0"/>
                 </StackPanel>
             </Border>
         </UniformGrid>
 
-        <!-- Transactions DataGrid -->
-        <Border Grid.Row="2" Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="8" Padding="12">
-            <DataGrid ItemsSource="{Binding RecentJobs}" AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal" HeadersVisibility="Column" Background="Transparent" BorderThickness="0" RowHeight="38">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="{DynamicResource ColTime}" Binding="{Binding CreatedAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="160"/>
-                    <DataGridTextColumn Header="{DynamicResource ColDocType}" Binding="{Binding DocumentType}" Width="150"/>
-                    <DataGridTextColumn Header="{DynamicResource ColQty}" Binding="{Binding Quantity}" Width="80"/>
-                    <DataGridTextColumn Header="{DynamicResource ColAmount}" Binding="{Binding TotalAmount, StringFormat='₹ {0:N2}'}" Width="120"/>
-                    <DataGridTextColumn Header="{DynamicResource ColPayment}" Binding="{Binding PaymentMode}" Width="100"/>
-                    <DataGridTextColumn Header="Printer" Binding="{Binding PrinterName}" Width="*"/>
-                    <DataGridTemplateColumn Width="180">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ui:Button Content="{DynamicResource BtnPrintReceipt}" Command="{Binding DataContext.PrintReceiptCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Height="28" Padding="8,0" FontSize="11" CornerRadius="3" Background="#F0F0F0"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
+        <!-- Main Master-Detail Workstage -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="380"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Transactions Table -->
+            <Border Grid.Column="0" Style="{DynamicResource SurfaceCardStyle}" Margin="0,0,14,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Search Toolbar -->
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="300"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="Search Invoice, Customer, Document..." Foreground="#9CA3AF" VerticalAlignment="Center" Margin="10,0,0,0" IsHitTestVisible="False"
+                                   Visibility="{Binding SearchFilter.IsEmpty, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"/>
+                        <TextBlock Grid.Column="1" Text="{Binding FilteredTransactions.Count, StringFormat='Showing {0} transactions'}" VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="11"/>
+                    </Grid>
+
+                    <!-- Transactions DataGrid -->
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding FilteredTransactions}" SelectedItem="{Binding SelectedTransaction}" AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal" HeadersVisibility="Column" Background="Transparent" BorderThickness="0" RowHeight="38">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Invoice #" Binding="{Binding InvoiceNumber}" Width="140" FontWeight="SemiBold"/>
+                            <DataGridTextColumn Header="Time (UTC)" Binding="{Binding CreatedAt, StringFormat='yyyy-MM-dd HH:mm'}" Width="130"/>
+                            <DataGridTextColumn Header="Document" Binding="{Binding DocumentType}" Width="140"/>
+                            <DataGridTextColumn Header="Total" Binding="{Binding NetTotalRupees, StringFormat='₹ {0:N2}'}" Width="90"/>
+                            <DataGridTextColumn Header="Paid" Binding="{Binding PaidRupees, StringFormat='₹ {0:N2}'}" Width="90"/>
+                            <DataGridTextColumn Header="Balance" Binding="{Binding BalanceRupees, StringFormat='₹ {0:N2}'}" Width="90"/>
+                            <DataGridTemplateColumn Header="Status" Width="90">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
+                                            <TextBlock Text="{Binding Status}" FontWeight="Bold" FontSize="10"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Customer" Binding="{Binding CustomerName}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <!-- Right: Transaction Details, Receipts, and Audit Log -->
+            <Border Grid.Column="1" Style="{DynamicResource SurfaceCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Selected Invoice Header -->
+                    <Border Grid.Row="0" Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,10">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding SelectedTransaction.InvoiceNumber, FallbackValue='No Transaction Selected'}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Grid.Column="1" Text="{Binding SelectedTransaction.Status, FallbackValue='—'}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource BrandPrimaryBrush}"/>
+                            </Grid>
+                            <TextBlock Text="{Binding SelectedTransaction.CustomerName, FallbackValue='Walk-in Customer', StringFormat='Customer: {0}'}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="{Binding SelectedTransaction.DocumentType, FallbackValue='—', StringFormat='Item: {0}'}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Total" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    <TextBlock Text="{Binding SelectedTransaction.NetTotalRupees, FallbackValue=0.00, StringFormat='₹ {0:N2}'}" FontWeight="Bold" FontSize="12"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Paid" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    <TextBlock Text="{Binding SelectedTransaction.PaidRupees, FallbackValue=0.00, StringFormat='₹ {0:N2}'}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource BrandSuccessBrush}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Balance" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    <TextBlock Text="{Binding SelectedTransaction.BalanceRupees, FallbackValue=0.00, StringFormat='₹ {0:N2}'}" FontWeight="Bold" FontSize="12" Foreground="#DC2626"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Action Buttons -->
+                    <Grid Grid.Row="1" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <ui:Button Grid.Column="0" Command="{Binding OpenPaymentDialogCommand}" Content="+ Payment" Height="30" Margin="0,0,4,0" Background="{DynamicResource BrandPrimaryBrush}" Foreground="White" FontWeight="SemiBold" FontSize="11"/>
+                        <ui:Button Grid.Column="1" Command="{Binding OpenRefundDialogCommand}" Content="Refund" Height="30" Margin="2,0,2,0" Background="{DynamicResource NeutralSurfaceBrush}" FontWeight="SemiBold" FontSize="11"/>
+                        <ui:Button Grid.Column="2" Command="{Binding OpenVoidDialogCommand}" Content="Void" Height="30" Margin="4,0,0,0" Background="#FEE2E2" Foreground="#B91C1C" FontWeight="SemiBold" FontSize="11"/>
+                    </Grid>
+
+                    <!-- Payment History & Audit Log -->
+                    <TabControl Grid.Row="2" Background="Transparent" BorderThickness="0">
+                        <TabItem Header="Receipts &amp; Refunds" FontSize="11">
+                            <ListBox ItemsSource="{Binding SelectedPayments}" Background="Transparent" BorderThickness="0" Margin="0,6,0,0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="0,0,0,1" Padding="4,6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{Binding PaymentMethod, StringFormat='{}{0} Record'}" FontWeight="SemiBold" FontSize="11"/>
+                                                    <TextBlock Text="{Binding CollectedAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{Binding AmountRupees, StringFormat='₹ {0:N2}'}" FontWeight="Bold" FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </TabItem>
+                        <TabItem Header="Audit History" FontSize="11">
+                            <ListBox ItemsSource="{Binding SelectedAuditTrail}" Background="Transparent" BorderThickness="0" Margin="0,6,0,0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="0,0,0,1" Padding="4,6">
+                                            <StackPanel>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding ActionType}" FontWeight="Bold" FontSize="11"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Timestamp, StringFormat='HH:mm:ss'}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                </Grid>
+                                                <TextBlock Text="{Binding MandatoryReason}" FontSize="10.5" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Modals: Payment, Refund, Void -->
+        <!-- 1. Add Payment Modal -->
+        <Border Grid.Row="0" Grid.RowSpan="5" Background="#80000000" Visibility="{Binding IsPaymentDialogVisible, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="100">
+            <Border Style="{StaticResource SurfaceCardStyle}" Width="360" CornerRadius="8" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Record Customer Payment" FontWeight="Bold" FontSize="15" Margin="0,0,0,12"/>
+                    <TextBlock Text="Amount (₹):" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding PaymentInputAmount, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Payment Mode:" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <ComboBox SelectedValue="{Binding PaymentInputMethod}" SelectedValuePath="Content" Height="34" Margin="0,0,0,10">
+                        <ComboBoxItem Content="CASH" IsSelected="True"/>
+                        <ComboBoxItem Content="UPI"/>
+                        <ComboBoxItem Content="CARD"/>
+                    </ComboBox>
+
+                    <TextBlock Text="Reference # (Optional for UPI/Card):" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding PaymentInputReference, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Margin="0,0,0,16"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <ui:Button Grid.Column="0" Command="{Binding ClosePaymentDialogCommand}" Content="Cancel" Height="34" Margin="0,0,4,0" Background="{DynamicResource NeutralSurfaceBrush}"/>
+                        <ui:Button Grid.Column="1" Command="{Binding SubmitPaymentCommand}" Content="Record" Height="34" Margin="4,0,0,0" Style="{DynamicResource PrimaryActionButtonStyle}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- 2. Refund Modal -->
+        <Border Grid.Row="0" Grid.RowSpan="5" Background="#80000000" Visibility="{Binding IsRefundDialogVisible, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="100">
+            <Border Style="{StaticResource SurfaceCardStyle}" Width="360" CornerRadius="8" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Issue Customer Refund" FontWeight="Bold" FontSize="15" Margin="0,0,0,12"/>
+                    <TextBlock Text="Refund Amount (₹):" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding RefundInputAmount, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Mandatory Audit Reason:" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding RefundInputReason, UpdateSourceTrigger=PropertyChanged}" Height="60" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,16"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <ui:Button Grid.Column="0" Command="{Binding CloseRefundDialogCommand}" Content="Cancel" Height="34" Margin="0,0,4,0" Background="{DynamicResource NeutralSurfaceBrush}"/>
+                        <ui:Button Grid.Column="1" Command="{Binding SubmitRefundCommand}" Content="Issue Refund" Height="34" Margin="4,0,0,0" Background="#DC2626" Foreground="White" FontWeight="Bold"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- 3. Void Modal -->
+        <Border Grid.Row="0" Grid.RowSpan="5" Background="#80000000" Visibility="{Binding IsVoidDialogVisible, Converter={StaticResource BooleanToVisibilityConverter}}" Panel.ZIndex="100">
+            <Border Style="{StaticResource SurfaceCardStyle}" Width="360" CornerRadius="8" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Void Invoice &amp; Refund" FontWeight="Bold" FontSize="15" Margin="0,0,0,8"/>
+                    <TextBlock Text="Voiding this invoice will cancel the transaction and automatically issue a full refund for all collected amounts." Foreground="#DC2626" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                    <TextBlock Text="Mandatory Cancellation Reason:" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding VoidInputReason, UpdateSourceTrigger=PropertyChanged}" Height="60" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,16"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <ui:Button Grid.Column="0" Command="{Binding CloseVoidDialogCommand}" Content="Cancel" Height="34" Margin="0,0,4,0" Background="{DynamicResource NeutralSurfaceBrush}"/>
+                        <ui:Button Grid.Column="1" Command="{Binding SubmitVoidCommand}" Content="Confirm Void" Height="34" Margin="4,0,0,0" Background="#DC2626" Foreground="White" FontWeight="Bold"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
         </Border>
 
         <!-- Status -->
-        <Border Grid.Row="3" Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="12,8" Margin="0,16,0,0">
-            <TextBlock Text="{Binding StatusMessage}" Foreground="#1A1A1A" FontWeight="Medium"/>
+        <Border Grid.Row="4" Style="{DynamicResource SurfaceCardStyle}" Padding="12,8" Margin="0,14,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Medium" VerticalAlignment="Center"/>
+                <ProgressBar Grid.Column="1" IsIndeterminate="True" Width="100" Height="6" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}" VerticalAlignment="Center"/>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

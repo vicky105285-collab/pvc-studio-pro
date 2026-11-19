@@ -15,11 +15,21 @@ namespace PVCStudioPro.App.ViewModels
 {
     public partial class CardPrintViewModel : ObservableObject
     {
+        private readonly IDocumentImportService _importService;
+        private readonly IPdfDocumentService _pdfDocumentService;
+        private readonly IDocumentTypeDetectionService _detectionService;
+        private readonly ICardDetectionService _cardDetection;
+        private readonly IManualCropService _cropService;
         private readonly IPdfService _pdfService;
         private readonly ITemplateService _templateService;
         private readonly IPrinterDiscoveryService _printerDiscovery;
         private readonly IPrintService _printService;
         private readonly IJobLedgerService _jobLedger;
+
+        // Navigation callbacks wired by MainViewModel
+        public Action<SKBitmap, string>? OpenInCropStudioAction { get; set; }
+        public Action<SKBitmap?, SKBitmap?, DocumentKind>? OpenInPrintPreviewAction { get; set; }
+        public Action<SKBitmap?, SKBitmap?, string>? OpenInPageDesignerAction { get; set; }
 
         [ObservableProperty]
         private BitmapSource? _frontCardImage;
@@ -46,7 +56,7 @@ namespace PVCStudioPro.App.ViewModels
         private ObservableCollection<string> _trayList = new();
 
         [ObservableProperty]
-        private string _selectedTray = "EPSON_2CARD_TRAY";
+        private string _selectedTray = "EPSON_L805_TRAY";
 
         [ObservableProperty]
         private double _offsetX = 0.0;
@@ -64,7 +74,7 @@ namespace PVCStudioPro.App.ViewModels
         private bool _isMirrorMode = false;
 
         [ObservableProperty]
-        private string _statusMessage = "Ready | Select or drop an Indian government document PDF";
+        private string _statusMessage = "Ready | Select or drop an Indian government document (PDF, JPG, PNG)";
 
         [ObservableProperty]
         private bool _isProcessing = false;
@@ -72,31 +82,158 @@ namespace PVCStudioPro.App.ViewModels
         [ObservableProperty]
         private bool _hasLoadedCards = false;
 
+        [ObservableProperty]
+        private bool _isPasswordPromptVisible = false;
+
+        [ObservableProperty]
+        private string _passwordInput = string.Empty;
+
+        [ObservableProperty]
+        private string _selectedPaymentMode = "CASH";
+
+        [ObservableProperty]
+        private ObservableCollection<string> _paymentModes = new() { "CASH", "UPI", "CARD" };
+
+        private SKBitmap? _cachedPageBitmap;
         private SKBitmap? _cachedFrontBitmap;
         private SKBitmap? _cachedBackBitmap;
         private CardTemplate? _activeTemplate;
         private byte[]? _activeDocumentBytes;
+        private DocumentKind _detectedKind = DocumentKind.Aadhaar;
 
         public CardPrintViewModel(
+            IDocumentImportService importService,
+            IPdfDocumentService pdfDocumentService,
+            IDocumentTypeDetectionService detectionService,
+            ICardDetectionService cardDetection,
+            IManualCropService cropService,
             IPdfService pdfService,
             ITemplateService templateService,
             IPrinterDiscoveryService printerDiscovery,
             IPrintService printService,
             IJobLedgerService jobLedger)
         {
+            _importService = importService;
+            _pdfDocumentService = pdfDocumentService;
+            _detectionService = detectionService;
+            _cardDetection = cardDetection;
+            _cropService = cropService;
             _pdfService = pdfService;
             _templateService = templateService;
             _printerDiscovery = printerDiscovery;
             _printService = printService;
             _jobLedger = jobLedger;
 
-            TrayList.Add("EPSON_2CARD_TRAY");
+            TrayList.Add("EPSON_L805_TRAY");
+            TrayList.Add("EPSON_L8050_TRAY");
             TrayList.Add("CANON_MULTI_TRAY");
             TrayList.Add("DRAGON_SHEET_A4");
             TrayList.Add("CR80_DIRECT");
-            SelectedTray = "EPSON_2CARD_TRAY";
+            SelectedTray = "EPSON_L805_TRAY";
 
             _ = InitializePrintersAsync();
+        }
+
+        [RelayCommand]
+        public async Task UnlockPasswordProtectedAsync()
+        {
+            if (string.IsNullOrEmpty(DocumentPath) || string.IsNullOrEmpty(PasswordInput)) return;
+            IsPasswordPromptVisible = false;
+            await LoadDocumentFileAsync(DocumentPath, PasswordInput);
+        }
+
+        [RelayCommand]
+        public void Rotate90()
+        {
+            if (_cachedFrontBitmap == null) return;
+
+            try
+            {
+                var rotatedFront = new SKBitmap(_cachedFrontBitmap.Height, _cachedFrontBitmap.Width, _cachedFrontBitmap.ColorType, _cachedFrontBitmap.AlphaType);
+                using (var canvas = new SKCanvas(rotatedFront))
+                {
+                    canvas.Translate(rotatedFront.Width, 0);
+                    canvas.RotateDegrees(90);
+                    canvas.DrawBitmap(_cachedFrontBitmap, 0, 0, SKSamplingOptions.Default, null);
+                }
+                _cachedFrontBitmap.Dispose();
+                _cachedFrontBitmap = rotatedFront;
+                FrontCardImage = _cachedFrontBitmap.ToBitmapSource();
+
+                if (_cachedBackBitmap != null)
+                {
+                    var rotatedBack = new SKBitmap(_cachedBackBitmap.Height, _cachedBackBitmap.Width, _cachedBackBitmap.ColorType, _cachedBackBitmap.AlphaType);
+                    using (var canvas = new SKCanvas(rotatedBack))
+                    {
+                        canvas.Translate(rotatedBack.Width, 0);
+                        canvas.RotateDegrees(90);
+                        canvas.DrawBitmap(_cachedBackBitmap, 0, 0, SKSamplingOptions.Default, null);
+                    }
+                    _cachedBackBitmap.Dispose();
+                    _cachedBackBitmap = rotatedBack;
+                    BackCardImage = _cachedBackBitmap.ToBitmapSource();
+                }
+                StatusMessage = "Rotated cards by 90 degrees.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Rotation error: {ex.Message}";
+            }
+        }
+
+        [RelayCommand]
+        public void FlipFaces()
+        {
+            if (_cachedFrontBitmap == null) return;
+
+            var tempBmp = _cachedFrontBitmap;
+            _cachedFrontBitmap = _cachedBackBitmap ?? _cachedFrontBitmap;
+            _cachedBackBitmap = tempBmp;
+
+            FrontCardImage = _cachedFrontBitmap?.ToBitmapSource();
+            BackCardImage = _cachedBackBitmap?.ToBitmapSource();
+            StatusMessage = "Swapped Front and Back card faces.";
+        }
+
+        [RelayCommand]
+        public void EditInCropStudio()
+        {
+            if (_cachedPageBitmap != null)
+            {
+                OpenInCropStudioAction?.Invoke(_cachedPageBitmap, Path.GetFileName(DocumentPath));
+            }
+            else if (_cachedFrontBitmap != null)
+            {
+                OpenInCropStudioAction?.Invoke(_cachedFrontBitmap, "Front Card");
+            }
+            else
+            {
+                StatusMessage = "No document page available to edit in Crop Studio.";
+            }
+        }
+
+        [RelayCommand]
+        public void SendToPageDesigner()
+        {
+            if (_cachedFrontBitmap == null)
+            {
+                StatusMessage = "Load or extract cards before sending to Page Designer.";
+                return;
+            }
+
+            OpenInPageDesignerAction?.Invoke(_cachedFrontBitmap, _cachedBackBitmap, DetectedTemplateName);
+        }
+
+        [RelayCommand]
+        public void SendToPrintPreview()
+        {
+            if (_cachedFrontBitmap == null)
+            {
+                StatusMessage = "Load or extract cards before opening True Print Preview.";
+                return;
+            }
+
+            OpenInPrintPreviewAction?.Invoke(_cachedFrontBitmap, _cachedBackBitmap, _detectedKind);
         }
 
         private async Task InitializePrintersAsync()
@@ -112,7 +249,6 @@ namespace PVCStudioPro.App.ViewModels
 
                 if (PrinterList.Count > 0)
                 {
-                    // Prefer Epson photo printers if present
                     string? epson = null;
                     foreach (var name in PrinterList)
                     {
@@ -138,7 +274,7 @@ namespace PVCStudioPro.App.ViewModels
         {
             var dlg = new OpenFileDialog
             {
-                Filter = "Indian Gov ID Documents (*.pdf)|*.pdf|All Files (*.*)|*.*",
+                Filter = "All Supported Identity Documents (*.pdf;*.jpg;*.jpeg;*.png;*.bmp;*.tiff;*.webp)|*.pdf;*.jpg;*.jpeg;*.png;*.bmp;*.tiff;*.webp|PDF Documents (*.pdf)|*.pdf|Image Files (*.jpg;*.jpeg;*.png;*.bmp)|*.jpg;*.jpeg;*.png;*.bmp|All Files (*.*)|*.*",
                 Title = "Select Identity Card Document"
             };
 
@@ -156,24 +292,98 @@ namespace PVCStudioPro.App.ViewModels
                 StatusMessage = "Reading and analyzing document...";
                 DocumentPath = filePath;
 
+                var sniff = _importService.SniffFile(filePath);
                 _activeDocumentBytes = await File.ReadAllBytesAsync(filePath);
-                using var stream = new MemoryStream(_activeDocumentBytes);
 
-                var docInfo = await _pdfService.InspectDocumentAsync(stream, password);
-                if (docInfo.IsEncrypted && string.IsNullOrEmpty(password))
+                if (sniff.MagicKind == FileMagicKind.Pdf)
                 {
-                    StatusMessage = "Password-protected PDF detected. Enter password.";
-                    return;
+                    using var stream = new MemoryStream(_activeDocumentBytes);
+                    var unlock = await _pdfDocumentService.TryUnlockPasswordAsync(stream, password);
+                    if (unlock.Status == PdfPasswordStatus.PasswordRequired || unlock.Status == PdfPasswordStatus.InvalidPassword)
+                    {
+                        IsPasswordPromptVisible = true;
+                        StatusMessage = unlock.Status == PdfPasswordStatus.InvalidPassword 
+                            ? "Invalid password. Please re-enter the 8-character PDF password."
+                            : "Password-protected PDF detected. Enter password to unlock.";
+                        return;
+                    }
+
+                    // Render Page 0 at 300 DPI
+                    stream.Position = 0;
+                    _cachedPageBitmap?.Dispose();
+                    _cachedPageBitmap = await _pdfService.RenderPageAsync(stream, 0, 300, password);
+
+                    // Text sample
+                    stream.Position = 0;
+                    var docInfo = await _pdfService.InspectDocumentAsync(stream, password);
+                    string textSample = docInfo.ExtractedTextSample;
+
+                    // Match template via TemplateService first
+                    var matchResult = _templateService.MatchTemplate(textSample, docInfo.PageWidthMm, docInfo.PageHeightMm);
+                    if (matchResult.IsSuccess && matchResult.Template != null && matchResult.ConfidenceScore > 0.65)
+                    {
+                        _activeTemplate = matchResult.Template;
+                        DetectedTemplateName = $"{_activeTemplate.DisplayName} (CR80 600 DPI)";
+                        StatusMessage = $"Recognized: {_activeTemplate.DisplayName}";
+
+                        using var extractStream = new MemoryStream(_activeDocumentBytes);
+                        var (front, back) = await _pdfService.ExtractCardFacesAsync(extractStream, _activeTemplate, password, applyMask: IsMaskAadhaar);
+                        SetCardBitmaps(front, back);
+                        HasLoadedCards = true;
+                        return;
+                    }
+
+                    // If text-based template match fails (common for UIDAI Identity-H font PDFs):
+                    // Fall back to robust multi-factor detection service + cut guide detector
+                    if (_cachedPageBitmap != null)
+                    {
+                        var detection = await _detectionService.DetectDocumentTypeAsync(_cachedPageBitmap, textSample, docInfo.PageWidthMm, docInfo.PageHeightMm);
+                        _detectedKind = detection.DetectedKind;
+                        DetectedTemplateName = $"{detection.DisplayName} ({detection.Confidence:P0})";
+                        StatusMessage = $"Visual layout detected: {detection.DisplayName} ({detection.DetectionNotes})";
+
+                        var (front, back, _, _) = await _cardDetection.DetectAndExtractDualCardsAsync(_cachedPageBitmap, detection.DetectedKind, detection.AadhaarGen);
+                        if (front != null)
+                        {
+                            SetCardBitmaps(front, back);
+                            HasLoadedCards = true;
+                            return;
+                        }
+                    }
+
+                    DetectedTemplateName = "UNSUPPORTED / UNKNOWN DOCUMENT";
+                    StatusMessage = "Could not automatically isolate card boundaries. Click 'Edit in Crop Studio' to crop manually.";
+                    HasLoadedCards = false;
                 }
+                else
+                {
+                    // Raster Image input (JPG, PNG, BMP, TIFF, WebP)
+                    _cachedPageBitmap?.Dispose();
+                    _cachedPageBitmap = SKBitmap.Decode(_activeDocumentBytes);
+                    if (_cachedPageBitmap == null)
+                    {
+                        StatusMessage = "Failed to decode image data.";
+                        return;
+                    }
 
-                // Match against 10 Indian Government card templates
-                _activeTemplate = _templateService.MatchTemplateByText(docInfo.ExtractedTextSample);
-                DetectedTemplateName = $"{_activeTemplate.DisplayName} ({_activeTemplate.DocumentType})";
+                    var detection = await _detectionService.DetectDocumentTypeAsync(_cachedPageBitmap, string.Empty);
+                    _detectedKind = detection.DetectedKind;
+                    DetectedTemplateName = $"{detection.DisplayName} (Image Input)";
 
-                await ExtractAndDisplayFacesAsync();
-
-                HasLoadedCards = true;
-                StatusMessage = $"Document Loaded: {_activeTemplate.DisplayName} (CR80 600 DPI Vector Ready)";
+                    var (front, back, _, _) = await _cardDetection.DetectAndExtractDualCardsAsync(_cachedPageBitmap, detection.DetectedKind, detection.AadhaarGen);
+                    if (front != null)
+                    {
+                        SetCardBitmaps(front, back);
+                        HasLoadedCards = true;
+                    }
+                    else
+                    {
+                        // Assume whole image is the card face
+                        SetCardBitmaps(_cachedPageBitmap.Copy(), null);
+                        HasLoadedCards = true;
+                        StatusMessage = "Image loaded as single card face. Open Crop Studio to adjust if needed.";
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -185,20 +395,15 @@ namespace PVCStudioPro.App.ViewModels
             }
         }
 
-        private async Task ExtractAndDisplayFacesAsync()
+        private void SetCardBitmaps(SKBitmap? front, SKBitmap? back)
         {
-            if (_activeDocumentBytes == null || _activeTemplate == null) return;
-
-            using var stream = new MemoryStream(_activeDocumentBytes);
-            var (front, back) = await _pdfService.ExtractCardFacesAsync(stream, _activeTemplate, applyMask: IsMaskAadhaar);
-
             _cachedFrontBitmap?.Dispose();
             _cachedBackBitmap?.Dispose();
 
             _cachedFrontBitmap = front;
             _cachedBackBitmap = back;
 
-            FrontCardImage = _cachedFrontBitmap.ToBitmapSource();
+            FrontCardImage = _cachedFrontBitmap?.ToBitmapSource();
             BackCardImage = _cachedBackBitmap?.ToBitmapSource();
         }
 
@@ -207,7 +412,10 @@ namespace PVCStudioPro.App.ViewModels
         {
             if (_cachedFrontBitmap == null) return;
             IsMaskAadhaar = !IsMaskAadhaar;
-            await ExtractAndDisplayFacesAsync();
+            if (_cachedPageBitmap != null)
+            {
+                await LoadDocumentFileAsync(DocumentPath, PasswordInput);
+            }
         }
 
         [RelayCommand]
@@ -246,10 +454,10 @@ namespace PVCStudioPro.App.ViewModels
                     // Record transaction in zero-PII ledger
                     await _jobLedger.RecordJobAsync(new PrintJobRecord
                     {
-                        DocumentType = _activeTemplate?.DocumentType ?? "OTHER",
+                        DocumentType = _detectedKind.ToString(),
                         Quantity = Copies,
                         TotalAmount = CardPrice * Copies,
-                        PaymentMode = "CASH",
+                        PaymentMode = SelectedPaymentMode,
                         PrinterName = SelectedPrinter,
                         Status = "COMPLETED"
                     });

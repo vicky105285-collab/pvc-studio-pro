@@ -72,3 +72,26 @@ If an operator enables "Quick Reprint" (in case a plastic card jams in the tray)
 - The decrypted card remains **strictly in physical RAM**.
 - An automated watchdog timer zeroizes and frees the buffer after **15 minutes** or upon application exit.
 - At no point is the decrypted card written to Windows `%TEMP%` or application directories.
+
+---
+
+## 4. Windows DPAPI Scope & Limitations
+
+### What Windows DPAPI Protects:
+- **Local Application Secrets:** If an operator configures an administrative password, custom cloud backup credentials, or proprietary printer profile calibration locks, these are encrypted via `ProtectedData.Protect` using `DataProtectionScope.CurrentUser`.
+- **Key Derivation:** DPAPI binds ciphertext directly to the Windows machine user account credentials through the Windows Local Security Authority Subsystem Service (LSASS).
+
+### What DPAPI Does NOT Protect:
+- **Transient In-Flight Memory:** DPAPI is an encryption-at-rest mechanism. It does not protect active bytes in volatile memory or graphics pipeline buffers while rendering.
+- **Cross-Account Process Snooping:** An attacker with local Administrator privileges or a kernel driver on the host machine can attach a debugger to inspect process memory.
+- **Conclusion:** DPAPI is strictly scoped for persisting operational credentials and offline configuration. Citizen identity documents are intentionally **never persisted to disk**, rendering DPAPI at-rest encryption unnecessary for customer document payloads.
+
+---
+
+## 5. Volatile Memory Scrubbing Realistic Engineering Boundaries
+
+In compliance with independent senior architectural standards:
+- **No False Guarantees:** PVC Studio Pro does not claim that zeroization guarantees complete eradication of all copies from system RAM under every conceivable operating condition.
+- **Managed Runtime Limits:** Any managed `byte[]` or `string` allocated on the .NET heap before unmanaged pinning may be relocated during garbage collection heap compaction before zeroization occurs.
+- **Hardware & Driver Buffers:** Print commands submitted to the Windows Print Spooler (`winspool.drv`) and vendor graphics printer drivers (e.g. Epson `e_farn0e.dll`) allocate driver-internal spool files (`.SPL`) and hardware FIFO buffers outside application control.
+- **Defense-in-Depth Mitigation:** PVC Studio Pro minimizes document lifespan, avoids disk writes, zeroizes unmanaged buffers with `VirtualLock` and `SecureZeroMemory`, and clears UI ImageSource references immediately upon print completion.

@@ -5,3 +5,6 @@ dist/
 .vs/
 *.db
 *.log
+*.msi
+*.zip
+TestResults/

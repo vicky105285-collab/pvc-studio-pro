@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Docnet.Core;
 using Docnet.Core.Exceptions;
@@ -10,25 +12,130 @@ using PVCStudioPro.Core.Models;
 
 namespace PVCStudioPro.Core.Services.Implementations
 {
-    public class PdfService : IPdfService
+    public class PdfService : IPdfDocumentService
     {
         private const double MmPerInch = 25.4;
         private const double PointsPerInch = 72.0;
 
-        public Task<PdfDocumentInfo> InspectDocumentAsync(Stream pdfStream, string? password = null)
+        // Resource & Safety Limits
+        private const int MaxAllowedPages = 50;
+        private const double MaxAllowedPageDimensionMm = 1200.0; // 1.2 meters
+        private const long MaxAllowedStreamBytes = 150 * 1024 * 1024; // 150 MB
+
+        public Task<PasswordUnlockResult> TryUnlockPasswordAsync(
+            Stream pdfStream,
+            string? password,
+            CancellationToken cancellationToken = default)
         {
             return Task.Run(() =>
             {
-                byte[] bytes = ToByteArray(pdfStream);
-                var info = new PdfDocumentInfo();
+                cancellationToken.ThrowIfCancellationRequested();
+                byte[] bytes = ToByteArrayWithLimit(pdfStream, MaxAllowedStreamBytes);
 
                 try
                 {
-                    using var docReader = string.IsNullOrEmpty(password)
+                    // 1. First test if document opens without password
+                    try
+                    {
+                        using var noPassDoc = DocLib.Instance.GetDocReader(bytes, new PageDimensions(1.0));
+                        int count = noPassDoc.GetPageCount();
+                        if (count > 0)
+                        {
+                            return PasswordUnlockResult.Unencrypted();
+                        }
+                    }
+                    catch (DocnetException ex) when (IsPasswordException(ex))
+                    {
+                        // Needs password
+                    }
+
+                    // 2. If password is null or empty, report password required
+                    if (string.IsNullOrWhiteSpace(password))
+                    {
+                        return PasswordUnlockResult.Required("Document is password protected. Please enter the 8-character decryption password.");
+                    }
+
+                    // 3. Candidate password attempts:
+                    // Candidate A: trimmed original
+                    // Candidate B: uppercase (UIDAI standard e.g. SURE1985)
+                    // Candidate C: lowercase
+                    string trimmed = password.Trim();
+                    var candidates = new List<string> { trimmed };
+                    string upper = trimmed.ToUpperInvariant();
+                    if (!candidates.Contains(upper)) candidates.Add(upper);
+                    string lower = trimmed.ToLowerInvariant();
+                    if (!candidates.Contains(lower)) candidates.Add(lower);
+
+                    foreach (var candidate in candidates)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        try
+                        {
+                            using var passDoc = DocLib.Instance.GetDocReader(bytes, candidate, new PageDimensions(1.0));
+                            if (passDoc.GetPageCount() > 0)
+                            {
+                                return PasswordUnlockResult.Success(candidate);
+                            }
+                        }
+                        catch (DocnetException ex) when (IsPasswordException(ex))
+                        {
+                            // Try next candidate
+                        }
+                    }
+
+                    return PasswordUnlockResult.Invalid("Incorrect password. For UIDAI e-Aadhaar, format is FIRST4_OF_NAME_CAPS + YYYY (e.g. SURE1985).");
+                }
+                catch (DocnetException ex)
+                {
+                    return PasswordUnlockResult.Corrupt($"PDF structure error: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    return PasswordUnlockResult.Corrupt($"Error inspecting document: {ex.Message}");
+                }
+                finally
+                {
+                    Array.Clear(bytes, 0, bytes.Length);
+                }
+            }, cancellationToken);
+        }
+
+        public async Task<PdfDocumentInfo> InspectDocumentAsync(
+            Stream pdfStream,
+            string? password = null,
+            CancellationToken cancellationToken = default)
+        {
+            var unlockResult = await TryUnlockPasswordAsync(pdfStream, password, cancellationToken);
+            var info = new PdfDocumentInfo
+            {
+                IsEncrypted = unlockResult.Status == PdfPasswordStatus.PasswordRequired ||
+                              unlockResult.Status == PdfPasswordStatus.DecryptionSuccessful
+            };
+
+            if (unlockResult.Status == PdfPasswordStatus.PasswordRequired ||
+                unlockResult.Status == PdfPasswordStatus.InvalidPassword)
+            {
+                return info;
+            }
+
+            return await Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                byte[] bytes = ToByteArrayWithLimit(pdfStream, MaxAllowedStreamBytes);
+
+                try
+                {
+                    string? effectivePw = unlockResult.EffectivePassword ?? password;
+                    using var docReader = string.IsNullOrEmpty(effectivePw)
                         ? DocLib.Instance.GetDocReader(bytes, new PageDimensions(1.0))
-                        : DocLib.Instance.GetDocReader(bytes, password, new PageDimensions(1.0));
+                        : DocLib.Instance.GetDocReader(bytes, effectivePw, new PageDimensions(1.0));
 
                     info.PageCount = docReader.GetPageCount();
+                    if (info.PageCount > MaxAllowedPages)
+                    {
+                        throw new PdfSecurityException($"PDF exceeds maximum allowable page count ({info.PageCount} > {MaxAllowedPages}).");
+                    }
+
                     if (info.PageCount > 0)
                     {
                         using var pageReader = docReader.GetPageReader(0);
@@ -36,71 +143,129 @@ namespace PVCStudioPro.Core.Services.Implementations
                         int hPt = pageReader.GetPageHeight();
                         info.PageWidthMm = (wPt * MmPerInch) / PointsPerInch;
                         info.PageHeightMm = (hPt * MmPerInch) / PointsPerInch;
+
+                        if (info.PageWidthMm > MaxAllowedPageDimensionMm || info.PageHeightMm > MaxAllowedPageDimensionMm)
+                        {
+                            throw new PdfSecurityException($"PDF dimensions exceed maximum physical safety threshold ({info.PageWidthMm:F0}x{info.PageHeightMm:F0} mm).");
+                        }
+
                         info.ExtractedTextSample = pageReader.GetText() ?? string.Empty;
                     }
                 }
-                catch (DocnetException ex) when (ex.Message.Contains("password", StringComparison.OrdinalIgnoreCase))
+                finally
                 {
-                    info.IsEncrypted = true;
-                }
-                catch (Exception ex)
-                {
-                    if (ex.Message.IndexOf("password", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        info.IsEncrypted = true;
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    Array.Clear(bytes, 0, bytes.Length);
                 }
 
                 return info;
-            });
+            }, cancellationToken);
         }
 
-        public Task<SKBitmap> RenderPageAsync(Stream pdfStream, int pageIndex, int dpi = 600, string? password = null)
+        public async Task<SKBitmap> RenderPageAsync(
+            Stream pdfStream,
+            int pageIndex,
+            int dpi = 600,
+            string? password = null,
+            CancellationToken cancellationToken = default)
         {
-            return Task.Run(() =>
+            if (dpi < 72 || dpi > 1200)
+                throw new ArgumentOutOfRangeException(nameof(dpi), "Render DPI must be between 72 and 1200 DPI.");
+
+            var unlock = await TryUnlockPasswordAsync(pdfStream, password, cancellationToken);
+            string? effectivePw = unlock.EffectivePassword ?? password;
+
+            return await Task.Run(() =>
             {
-                byte[] bytes = ToByteArray(pdfStream);
+                cancellationToken.ThrowIfCancellationRequested();
+                byte[] bytes = ToByteArrayWithLimit(pdfStream, MaxAllowedStreamBytes);
 
-                using var probeDoc = string.IsNullOrEmpty(password)
-                    ? DocLib.Instance.GetDocReader(bytes, new PageDimensions(1.0))
-                    : DocLib.Instance.GetDocReader(bytes, password, new PageDimensions(1.0));
+                try
+                {
+                    double scalingFactor = (double)dpi / PointsPerInch;
+                    using var renderDoc = string.IsNullOrEmpty(effectivePw)
+                        ? DocLib.Instance.GetDocReader(bytes, new PageDimensions(scalingFactor))
+                        : DocLib.Instance.GetDocReader(bytes, effectivePw, new PageDimensions(scalingFactor));
 
-                if (pageIndex < 0 || pageIndex >= probeDoc.GetPageCount())
-                    throw new ArgumentOutOfRangeException(nameof(pageIndex), $"Page {pageIndex} is out of range.");
+                    if (pageIndex < 0 || pageIndex >= renderDoc.GetPageCount())
+                        throw new ArgumentOutOfRangeException(nameof(pageIndex), $"Page {pageIndex} is out of bounds (document has {renderDoc.GetPageCount()} pages).");
 
-                using var probePage = probeDoc.GetPageReader(pageIndex);
-                int baseWidthPt = probePage.GetPageWidth();
-                int baseHeightPt = probePage.GetPageHeight();
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                int targetWidthPx = (int)Math.Round((baseWidthPt * dpi) / PointsPerInch);
-                int targetHeightPx = (int)Math.Round((baseHeightPt * dpi) / PointsPerInch);
+                    using var renderPage = renderDoc.GetPageReader(pageIndex);
+                    byte[] rawBgra = renderPage.GetImage();
+                    int renderedWidth = renderPage.GetPageWidth();
+                    int renderedHeight = renderPage.GetPageHeight();
 
-                using var renderDoc = string.IsNullOrEmpty(password)
-                    ? DocLib.Instance.GetDocReader(bytes, new PageDimensions(targetWidthPx, targetHeightPx))
-                    : DocLib.Instance.GetDocReader(bytes, password, new PageDimensions(targetWidthPx, targetHeightPx));
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                using var renderPage = renderDoc.GetPageReader(pageIndex);
-                byte[] rawBgra = renderPage.GetImage();
-                int renderedWidth = renderPage.GetPageWidth();
-                int renderedHeight = renderPage.GetPageHeight();
+                    var bitmap = new SKBitmap(renderedWidth, renderedHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
+                    IntPtr pixelsPtr = bitmap.GetPixels();
+                    Marshal.Copy(rawBgra, 0, pixelsPtr, rawBgra.Length);
 
-                var bitmap = new SKBitmap(renderedWidth, renderedHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
-                IntPtr pixelsPtr = bitmap.GetPixels();
-                Marshal.Copy(rawBgra, 0, pixelsPtr, rawBgra.Length);
+                    return bitmap;
+                }
+                catch (DocnetException ex) when (IsPasswordException(ex))
+                {
+                    throw new PdfPasswordRequiredException("The document is password-protected. Please provide a valid decryption password.");
+                }
+                finally
+                {
+                    Array.Clear(bytes, 0, bytes.Length);
+                }
+            }, cancellationToken);
+        }
 
-                return bitmap;
-            });
+        public async Task<IReadOnlyList<SKBitmap>> RenderAllPagesAsync(
+            Stream pdfStream,
+            int dpi = 300,
+            string? password = null,
+            CancellationToken cancellationToken = default)
+        {
+            var unlock = await TryUnlockPasswordAsync(pdfStream, password, cancellationToken);
+            string? effectivePw = unlock.EffectivePassword ?? password;
+
+            return await Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                byte[] bytes = ToByteArrayWithLimit(pdfStream, MaxAllowedStreamBytes);
+                var pages = new List<SKBitmap>();
+
+                try
+                {
+                    double scalingFactor = (double)dpi / PointsPerInch;
+                    using var renderDoc = string.IsNullOrEmpty(effectivePw)
+                        ? DocLib.Instance.GetDocReader(bytes, new PageDimensions(scalingFactor))
+                        : DocLib.Instance.GetDocReader(bytes, effectivePw, new PageDimensions(scalingFactor));
+
+                    int count = Math.Min(renderDoc.GetPageCount(), 20); // render up to 20 pages
+                    for (int i = 0; i < count; i++)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        using var pageReader = renderDoc.GetPageReader(i);
+                        byte[] rawBgra = pageReader.GetImage();
+                        int w = pageReader.GetPageWidth();
+                        int h = pageReader.GetPageHeight();
+
+                        var bmp = new SKBitmap(w, h, SKColorType.Bgra8888, SKAlphaType.Premul);
+                        Marshal.Copy(rawBgra, 0, bmp.GetPixels(), rawBgra.Length);
+                        pages.Add(bmp);
+                    }
+
+                    return (IReadOnlyList<SKBitmap>)pages;
+                }
+                finally
+                {
+                    Array.Clear(bytes, 0, bytes.Length);
+                }
+            }, cancellationToken);
         }
 
         public async Task<(SKBitmap Front, SKBitmap? Back)> ExtractCardFacesAsync(
             Stream pdfStream,
             CardTemplate template,
             string? password = null,
-            bool applyMask = false)
+            bool applyMask = false,
+            CancellationToken cancellationToken = default)
         {
             const int dpi = 600;
             double cr80WidthMm = template.PhysicalCard?.WidthMm ?? 85.60;
@@ -110,14 +275,16 @@ namespace PVCStudioPro.Core.Services.Implementations
             int cr80HeightPx = (int)Math.Round((cr80HeightMm * dpi) / MmPerInch);
 
             // Render front page
-            SKBitmap frontSource = await RenderPageAsync(pdfStream, template.Faces.Front.SourcePage, dpi, password);
+            SKBitmap frontSource = await RenderPageAsync(pdfStream, template.Faces.Front.SourcePage, dpi, password, cancellationToken);
             SKBitmap frontCard = CropAndOrientCard(frontSource, template.Faces.Front, cr80WidthPx, cr80HeightPx, dpi, applyMask);
             frontSource.Dispose();
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             SKBitmap? backCard = null;
             if (template.Faces.Back != null)
             {
-                SKBitmap backSource = await RenderPageAsync(pdfStream, template.Faces.Back.SourcePage, dpi, password);
+                SKBitmap backSource = await RenderPageAsync(pdfStream, template.Faces.Back.SourcePage, dpi, password, cancellationToken);
                 backCard = CropAndOrientCard(backSource, template.Faces.Back, cr80WidthPx, cr80HeightPx, dpi, applyMask);
                 backSource.Dispose();
             }
@@ -168,6 +335,7 @@ namespace PVCStudioPro.Core.Services.Implementations
                 canvas.Restore();
             }
 
+            // Apply Masking Zones if requested (UIDAI Masked Aadhaar compliance)
             if (applyMask && face.MaskZones != null && face.MaskZones.Count > 0)
             {
                 using var maskPaint = new SKPaint
@@ -207,19 +375,34 @@ namespace PVCStudioPro.Core.Services.Implementations
             return finalCard;
         }
 
-        private static byte[] ToByteArray(Stream stream)
+        private static bool IsPasswordException(Exception ex)
         {
+            return ex.Message.IndexOf("password", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   ex.Message.IndexOf("handler", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static byte[] ToByteArrayWithLimit(Stream stream, long maxBytes)
+        {
+            if (stream.CanSeek)
+            {
+                stream.Position = 0;
+                if (stream.Length > maxBytes)
+                {
+                    throw new PdfSecurityException($"PDF file size ({stream.Length / (1024 * 1024)} MB) exceeds maximum security limit ({maxBytes / (1024 * 1024)} MB).");
+                }
+            }
+
             if (stream is MemoryStream ms)
             {
                 return ms.ToArray();
             }
 
             using var memoryStream = new MemoryStream();
-            if (stream.CanSeek)
-            {
-                stream.Position = 0;
-            }
             stream.CopyTo(memoryStream);
+            if (memoryStream.Length > maxBytes)
+            {
+                throw new PdfSecurityException($"PDF content exceeds maximum allowable size ({maxBytes / (1024 * 1024)} MB).");
+            }
             return memoryStream.ToArray();
         }
     }

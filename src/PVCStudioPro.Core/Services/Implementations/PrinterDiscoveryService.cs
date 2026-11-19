@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using PVCStudioPro.Core.Models;
 
 namespace PVCStudioPro.Core.Services.Implementations
 {
+    [SupportedOSPlatform("windows")]
     public class PrinterDiscoveryService : IPrinterDiscoveryService
     {
         [DllImport("winspool.drv", CharSet = CharSet.Auto, SetLastError = true)]

@@ -2,56 +2,170 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <!-- Application Shell (தமிழ்) -->
-    <sys:String x:Key="AppTitle">பிவிசி ஸ்டுடியோ ப்ரோ - பிவிசி அட்டை அச்சிடும் மென்பொருள்</sys:String>
+    <!-- Application Shell & Navigation -->
+    <sys:String x:Key="AppTitle">PVC Studio Pro - தொழில்முறை PVC அட்டை &amp; புகைப்பட அச்சிடும் மென்பொருள்</sys:String>
+    <sys:String x:Key="NavGroupProduction">உற்பத்திப் பிரிவு</sys:String>
+    <sys:String x:Key="NavGroupHardware">அச்சுப்பொறி &amp; வன்பொருள்</sys:String>
+    <sys:String x:Key="NavGroupBusiness">வணிகம் &amp; கணக்கு</sys:String>
+    <sys:String x:Key="NavGroupSystem">அமைப்பு</sys:String>
+
+    <sys:String x:Key="NavProductionStudio">உற்பத்தி அரங்கு (Production Studio)</sys:String>
+    <sys:String x:Key="NavDocumentDesk">ஆவண மையம் (Document Desk)</sys:String>
     <sys:String x:Key="NavDashboard">அறிக்கைப் பலகை</sys:String>
     <sys:String x:Key="NavCardPrint">அட்டை அச்சிடுதல்</sys:String>
+    <sys:String x:Key="NavPageDesigner">பக்க வடிவமைப்பு (Page Designer)</sys:String>
     <sys:String x:Key="NavPhotoStudio">புகைப்பட அரங்கு</sys:String>
+    <sys:String x:Key="NavDocProcessing">ஆவண சீரமைப்பு</sys:String>
+    <sys:String x:Key="NavBatch">மொத்த அச்சிடுதல்</sys:String>
+    <sys:String x:Key="NavPrintCenter">அச்சு மையம்</sys:String>
+    <sys:String x:Key="NavPrinterTray">அச்சுப்பொறி &amp; தட்டு மேலாளர்</sys:String>
+    <sys:String x:Key="NavCalibration">தட்டு அளவுத்திருத்தம்</sys:String>
+    <sys:String x:Key="NavTemplates">அட்டை வார்ப்புருக்கள்</sys:String>
+    <sys:String x:Key="NavBusinessProfile">வணிக சுயவிவரம்</sys:String>
     <sys:String x:Key="NavLedger">கணக்குப் பதிவேடு</sys:String>
-    <sys:String x:Key="NavCalibration">அச்சுப்பொறி அளவீடு</sys:String>
+    <sys:String x:Key="NavReports">அறிக்கைகள் &amp; பகுப்பாய்வு</sys:String>
+    <sys:String x:Key="NavBackup">காப்புப்பிரதி &amp; மீட்பு</sys:String>
     <sys:String x:Key="NavSettings">அமைப்புகள்</sys:String>
-    <sys:String x:Key="LangToggle">English</sys:String>
+
+    <sys:String x:Key="LangToggle">English (ஆங்கிலம்)</sys:String>
+    <sys:String x:Key="ThemeToggle">வண்ண அமைப்பு மாற்றம்</sys:String>
+    <sys:String x:Key="StatusReady">அமைப்பு தயார் | ஆஃப்லைன் செயல்பாடு | குடிமக்கள் தரவு சேமிக்கப்படுவதில்லை</sys:String>
+
+    <!-- Dashboard -->
+    <sys:String x:Key="DashHeader">இ-சேவை செயல்பாட்டு மையம்</sys:String>
+    <sys:String x:Key="DashSubHeader">தினசரி உற்பத்தி விவரங்கள் மற்றும் அச்சுப்பொறி நிலை</sys:String>
+    <sys:String x:Key="DashCardsPrintedToday">இன்று அச்சிடப்பட்ட அட்டைகள்</sys:String>
+    <sys:String x:Key="DashPhotoSheetsToday">இன்று அச்சிடப்பட்ட புகைப்பட தாள்கள்</sys:String>
+    <sys:String x:Key="DashRevenueToday">இன்றைய மொத்த வருவாய்</sys:String>
+    <sys:String x:Key="DashPaymentSplit">ரொக்கம் vs. UPI விகிதம்</sys:String>
+    <sys:String x:Key="DashQuickActions">விரைவு உற்பத்திச் செயல்கள்</sys:String>
+    <sys:String x:Key="DashActionPrintCard">PVC அட்டை அச்சிடு</sys:String>
+    <sys:String x:Key="DashActionPhotoStudio">பாஸ்போர்ட் புகைப்படம்</sys:String>
+    <sys:String x:Key="DashActionBatch">மொத்த வரிசை</sys:String>
+    <sys:String x:Key="DashActionCalibrate">தட்டு அளவுத்திருத்தம்</sys:String>
+    <sys:String x:Key="DashRecentJobs">சமீபத்திய பரிவர்த்தனைகள்</sys:String>
+    <sys:String x:Key="DashPrinterStatus">அச்சுப்பொறி இணைப்பு நிலை</sys:String>
 
     <!-- Card Print Studio -->
     <sys:String x:Key="BtnOpenDocument">ஆவணத்தைத் திற (Ctrl+O)</sys:String>
-    <sys:String x:Key="BtnPrintNow">இப்போதே அச்சிடு (Ctrl+P)</sys:String>
-    <sys:String x:Key="ChkMaskAadhaar">ஆதார் மறைத்தல் (XXXX-XXXX-1234)</sys:String>
-    <sys:String x:Key="LblFrontFace">முன்பக்கம் (பகுதி 1)</sys:String>
-    <sys:String x:Key="LblBackFace">பின்பக்கம் (பகுதி 2)</sys:String>
-    <sys:String x:Key="LblPrinterDevice">அச்சுப்பொறி:</sys:String>
-    <sys:String x:Key="LblMediaTray">தட்டு வகை:</sys:String>
+    <sys:String x:Key="BtnPrintNow">அட்டை அச்சிடு (Ctrl+P)</sys:String>
+    <sys:String x:Key="ChkMaskAadhaar">முதல் 8 எண்களை மறை (UIDAI ஆணை)</sys:String>
+    <sys:String x:Key="LblFrontFace">முன்பக்கம் (அட்டை 1)</sys:String>
+    <sys:String x:Key="LblBackFace">பின்பக்கம் (அட்டை 2)</sys:String>
+    <sys:String x:Key="LblPrinterDevice">அச்சுப்பொறி சாதனம்:</sys:String>
+    <sys:String x:Key="LblMediaTray">அட்டை தட்டு / இணைப்பு:</sys:String>
     <sys:String x:Key="LblCopies">பிரதிகள்:</sys:String>
-    <sys:String x:Key="LblCardPrice">கட்டணம் (₹):</sys:String>
-    <sys:String x:Key="LblOffsetX">கிடைமட்ட இடைவெளி X (மிமீ):</sys:String>
-    <sys:String x:Key="LblOffsetY">செங்குத்து இடைவெளி Y (மிமீ):</sys:String>
-    <sys:String x:Key="LblMirrorMode">பிரதிபலிப்பு முறை (டிராகன் தாள்)</sys:String>
-    <sys:String x:Key="LblPreflightStatus">முன் சரிபார்ப்பு நிலை:</sys:String>
-    <sys:String x:Key="StatusReady">தயாராக உள்ளது | ஆஃப்லைன் செயல்பாடு | குடிமக்கள் தரவு சேமிப்பு இல்லை</sys:String>
-    <sys:String x:Key="LblDocumentType">கண்டறியப்பட்ட ஆவணம்:</sys:String>
+    <sys:String x:Key="LblCardPrice">அட்டை விலை (₹):</sys:String>
+    <sys:String x:Key="LblOffsetX">கிடைமட்ட இடைவெளி X (மி.மீ):</sys:String>
+    <sys:String x:Key="LblOffsetY">செங்குத்து இடைவெளி Y (மி.மீ):</sys:String>
+    <sys:String x:Key="LblMirrorMode">கண்ணாடி பிம்ப முறை (டிராகன் தாள்)</sys:String>
+    <sys:String x:Key="LblPreflightStatus">முன் பரிசோதனை நிலை:</sys:String>
+    <sys:String x:Key="LblDocumentType">கண்டறியப்பட்ட ஆவண வடிவம்:</sys:String>
+    <sys:String x:Key="BtnRotate90">90° சுழற்று</sys:String>
+    <sys:String x:Key="BtnFlipFaces">முன்/பின் பக்கம் மாற்று</sys:String>
 
-    <!-- Business Ledger -->
-    <sys:String x:Key="LedgerHeader">தினசரி வணிகப் பணப் பரிவர்த்தனைப் பதிவேடு</sys:String>
-    <sys:String x:Key="LblTodayCards">இன்று அச்சிடப்பட்ட மொத்த அட்டைகள்</sys:String>
+    <!-- Photo Studio -->
+    <sys:String x:Key="PhotoHeader">பாஸ்போர்ட் புகைப்பட அரங்கு</sys:String>
+    <sys:String x:Key="PhotoSubHeader">பயோமெட்ரிக் வரம்புகள், ஆஃப்லைன் பின்னணி நீக்கம் மற்றும் 4x6 / A4 அமைப்புகள்</sys:String>
+    <sys:String x:Key="BtnOpenPhoto">புகைப்படத்தை ஏற்று</sys:String>
+    <sys:String x:Key="ChkRemoveBg">பின்னணி நீக்கம் (ஆஃப்லைன் கிராப்கட்)</sys:String>
+    <sys:String x:Key="LblStudioColor">ஸ்டுடியோ பின்னணி வண்ணம்:</sys:String>
+    <sys:String x:Key="LblGridSize">தாள் அமைப்பு:</sys:String>
+    <sys:String x:Key="BtnPrintPhotos">புகைப்படத் தாளை அச்சிடு (Ctrl+P)</sys:String>
+    <sys:String x:Key="BtnExportPhoto">படமாகச் சேமி (PNG)</sys:String>
+    <sys:String x:Key="LblBrightness">பிரகாசம்:</sys:String>
+    <sys:String x:Key="LblContrast">வண்ண மாறுபாடு:</sys:String>
+
+    <!-- Document Processing / Scan -->
+    <sys:String x:Key="ScanHeader">ஆவண சீரமைப்பு &amp; நேராக்கல்</sys:String>
+    <sys:String x:Key="ScanSubHeader">தானியங்கி மூலை கண்டறிதல் மற்றும் CR80 வடிவமைப்பு திருத்தம்</sys:String>
+    <sys:String x:Key="BtnAutoDetectCorners">தானாக மூலைகளைக் கண்டறி</sys:String>
+    <sys:String x:Key="BtnRectifyCard">சீரமைத்து அச்சிட அனுப்பு</sys:String>
+
+    <!-- Batch Processing -->
+    <sys:String x:Key="BatchHeader">மொத்த அட்டை உற்பத்தி</sys:String>
+    <sys:String x:Key="BatchSubHeader">பல ஆவணங்களை ஒரே நேரத்தில் வரிசைப்படுத்தி அச்சிடுங்கள்</sys:String>
+    <sys:String x:Key="BtnAddFiles">ஆவணங்களைச் சேர்...</sys:String>
+    <sys:String x:Key="BtnAddFolder">கோப்புறையை ஏற்று...</sys:String>
+    <sys:String x:Key="BtnStartBatch">மொத்தமாக அச்சிடத் தொடங்கு</sys:String>
+    <sys:String x:Key="BtnClearBatch">வரிசையை நீக்கு</sys:String>
+
+    <!-- Printer & Tray Manager -->
+    <sys:String x:Key="PrinterManagerHeader">அச்சுப்பொறி &amp; தட்டு மேலாளர்</sys:String>
+    <sys:String x:Key="PrinterManagerSubHeader">தனிப்பயன் தட்டுகள் மற்றும் உற்பத்தியாளர் இணைப்புகளை நிர்வகித்தல்</sys:String>
+    <sys:String x:Key="BtnRefreshPrinters">அச்சுப்பொறிகளைத் தேடு</sys:String>
+    <sys:String x:Key="BtnNewProfile">புதிய தட்டு சுயவிவரம்</sys:String>
+    <sys:String x:Key="BtnDuplicateProfile">சுயவிவர நகல் எடு</sys:String>
+    <sys:String x:Key="BtnSaveProfile">மாற்றங்களைச் சேமி</sys:String>
+    <sys:String x:Key="BtnDeleteProfile">சுயவிவரத்தை நீக்கு</sys:String>
+
+    <!-- Calibration Studio -->
+    <sys:String x:Key="CalibHeader">வன்பொருள் அளவுத்திருத்தம் &amp; அச்சு நேராக்கல்</sys:String>
+    <sys:String x:Key="CalibInstructions">மாதிரி தாளை அச்சிட்டு கேலிபர் மூலம் இடைவெளியை அளவிட்டு கீழே உள்ள மதிப்புகளை மாற்றவும்.</sys:String>
+    <sys:String x:Key="BtnPrintCalibSheet">மாதிரி அளவுத்திருத்த தாளை அச்சிடு</sys:String>
+    <sys:String x:Key="BtnSaveCalibration">அளவுத்திருத்தத்தைச் சேமி</sys:String>
+    <sys:String x:Key="BtnResetDefaults">தொழிற்சாலை அமைப்புகளுக்கு மீட்டமை</sys:String>
+
+    <!-- Template Manager -->
+    <sys:String x:Key="TemplateHeader">அடையாள அட்டை வார்ப்புருக்கள்</sys:String>
+    <sys:String x:Key="TemplateSubHeader">10 இந்திய அரசு ஆவணங்களுக்கான அளவு மற்றும் சொல் விதிகளின் மேலாண்மை</sys:String>
+    <sys:String x:Key="BtnExportTemplates">JSON வார்ப்புருவை ஏற்றுமதி செய்</sys:String>
+    <sys:String x:Key="BtnImportTemplate">தனிப்பயன் வார்ப்புருவை இறக்குமதி செய்</sys:String>
+
+    <!-- Business Profile -->
+    <sys:String x:Key="BusinessProfileHeader">வணிக சுயவிவரம் &amp; பற்றுச்சீட்டு அமைவு</sys:String>
+    <sys:String x:Key="BusinessProfileSubHeader">மையத்தின் பெயர், முகவரி, கட்டணங்கள் மற்றும் பற்றுச்சீட்டு அமைப்புகள்</sys:String>
+    <sys:String x:Key="TabIdentity">வணிக அடையாளம்</sys:String>
+    <sys:String x:Key="TabBilling">பற்றுச்சீட்டு &amp; ரசீது</sys:String>
+    <sys:String x:Key="TabHardwareDefaults">இயல்புநிலை அமைப்புகள்</sys:String>
+    <sys:String x:Key="TabDataPrivacy">தரவு &amp; பாதுகாப்பு</sys:String>
+    <sys:String x:Key="LblShopName">வணிகம் / மையத்தின் பெயர்:</sys:String>
+    <sys:String x:Key="LblOperatorName">உரிமையாளர் பெயர்:</sys:String>
+    <sys:String x:Key="LblBusinessType">வணிக வகை:</sys:String>
+    <sys:String x:Key="LblAddressLine1">முகவரி வரி 1:</sys:String>
+    <sys:String x:Key="LblAddressLine2">முகவரி வரி 2 (விருப்பம்):</sys:String>
+    <sys:String x:Key="LblDistrict">மாவட்டம்:</sys:String>
+    <sys:String x:Key="LblState">மாநிலம்:</sys:String>
+    <sys:String x:Key="LblPinCode">அஞ்சல் குறியீடு (PIN):</sys:String>
+    <sys:String x:Key="LblPhone">தொடர்பு தொலைபேசி:</sys:String>
+    <sys:String x:Key="LblEmail">மின்னஞ்சல் முகவரி:</sys:String>
+    <sys:String x:Key="LblCurrency">நாணயக் குறியீடு:</sys:String>
+    <sys:String x:Key="LblInvoicePrefix">ரசீது முன்னொட்டு:</sys:String>
+    <sys:String x:Key="LblNextInvoice">அடுத்த ரசீது எண்:</sys:String>
+    <sys:String x:Key="LblReceiptPaperSize">ரசீது காகித அளவு:</sys:String>
+    <sys:String x:Key="LblReceiptFooter">ரசீது கீழ்க்குறிப்புச் செய்தி:</sys:String>
+    <sys:String x:Key="BtnSaveProfileSettings">வணிக அமைப்புகளைச் சேமி</sys:String>
+
+    <!-- Transactions & Ledger -->
+    <sys:String x:Key="LedgerHeader">தினசரி பரிவர்த்தனைப் பதிவேடு</sys:String>
+    <sys:String x:Key="LedgerSubHeader">கணக்குத் தணிக்கை மற்றும் வெப்ப அச்சு ரசீதுகள்</sys:String>
+    <sys:String x:Key="LblTodayCards">இன்று அச்சிடப்பட்ட அட்டைகள்</sys:String>
     <sys:String x:Key="LblTodayRevenue">இன்றைய மொத்த வருவாய்</sys:String>
-    <sys:String x:Key="LblRecentJobs">சமீபத்திய அச்சுப் பரிவர்த்தனைகள்</sys:String>
+    <sys:String x:Key="ColJobNo">ரசீது எண்</sys:String>
     <sys:String x:Key="ColTime">நேரம்</sys:String>
     <sys:String x:Key="ColDocType">ஆவண வகை</sys:String>
     <sys:String x:Key="ColQty">எண்ணிக்கை</sys:String>
     <sys:String x:Key="ColAmount">தொகை (₹)</sys:String>
-    <sys:String x:Key="ColPayment">செலுத்தல் முறை</sys:String>
-    <sys:String x:Key="BtnPrintReceipt">58மிமீ / 80மிமீ ரசீது அச்சிடு</sys:String>
+    <sys:String x:Key="ColPayment">கட்டண முறை</sys:String>
+    <sys:String x:Key="ColPrinter">அச்சுப்பொறி</sys:String>
+    <sys:String x:Key="BtnPrintReceipt">வெப்ப ரசீது அச்சிடு</sys:String>
+    <sys:String x:Key="BtnExportCsv">CSV விரிதாளை ஏற்றுமதி செய்</sys:String>
 
-    <!-- Calibration -->
-    <sys:String x:Key="CalibHeader">அச்சுப்பொறி தட்டு நேர்த்தி மற்றும் அளவீடு</sys:String>
-    <sys:String x:Key="CalibInstructions">அளவீட்டுத் தாளை உங்கள் தட்டில் அச்சிடுங்கள். ஏதேனும் இடைவெளி இருந்தால் அளவுகோலால் சரிபார்த்து X மற்றும் Y எண்களை மாற்றவும்.</sys:String>
-    <sys:String x:Key="BtnPrintCalibSheet">சோதனை அளவீட்டுத் தாளை அச்சிடு</sys:String>
-    <sys:String x:Key="BtnSaveCalibration">அளவீட்டைச் சேமி</sys:String>
+    <!-- Reports & Analytics -->
+    <sys:String x:Key="ReportsHeader">வணிக அறிக்கைகள் &amp; பகுப்பாய்வு</sys:String>
+    <sys:String x:Key="ReportsSubHeader">வருவாய் போக்குகள் மற்றும் அட்டை வகைகளின் விவரங்கள்</sys:String>
 
-    <!-- Photo Studio -->
-    <sys:String x:Key="PhotoHeader">பாஸ்போர்ட் புகைப்பட அரங்கு</sys:String>
-    <sys:String x:Key="BtnOpenPhoto">புகைப்படத்தை ஏற்று</sys:String>
-    <sys:String x:Key="ChkRemoveBg">பின்னணி நீக்குதல் (செயற்கை நுண்ணறிவு)</sys:String>
-    <sys:String x:Key="LblGridSize">புகைப்படத் தாள் கட்டமைப்பு:</sys:String>
-    <sys:String x:Key="BtnPrintPhotos">புகைப்படத் தாளை அச்சிடு (4x6 / A4)</sys:String>
+    <!-- Backup & Restore -->
+    <sys:String x:Key="BackupHeader">காப்புப்பிரதி &amp; மீட்பு மேலாளர்</sys:String>
+    <sys:String x:Key="BackupSubHeader">கணக்குப் பதிவேடு மற்றும் வன்பொருள் அமைப்புகளைப் பாதுகாத்தல்</sys:String>
+    <sys:String x:Key="BtnCreateBackup">உடனடி காப்புப்பிரதி எடு</sys:String>
+    <sys:String x:Key="BtnRestoreBackup">காப்பகத்திலிருந்து மீட்டமை</sys:String>
+
+    <!-- Settings -->
+    <sys:String x:Key="SettingsHeader">பயன்பாட்டு அமைப்புகள் &amp; விருப்பத்தேர்வுகள்</sys:String>
+    <sys:String x:Key="SettingsSubHeader">வண்ண முறை, மொழி மற்றும் திரை அளவு மாற்றங்கள்</sys:String>
+    <sys:String x:Key="LblTheme">வண்ணத் தோற்றம்:</sys:String>
+    <sys:String x:Key="LblLanguage">முதன்மை மொழி:</sys:String>
+    <sys:String x:Key="LblUiScale">திரை அளவு மாற்றம்:</sys:String>
 
 </ResourceDictionary>

@@ -41,7 +41,61 @@ namespace PVCStudioPro.Tests
                 canvas.Clear(SKColors.SandyBrown);
             }
 
-            using var result = await service.ProcessPassportPhotoAsync(portrait, SKColors.White);
+            using var result = await service.ProcessPassportPhotoAsync(portrait, SKColors.White, removeOriginalBg: false);
+
+            result.Should().NotBeNull();
+            result.Width.Should().Be(827);   // 35mm at 600 DPI
+            result.Height.Should().Be(1063); // 45mm at 600 DPI
+        }
+
+        [Fact]
+        public async Task RemoveBackgroundAsync_GrabCut_ShouldReplaceBackgroundWithTargetColor()
+        {
+            var service = new VisionService();
+
+            // Create a 200x200 image: White background with a dark blue circular foreground subject in center
+            using var input = new SKBitmap(200, 200, SKColorType.Bgra8888, SKAlphaType.Premul);
+            using (var canvas = new SKCanvas(input))
+            {
+                canvas.Clear(SKColors.White);
+                using var paint = new SKPaint { Color = SKColors.Navy, Style = SKPaintStyle.Fill, IsAntialias = true };
+                canvas.DrawCircle(100, 100, 50, paint);
+            }
+
+            // Remove background and replace with Bright Red
+            using var segmented = await service.RemoveBackgroundAsync(input, SKColors.Red);
+
+            segmented.Should().NotBeNull();
+            segmented.Width.Should().Be(200);
+            segmented.Height.Should().Be(200);
+
+            // Verify corner pixel (originally white background) has been replaced by Red
+            SKColor cornerColor = segmented.GetPixel(5, 5);
+            cornerColor.Red.Should().BeGreaterThan(200);
+            cornerColor.Green.Should().BeLessThan(50);
+            cornerColor.Blue.Should().BeLessThan(50);
+
+            // Verify center pixel (foreground circle) remains primarily Navy / Blue
+            SKColor centerColor = segmented.GetPixel(100, 100);
+            centerColor.Blue.Should().BeGreaterThan(100);
+            centerColor.Red.Should().BeLessThan(50);
+        }
+
+        [Fact]
+        public async Task ProcessPassportPhotoAsync_WithGrabCutBgRemoval_ShouldGenerateValidPassportSize()
+        {
+            var service = new VisionService();
+
+            // Create dual-tone image: Light background with dark center
+            using var portrait = new SKBitmap(400, 400, SKColorType.Bgra8888, SKAlphaType.Premul);
+            using (var canvas = new SKCanvas(portrait))
+            {
+                canvas.Clear(SKColors.LightGreen);
+                using var paint = new SKPaint { Color = SKColors.DarkSlateGray, Style = SKPaintStyle.Fill };
+                canvas.DrawRect(new SKRect(100, 50, 300, 350), paint);
+            }
+
+            using var result = await service.ProcessPassportPhotoAsync(portrait, SKColors.White, removeOriginalBg: true);
 
             result.Should().NotBeNull();
             result.Width.Should().Be(827);   // 35mm at 600 DPI
