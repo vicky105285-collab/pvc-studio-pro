@@ -15,15 +15,23 @@ namespace PVCStudioPro.App.ViewModels
 {
     public partial class BusinessLedgerViewModel : ObservableObject
     {
+        private readonly ITransactionPaymentService _paymentService;
+        private readonly IDatabasePathProvider _pathProvider;
         private readonly IJobLedgerService _jobLedger;
         private readonly IBusinessProfileService _profileService;
-        private List<PrintJobRecord> _allLoadedJobs = new();
+        private List<BusinessTransaction> _allLoadedTransactions = new();
 
         [ObservableProperty]
-        private int _todayCards = 0;
+        private bool _isTestMode = false;
 
         [ObservableProperty]
         private decimal _todayRevenue = 0.00m;
+
+        [ObservableProperty]
+        private decimal _totalCollected = 0.00m;
+
+        [ObservableProperty]
+        private decimal _totalRefunded = 0.00m;
 
         [ObservableProperty]
         private decimal _cashRevenue = 0.00m;
@@ -32,19 +40,25 @@ namespace PVCStudioPro.App.ViewModels
         private decimal _upiRevenue = 0.00m;
 
         [ObservableProperty]
-        private int _todayAadhaarCount = 0;
+        private decimal _cardRevenue = 0.00m;
 
         [ObservableProperty]
-        private int _todayPanCount = 0;
+        private int _todayCards = 0;
 
         [ObservableProperty]
         private string _searchFilter = string.Empty;
 
         [ObservableProperty]
-        private string _selectedDateRange = "Today"; // Today, ThisWeek, ThisMonth, All
+        private ObservableCollection<BusinessTransaction> _filteredTransactions = new();
 
         [ObservableProperty]
-        private ObservableCollection<PrintJobRecord> _filteredJobs = new();
+        private BusinessTransaction? _selectedTransaction;
+
+        [ObservableProperty]
+        private ObservableCollection<TransactionPayment> _selectedPayments = new();
+
+        [ObservableProperty]
+        private ObservableCollection<TransactionAuditTrail> _selectedAuditTrail = new();
 
         [ObservableProperty]
         private string _statusMessage = "Zero Citizen PII Stored | Financial transaction ledger stored locally in SQLite";
@@ -52,12 +66,54 @@ namespace PVCStudioPro.App.ViewModels
         [ObservableProperty]
         private bool _isBusy = false;
 
+        // Payment Dialog Controls
+        [ObservableProperty]
+        private bool _isPaymentDialogVisible = false;
+
+        [ObservableProperty]
+        private decimal _paymentInputAmount = 50.00m;
+
+        [ObservableProperty]
+        private string _paymentInputMethod = "CASH";
+
+        [ObservableProperty]
+        private string _paymentInputReference = string.Empty;
+
+        // Refund Dialog Controls
+        [ObservableProperty]
+        private bool _isRefundDialogVisible = false;
+
+        [ObservableProperty]
+        private decimal _refundInputAmount = 50.00m;
+
+        [ObservableProperty]
+        private string _refundInputReason = string.Empty;
+
+        // Void Dialog Controls
+        [ObservableProperty]
+        private bool _isVoidDialogVisible = false;
+
+        [ObservableProperty]
+        private string _voidInputReason = string.Empty;
+
         public BusinessLedgerViewModel(
+            ITransactionPaymentService paymentService,
+            IDatabasePathProvider pathProvider,
             IJobLedgerService jobLedger,
             IBusinessProfileService profileService)
         {
-            _jobLedger = jobLedger;
-            _profileService = profileService;
+            _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
+            _pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
+            _jobLedger = jobLedger ?? throw new ArgumentNullException(nameof(jobLedger));
+            _profileService = profileService ?? throw new ArgumentNullException(nameof(profileService));
+
+            _isTestMode = _pathProvider.IsTestMode;
+            _pathProvider.TestModeChanged += (s, mode) =>
+            {
+                IsTestMode = mode;
+                _ = LoadLedgerAsync();
+            };
+
             _ = LoadLedgerAsync();
         }
 
@@ -67,21 +123,34 @@ namespace PVCStudioPro.App.ViewModels
             try
             {
                 IsBusy = true;
-                var summary = await _jobLedger.GetDailySummaryAsync(DateTime.UtcNow);
-                TodayCards = summary.TotalCards;
-                TodayRevenue = summary.TotalRevenue;
-                TodayAadhaarCount = summary.AadhaarCount;
-                TodayPanCount = summary.PanCount;
+                IsTestMode = _pathProvider.IsTestMode;
 
-                var jobs = await _jobLedger.GetRecentJobsAsync(200);
-                _allLoadedJobs = jobs.ToList();
+                // IST Day calculation (UTC + 05:30)
+                var nowUtc = DateTime.UtcNow;
+                var nowIst = nowUtc.AddHours(5.5);
+                var todayIst = DateOnly.FromDateTime(nowIst);
 
-                // Compute cash vs upi
-                CashRevenue = _allLoadedJobs.Where(j => j.PaymentMode.Equals("CASH", StringComparison.OrdinalIgnoreCase)).Sum(j => j.TotalAmount);
-                UpiRevenue = _allLoadedJobs.Where(j => j.PaymentMode.Equals("UPI", StringComparison.OrdinalIgnoreCase)).Sum(j => j.TotalAmount);
+                var report = await _paymentService.GetDailyReconciliationAsync(todayIst, _pathProvider.IsTestMode);
+                TodayRevenue = report.TotalRevenueRupees;
+                TotalCollected = report.TotalCollectedRupees;
+                TotalRefunded = report.TotalRefundedRupees;
+                CashRevenue = report.NetCashRupees;
+                UpiRevenue = report.UpiRupees;
+                CardRevenue = report.CardRupees;
+                TodayCards = report.TransactionCount;
+
+                var transactions = await _paymentService.GetRecentTransactionsAsync(200, _pathProvider.IsTestMode);
+                _allLoadedTransactions = transactions.ToList();
 
                 ApplyFilter();
-                StatusMessage = $"Updated at {DateTime.Now:T} | {FilteredJobs.Count} transactions loaded (Zero Citizen PII retained).";
+
+                if (SelectedTransaction != null)
+                {
+                    await LoadSelectedTransactionDetailsAsync(SelectedTransaction);
+                }
+
+                string modeTag = _pathProvider.IsTestMode ? "⚠️ TEST SANDBOX ACTIVE" : "PRODUCTION LEDGER";
+                StatusMessage = $"{modeTag} | Updated at {DateTime.Now:T} | {FilteredTransactions.Count} transactions loaded.";
             }
             catch (Exception ex)
             {
@@ -93,107 +162,270 @@ namespace PVCStudioPro.App.ViewModels
             }
         }
 
+        partial void OnSelectedTransactionChanged(BusinessTransaction? value)
+        {
+            if (value != null)
+            {
+                _ = LoadSelectedTransactionDetailsAsync(value);
+            }
+            else
+            {
+                SelectedPayments.Clear();
+                SelectedAuditTrail.Clear();
+            }
+        }
+
+        private async Task LoadSelectedTransactionDetailsAsync(BusinessTransaction tx)
+        {
+            try
+            {
+                var payments = await _paymentService.GetPaymentsForTransactionAsync(tx.TransactionId);
+                SelectedPayments = new ObservableCollection<TransactionPayment>(payments);
+
+                var audit = await _paymentService.GetAuditTrailAsync(tx.TransactionId);
+                SelectedAuditTrail = new ObservableCollection<TransactionAuditTrail>(audit);
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Notice: Failed to load details for {tx.InvoiceNumber}: {ex.Message}";
+            }
+        }
+
         partial void OnSearchFilterChanged(string value)
         {
             ApplyFilter();
         }
 
-        [RelayCommand]
-        public void SetDateRange(string range)
-        {
-            SelectedDateRange = range;
-            ApplyFilter();
-        }
-
         private void ApplyFilter()
         {
-            var query = _allLoadedJobs.AsEnumerable();
+            var q = _allLoadedTransactions.AsEnumerable();
 
-            // Date filtering
-            var now = DateTime.UtcNow;
-            switch (SelectedDateRange)
-            {
-                case "Today":
-                    query = query.Where(j => j.CreatedAt.Date == now.Date);
-                    break;
-                case "ThisWeek":
-                    var startOfWeek = now.Date.AddDays(-(int)now.DayOfWeek);
-                    query = query.Where(j => j.CreatedAt.Date >= startOfWeek);
-                    break;
-                case "ThisMonth":
-                    var startOfMonth = new DateTime(now.Year, now.Month, 1);
-                    query = query.Where(j => j.CreatedAt.Date >= startOfMonth);
-                    break;
-                case "All":
-                default:
-                    break;
-            }
-
-            // Search filter
             if (!string.IsNullOrWhiteSpace(SearchFilter))
             {
-                string term = SearchFilter.Trim().ToLowerInvariant();
-                query = query.Where(j =>
-                    j.DocumentType.ToLowerInvariant().Contains(term) ||
-                    j.PaymentMode.ToLowerInvariant().Contains(term) ||
-                    j.PrinterName.ToLowerInvariant().Contains(term) ||
-                    j.JobId.ToLowerInvariant().Contains(term));
+                q = q.Where(t =>
+                    t.InvoiceNumber.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                    t.CustomerName.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                    t.DocumentType.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                    t.PrinterName.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase) ||
+                    t.Status.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase)
+                );
             }
 
-            FilteredJobs.Clear();
-            foreach (var item in query.OrderByDescending(j => j.CreatedAt))
+            FilteredTransactions = new ObservableCollection<BusinessTransaction>(q);
+        }
+
+        [RelayCommand]
+        public void OpenPaymentDialog()
+        {
+            if (SelectedTransaction == null || SelectedTransaction.Status == "VOID")
             {
-                FilteredJobs.Add(item);
+                StatusMessage = "Please select an active, non-voided transaction.";
+                return;
+            }
+
+            PaymentInputAmount = SelectedTransaction.BalanceRupees > 0 ? SelectedTransaction.BalanceRupees : 50.00m;
+            PaymentInputMethod = "CASH";
+            PaymentInputReference = string.Empty;
+            IsPaymentDialogVisible = true;
+        }
+
+        [RelayCommand]
+        public async Task SubmitPaymentAsync()
+        {
+            if (SelectedTransaction == null) return;
+
+            try
+            {
+                IsBusy = true;
+                long amountPaise = (long)Math.Round(PaymentInputAmount * 100);
+
+                await _paymentService.RecordPaymentAsync(new AddPaymentCommand
+                {
+                    TransactionId = SelectedTransaction.TransactionId,
+                    AmountPaise = amountPaise,
+                    PaymentMethod = PaymentInputMethod,
+                    ReferenceNumber = PaymentInputReference,
+                    IsTestMode = _pathProvider.IsTestMode
+                });
+
+                IsPaymentDialogVisible = false;
+                await LoadLedgerAsync();
+                StatusMessage = $"✓ Recorded payment of ₹{PaymentInputAmount:F2} ({PaymentInputMethod}) for {SelectedTransaction.InvoiceNumber}.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Payment error: {ex.Message}";
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        [RelayCommand]
+        public void ClosePaymentDialog()
+        {
+            IsPaymentDialogVisible = false;
+        }
+
+        [RelayCommand]
+        public void OpenRefundDialog()
+        {
+            if (SelectedTransaction == null)
+            {
+                StatusMessage = "Please select a transaction to refund.";
+                return;
+            }
+
+            RefundInputAmount = SelectedTransaction.PaidRupees > 0 ? SelectedTransaction.PaidRupees : 10.00m;
+            RefundInputReason = "Print output defect / customer request";
+            IsRefundDialogVisible = true;
+        }
+
+        [RelayCommand]
+        public async Task SubmitRefundAsync()
+        {
+            if (SelectedTransaction == null) return;
+
+            try
+            {
+                IsBusy = true;
+                long amountPaise = (long)Math.Round(RefundInputAmount * 100);
+
+                await _paymentService.RecordRefundAsync(new AddRefundCommand
+                {
+                    TransactionId = SelectedTransaction.TransactionId,
+                    AmountPaise = amountPaise,
+                    PaymentMethod = "CASH",
+                    MandatoryReason = RefundInputReason,
+                    IsTestMode = _pathProvider.IsTestMode
+                });
+
+                IsRefundDialogVisible = false;
+                await LoadLedgerAsync();
+                StatusMessage = $"✓ Issued refund of ₹{RefundInputAmount:F2} for {SelectedTransaction.InvoiceNumber}.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Refund error: {ex.Message}";
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        [RelayCommand]
+        public void CloseRefundDialog()
+        {
+            IsRefundDialogVisible = false;
+        }
+
+        [RelayCommand]
+        public void OpenVoidDialog()
+        {
+            if (SelectedTransaction == null || SelectedTransaction.Status == "VOID")
+            {
+                StatusMessage = "Please select an active transaction to void.";
+                return;
+            }
+
+            VoidInputReason = "Damaged print output during spooling / operator cancellation";
+            IsVoidDialogVisible = true;
+        }
+
+        [RelayCommand]
+        public async Task SubmitVoidAsync()
+        {
+            if (SelectedTransaction == null) return;
+
+            try
+            {
+                IsBusy = true;
+                await _paymentService.VoidTransactionAsync(new VoidTransactionCommand
+                {
+                    TransactionId = SelectedTransaction.TransactionId,
+                    MandatoryReason = VoidInputReason,
+                    RefundAllCollected = true,
+                    IsTestMode = _pathProvider.IsTestMode
+                });
+
+                IsVoidDialogVisible = false;
+                await LoadLedgerAsync();
+                StatusMessage = $"✓ Voided invoice {SelectedTransaction.InvoiceNumber}. Full collected amount refunded.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Void error: {ex.Message}";
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        [RelayCommand]
+        public void CloseVoidDialog()
+        {
+            IsVoidDialogVisible = false;
+        }
+
+        [RelayCommand]
+        public void ToggleTestMode()
+        {
+            _pathProvider.SetTestMode(!_pathProvider.IsTestMode);
+            IsTestMode = _pathProvider.IsTestMode;
+        }
+
+        [RelayCommand]
+        public async Task ResetTestModeDatabaseAsync()
+        {
+            if (!_pathProvider.IsTestMode)
+            {
+                StatusMessage = "Cannot reset database while in Production Mode!";
+                return;
+            }
+
+            try
+            {
+                _pathProvider.ResetTestDatabase();
+                await LoadLedgerAsync();
+                StatusMessage = "✓ Test mode sandbox database has been safely cleared.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Reset notice: {ex.Message}";
             }
         }
 
         [RelayCommand]
         public async Task ExportCsvAsync()
         {
-            if (FilteredJobs.Count == 0)
+            if (FilteredTransactions.Count == 0)
             {
-                StatusMessage = "No transactions available to export.";
+                StatusMessage = "No transaction records to export.";
                 return;
             }
 
             var dlg = new SaveFileDialog
             {
-                Filter = "CSV Spreadsheet (*.csv)|*.csv",
-                FileName = $"PVC_Studio_Pro_Ledger_{DateTime.Now:yyyyMMdd_HHmm}.csv",
+                Filter = "CSV File (*.csv)|*.csv",
+                FileName = $"BusinessLedger_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
                 Title = "Export Financial Ledger to CSV"
             };
 
             if (dlg.ShowDialog() == true)
             {
                 var sb = new StringBuilder();
-                sb.AppendLine("JobId,Timestamp,DocumentType,Quantity,TotalAmount,PaymentMode,PrinterName,Status");
+                sb.AppendLine("InvoiceNumber,DateUTC,CustomerName,DocumentType,Quantity,UnitPrice,Discount,NetTotal,Paid,Balance,Status,Printer,IsTestMode");
 
-                foreach (var j in FilteredJobs)
+                foreach (var t in FilteredTransactions)
                 {
-                    sb.AppendLine($"\"{j.JobId}\",\"{j.CreatedAt:yyyy-MM-dd HH:mm:ss}\",\"{j.DocumentType}\",{j.Quantity},{j.TotalAmount:F2},\"{j.PaymentMode}\",\"{j.PrinterName}\",\"{j.Status}\"");
+                    sb.AppendLine($"\"{t.InvoiceNumber}\",\"{t.CreatedAt:yyyy-MM-dd HH:mm:ss}\",\"{t.CustomerName}\",\"{t.DocumentType}\",{t.Quantity},{t.UnitPricePaise / 100.0:F2},{t.DiscountPaise / 100.0:F2},{t.NetTotalPaise / 100.0:F2},{t.PaidPaise / 100.0:F2},{t.BalancePaise / 100.0:F2},\"{t.Status}\",\"{t.PrinterName}\",{t.IsTestMode}");
                 }
 
                 await File.WriteAllTextAsync(dlg.FileName, sb.ToString(), Encoding.UTF8);
-                StatusMessage = $"Financial ledger exported ({FilteredJobs.Count} records) to {dlg.FileName}";
-            }
-        }
-
-        [RelayCommand]
-        public async Task PrintReceiptAsync(PrintJobRecord? record)
-        {
-            if (record == null) return;
-
-            try
-            {
-                var profile = await _profileService.GetProfileAsync();
-                string shop = string.IsNullOrWhiteSpace(profile.ShopName) ? "e-Sevai Maiyam" : profile.ShopName;
-                string paper = profile.ReceiptPaperSize;
-
-                StatusMessage = $"Receipt spooled to {paper} thermal receipt printer for Job {record.JobId.Substring(0, Math.Min(8, record.JobId.Length))} [Shop: {shop}, ₹{record.TotalAmount:F2}]";
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Receipt error: {ex.Message}";
+                StatusMessage = $"✓ Exported {FilteredTransactions.Count} ledger rows to {Path.GetFileName(dlg.FileName)}.";
             }
         }
     }

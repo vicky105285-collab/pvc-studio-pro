@@ -78,6 +78,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -135,8 +136,23 @@
             </ui:TitleBar.Header>
         </ui:TitleBar>
 
+        <!-- High-Visibility Test Mode Top Warning Banner -->
+        <Border Grid.Row="1" Background="#FEF3C7" BorderBrush="#F59E0B" BorderThickness="0,0,0,1.5" Padding="16,6"
+                Visibility="{Binding IsTestMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="⚠️" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Grid.Column="1" Text="TEST MODE ACTIVE — Financial Sandbox Enabled (Zero Production Data Affected)" FontWeight="Bold" Foreground="#92400E" FontSize="11.5" VerticalAlignment="Center"/>
+                <ui:Button Grid.Column="2" Command="{Binding ExitTestModeCommand}" Content="Exit Test Mode" Height="24" Padding="10,0" Background="#F59E0B" Foreground="White" FontWeight="Bold" FontSize="10.5" CornerRadius="4"/>
+            </Grid>
+        </Border>
+
         <!-- Main Body: Navigation Sidebar + Workspace Content -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>

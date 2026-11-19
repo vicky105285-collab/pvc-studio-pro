@@ -99,7 +99,9 @@ namespace PVCStudioPro.App
                 services.AddSingleton<ISecurityService, SecurityService>();
                 services.AddSingleton<IVisionService, VisionService>();
                 services.AddSingleton<IPassportPhotoEngine, PassportPhotoEngine>();
-                services.AddSingleton<IJobLedgerService>(sp => new JobLedgerService(dbPath));
+                services.AddSingleton<IDatabasePathProvider, DatabasePathProvider>();
+                services.AddSingleton<ITransactionPaymentService, TransactionPaymentService>();
+                services.AddSingleton<IJobLedgerService>(sp => new JobLedgerService(sp.GetRequiredService<IDatabasePathProvider>().DatabasePath, sp.GetRequiredService<IDatabasePathProvider>()));
 
                 string profileConfigPath = Path.Combine(configDir, "business_profile.json");
                 services.AddSingleton<IBusinessProfileService>(sp => new BusinessProfileService(profileConfigPath));

@@ -12,8 +12,12 @@ namespace PVCStudioPro.App.ViewModels
     public partial class MainViewModel : ObservableObject
     {
         public IDocumentSessionManager SessionManager { get; }
+        private readonly IDatabasePathProvider? _pathProvider;
 
         public ObservableCollection<IDocumentSession> OpenSessions { get; } = new();
+
+        [ObservableProperty]
+        private bool _isTestMode;
 
         [ObservableProperty]
         private IDocumentSession? _selectedSession;
@@ -74,8 +78,16 @@ namespace PVCStudioPro.App.ViewModels
             ReportsAnalyticsViewModel reportsVM,
             BackupRestoreViewModel backupVM,
             SettingsViewModel settingsVM,
-            IDocumentSessionManager? sessionManager = null)
+            IDocumentSessionManager? sessionManager = null,
+            IDatabasePathProvider? pathProvider = null)
         {
+            _pathProvider = pathProvider;
+            if (_pathProvider != null)
+            {
+                IsTestMode = _pathProvider.IsTestMode;
+                _pathProvider.TestModeChanged += (s, mode) => IsTestMode = mode;
+            }
+
             SessionManager = sessionManager ?? new DocumentSessionManager();
             SessionManager.SessionChanged += OnSessionChanged;
             SyncSessions();
@@ -375,6 +387,13 @@ namespace PVCStudioPro.App.ViewModels
             {
                 Source = new Uri($"pack://application:,,,/Themes/{themeFile}", UriKind.Absolute)
             });
+        }
+
+        [RelayCommand]
+        public void ExitTestMode()
+        {
+            _pathProvider?.SetTestMode(false);
+            IsTestMode = false;
         }
 
         private static void ApplyLanguageDictionary(string dictFile)

@@ -13,11 +13,16 @@ namespace PVCStudioPro.Core.Services.Implementations
     {
         private readonly string _connectionString;
         private readonly string _dbPath;
+        private readonly IDatabasePathProvider? _pathProvider;
         private bool _initialized;
 
-        public JobLedgerService(string? customDbPath = null)
+        private string CurrentDbPath => _pathProvider?.DatabasePath ?? _dbPath;
+        private string ActiveConnectionString => $"Data Source={CurrentDbPath};";
+
+        public JobLedgerService(string? customDbPath = null, IDatabasePathProvider? pathProvider = null)
         {
-            _dbPath = customDbPath ?? Path.Combine(
+            _pathProvider = pathProvider;
+            _dbPath = customDbPath ?? _pathProvider?.DatabasePath ?? Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "PVCStudioPro", "data", "pvc_studio.db"
             );
@@ -39,7 +44,7 @@ namespace PVCStudioPro.Core.Services.Implementations
                 Directory.CreateDirectory(dir);
             }
 
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(ActiveConnectionString);
             await connection.OpenAsync();
 
             string ddl = @"
@@ -106,7 +111,7 @@ namespace PVCStudioPro.Core.Services.Implementations
                 record.JobNumber = $"INV-{DateTime.Now:yyyyMMdd}-{new Random().Next(1000, 9999)}";
             }
 
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(ActiveConnectionString);
             string sql = @"
                 INSERT INTO print_jobs (job_id, job_number, profile_id, printer_name, document_type, status, quantity, total_amount, amount_paid, payment_mode, is_reprint, created_at)
                 VALUES (@JobId, @JobNumber, @ProfileId, @PrinterName, @DocumentType, @Status, @Quantity, @TotalAmount, @AmountPaid, @PaymentMode, @IsReprint, @CreatedAt);
@@ -117,7 +122,7 @@ namespace PVCStudioPro.Core.Services.Implementations
         public async Task<IReadOnlyList<PrintJobRecord>> GetRecentJobsAsync(int limit = 50)
         {
             await EnsureInitializedAsync();
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(ActiveConnectionString);
             string sql = "SELECT * FROM print_jobs ORDER BY created_at DESC LIMIT @Limit;";
             var list = await connection.QueryAsync<PrintJobRecord>(sql, new { Limit = limit });
             return list.ToList().AsReadOnly();
@@ -126,7 +131,7 @@ namespace PVCStudioPro.Core.Services.Implementations
         public async Task<DailySummary> GetDailySummaryAsync(DateTime date)
         {
             await EnsureInitializedAsync();
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(ActiveConnectionString);
             string dateStr = date.ToString("yyyy-MM-dd");
 
             string sql = @"
@@ -151,7 +156,7 @@ namespace PVCStudioPro.Core.Services.Implementations
 
         public async Task<PrinterProfile> GetDefaultProfileAsync()
         {
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(ActiveConnectionString);
             string sql = "SELECT * FROM printer_profiles WHERE is_default = 1 LIMIT 1;";
             var profile = await connection.QueryFirstOrDefaultAsync<PrinterProfile>(sql);
             return profile ?? new PrinterProfile();
@@ -159,7 +164,7 @@ namespace PVCStudioPro.Core.Services.Implementations
 
         public async Task SaveProfileAsync(PrinterProfile profile)
         {
-            using var connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(ActiveConnectionString);
             string sql = @"
                 INSERT INTO printer_profiles (profile_id, profile_name, printer_device_name, tray_type, offset_x_mm, offset_y_mm, card_gap_mm, target_dpi, mirror_mode, is_default, created_at, updated_at)
                 VALUES (@ProfileId, @ProfileName, @PrinterDeviceName, @TrayType, @OffsetXMm, @OffsetYMm, @CardGapMm, @TargetDpi, @MirrorMode, @IsDefault, @CreatedAt, @UpdatedAt)
