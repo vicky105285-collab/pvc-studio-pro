@@ -24,6 +24,13 @@ namespace PVCStudioPro.App.ViewModels
         [ObservableProperty]
         private bool _isTestMode = false;
 
+        public string TestModeButtonText => IsTestMode ? "Exit Test Mode" : "Switch to Test Mode";
+
+        partial void OnIsTestModeChanged(bool value)
+        {
+            OnPropertyChanged(nameof(TestModeButtonText));
+        }
+
         [ObservableProperty]
         private decimal _todayRevenue = 0.00m;
 
@@ -50,6 +57,13 @@ namespace PVCStudioPro.App.ViewModels
 
         [ObservableProperty]
         private ObservableCollection<BusinessTransaction> _filteredTransactions = new();
+
+        public bool HasNoTransactions => FilteredTransactions == null || FilteredTransactions.Count == 0;
+
+        partial void OnFilteredTransactionsChanged(ObservableCollection<BusinessTransaction> value)
+        {
+            OnPropertyChanged(nameof(HasNoTransactions));
+        }
 
         [ObservableProperty]
         private BusinessTransaction? _selectedTransaction;

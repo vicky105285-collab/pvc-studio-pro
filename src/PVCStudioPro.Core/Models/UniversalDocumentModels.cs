@@ -229,6 +229,7 @@ namespace PVCStudioPro.Core.Models
         public bool RequiresManualConfirmation => !Confidence.IsHighConfidence;
         public string DetectionNotes { get; set; } = string.Empty;
         public bool HasBackFace => BackCard != null;
+        public bool IsMaskApplied { get; set; }
     }
 
     public interface ICardDetectionEngine

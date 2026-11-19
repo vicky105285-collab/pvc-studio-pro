@@ -265,6 +265,13 @@ namespace PVCStudioPro.Core.Services.Implementations
 
                     if (applyMask)
                     {
+                        // MaskZone coordinates calibration:
+                        // UIDAI 2022-2024 Modern Cutline e-Aadhaar format: card size 85.60 x 53.98 mm.
+                        // Primary 12-digit Aadhaar UID number is positioned at relative X=28.0 mm, Y=46.5 mm,
+                        // Width=24.0 mm, Height=4.5 mm (or fallback range X=20.0, Y=42.0, W=45.0, H=6.0 mm).
+                        // Masking replaces the first 8 digits with "XXXX XXXX " and paints an opaque white block.
+                        // Note: Legacy pre-2018 large format or mAadhaar mobile app screenshots do not share this
+                        // geometry and must be cropped/masked with the interactive crop drawer.
                         var maskZones = matchedTemplate?.Faces?.Front?.MaskZones;
                         if (maskZones == null || maskZones.Count == 0)
                         {
@@ -304,6 +311,7 @@ namespace PVCStudioPro.Core.Services.Implementations
                                     canvas.DrawText(mz.OverlayText, mx + 15, my + (mh * 0.75f), SKTextAlign.Left, font, textPaint);
                                 }
                             }
+                            result.IsMaskApplied = true;
                         }
                     }
                 }

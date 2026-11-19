@@ -173,7 +173,7 @@
                                 <TextBlock Text="Pre-Print Quality &amp; Compliance Checklist" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
                                 <CheckBox IsChecked="{Binding IsApprovedByOperator}" Content="Card dimensions verified to ISO/IEC 7810 CR80 standard" FontSize="11" Margin="0,0,0,4"/>
                                 <CheckBox IsChecked="True" Content="Physical tray media inserted along feed arrow direction" FontSize="11" Margin="0,0,0,4" IsEnabled="False"/>
-                                <CheckBox IsChecked="True" Content="Zero-Citizen-PII: No citizen identity numbers saved in log" FontSize="11" IsEnabled="False"/>
+                                <CheckBox IsChecked="True" Content="Offline Processing: Session data held in RAM only" FontSize="11" IsEnabled="False"/>
                             </StackPanel>
                         </Border>
 

@@ -282,5 +282,38 @@ namespace PVCStudioPro.Tests
             dict.Contains("ChkMaskAadhaar").Should().BeTrue();
             dict["ChkMaskAadhaar"].ToString().Should().Contain("முதல் 8 எண்களை மறை");
         }
+
+        [Theory]
+        [InlineData("SettingsView.xaml")]
+        [InlineData("BusinessLedgerView.xaml")]
+        public void PilotViews_MustContainNoRawHexColors_AndAdhereToFluentGrid(string viewFileName)
+        {
+            string current = AppContext.BaseDirectory;
+            string viewPath = string.Empty;
+            while (!string.IsNullOrEmpty(current))
+            {
+                string target = Path.Combine(current, "src", "PVCStudioPro.App", "Views", viewFileName);
+                if (File.Exists(target))
+                {
+                    viewPath = target;
+                    break;
+                }
+                var parent = Directory.GetParent(current);
+                if (parent == null) break;
+                current = parent.FullName;
+            }
+
+            File.Exists(viewPath).Should().BeTrue($"{viewFileName} must exist");
+            string text = File.ReadAllText(viewPath);
+
+            // 1. Fail if raw hex color appears (#RGB, #RGBA, #RRGGBB, #AARRGGBB)
+            var hexRegex = new System.Text.RegularExpressions.Regex(@"#[0-9A-Fa-f]{3,8}\b", System.Text.RegularExpressions.RegexOptions.Compiled);
+            var hexMatches = hexRegex.Matches(text);
+            hexMatches.Count.Should().Be(0, $"{viewFileName} in Phase 1 pilot must use design tokens, not raw hex colors. Found: {string.Join(", ", hexMatches.Select(m => m.Value))}");
+
+            // 2. Fail if small fixed heights on inputs/buttons (fixed heights < 30px) that clip text appear
+            var badHeightRegex = new System.Text.RegularExpressions.Regex(@"<(?:TextBox|ComboBox|Button|ui:Button)\b[^>]*?\bHeight=""(2[0-9]|1[0-9]|[0-9])""", System.Text.RegularExpressions.RegexOptions.Compiled);
+            badHeightRegex.Matches(text).Count.Should().Be(0, $"{viewFileName} should not contain small fixed heights on inputs/buttons that clip text at high DPI");
+        }
     }
 }

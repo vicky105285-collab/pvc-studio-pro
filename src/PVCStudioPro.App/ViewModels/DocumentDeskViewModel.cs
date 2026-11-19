@@ -98,7 +98,7 @@ namespace PVCStudioPro.App.ViewModels
         private bool _isMaskAadhaarEnabled = false;
 
         [ObservableProperty]
-        private string _statusMessage = "Universal Document Desk Ready | Zero-Citizen-PII Local Pipeline";
+        private string _statusMessage = "Universal Document Desk Ready | Local Offline Pipeline";
 
         private SKBitmap? _activePageBitmap;
         private SKBitmap? _cachedFrontBitmap;

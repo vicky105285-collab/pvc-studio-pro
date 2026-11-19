@@ -87,6 +87,9 @@ namespace PVCStudioPro.App.ViewModels
         private bool _isMaskAadhaar = false;
 
         [ObservableProperty]
+        private bool _isMaskApplied = false;
+
+        [ObservableProperty]
         private BitmapSource? _frontCardImage;
 
         [ObservableProperty]
@@ -207,7 +210,7 @@ namespace PVCStudioPro.App.ViewModels
         private ObservableCollection<string> _paymentModes = new() { "CASH", "UPI", "CARD" };
 
         [ObservableProperty]
-        private string _statusMessage = "PVC Studio Pro Ready | Clean-Room Zero-Citizen-PII Architecture";
+        private string _statusMessage = "PVC Studio Pro Ready | 100% Offline Local Processing";
 
         [ObservableProperty]
         private bool _printSuccessAlert = false;
@@ -399,6 +402,28 @@ namespace PVCStudioPro.App.ViewModels
             BackCardImage = null;
         }
 
+        public static bool IsVirtualPrinter(string? printerName)
+        {
+            if (string.IsNullOrWhiteSpace(printerName)) return true;
+            return printerName.Contains("OneNote", StringComparison.OrdinalIgnoreCase) ||
+                   printerName.Contains("Microsoft Print to PDF", StringComparison.OrdinalIgnoreCase) ||
+                   printerName.Contains("Fax", StringComparison.OrdinalIgnoreCase) ||
+                   printerName.Contains("XPS Document Writer", StringComparison.OrdinalIgnoreCase) ||
+                   printerName.Contains("Virtual", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public bool CanStartPrinting => HasLoadedDocument && !string.IsNullOrWhiteSpace(SelectedPrinter) && !IsVirtualPrinter(SelectedPrinter);
+
+        partial void OnHasLoadedDocumentChanged(bool value)
+        {
+            StartPrintingCommand.NotifyCanExecuteChanged();
+        }
+
+        partial void OnSelectedPrinterChanged(string value)
+        {
+            StartPrintingCommand.NotifyCanExecuteChanged();
+        }
+
         private async Task InitializePrintersAsync()
         {
             try
@@ -423,7 +448,22 @@ namespace PVCStudioPro.App.ViewModels
                             break;
                         }
                     }
-                    SelectedPrinter = preferred ?? PrinterList[0];
+
+                    if (preferred == null)
+                    {
+                        foreach (var p in PrinterList)
+                        {
+                            if (!IsVirtualPrinter(p))
+                            {
+                                preferred = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Never default to OneNote or virtual printers. If no physical hardware is detected,
+                    // keep SelectedPrinter empty so user is guided to select or attach hardware.
+                    SelectedPrinter = preferred ?? string.Empty;
                 }
             }
             catch (Exception ex)
@@ -499,7 +539,7 @@ namespace PVCStudioPro.App.ViewModels
                     DetectedBadge = $"{extraction.DetectedKind.ToString().ToUpperInvariant()} • AUTO-DETECTED";
 
                     ApplyDetectionConfidence(extraction.Confidence, extraction.FrontRect);
-                    SetExtractedCards(extraction.FrontCard, extraction.BackCard);
+                    SetExtractedCards(extraction.FrontCard, extraction.BackCard, extraction.IsMaskApplied);
                 }
                 else
                 {
@@ -524,12 +564,12 @@ namespace PVCStudioPro.App.ViewModels
                     ApplyDetectionConfidence(extraction.Confidence, extraction.FrontRect);
                     if (extraction.FrontCard != null)
                     {
-                        SetExtractedCards(extraction.FrontCard, extraction.BackCard);
+                        SetExtractedCards(extraction.FrontCard, extraction.BackCard, extraction.IsMaskApplied);
                     }
                     else
                     {
                         // Single card image
-                        SetExtractedCards(_cachedPageBitmap.Copy(), null);
+                        SetExtractedCards(_cachedPageBitmap.Copy(), null, isMaskApplied: false);
                     }
                     if (extraction.MatchedTemplate != null)
                     {
@@ -564,10 +604,12 @@ namespace PVCStudioPro.App.ViewModels
             await LoadDocumentAsync(DocumentPath, PasswordInput);
         }
 
-        private void SetExtractedCards(SKBitmap? front, SKBitmap? back)
+        private void SetExtractedCards(SKBitmap? front, SKBitmap? back, bool isMaskApplied = false)
         {
             _cachedFrontBitmap?.Dispose();
             _cachedBackBitmap?.Dispose();
+
+            IsMaskApplied = isMaskApplied;
 
             // Enforce exact CR80 physical dimensions (85.60 x 53.98 mm = 2022 x 1275 px @ 600 DPI)
             _cachedFrontBitmap = front != null ? NormalizeToCr80(front) : null;
@@ -1146,7 +1188,7 @@ namespace PVCStudioPro.App.ViewModels
                     cb.DrawBitmap(_cachedPageBitmap, backRect, new SKRect(0, 0, bw, bh), SKSamplingOptions.Default);
                 }
 
-                SetExtractedCards(frontSubset, backSubset);
+                SetExtractedCards(frontSubset, backSubset, isMaskApplied: IsMaskApplied);
                 backSubset?.Dispose();
 
                 DetectedDocTitle = template.DisplayName;
@@ -1194,9 +1236,15 @@ namespace PVCStudioPro.App.ViewModels
 
         #region Production Printing & Export
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanStartPrinting))]
         public async Task StartPrintingAsync()
         {
+            if (IsMaskAadhaar && !IsMaskApplied)
+            {
+                StatusMessage = "Operation Blocked: UIDAI Masked Aadhaar was requested, but mask verification failed. Export and printing blocked to prevent accidental PII exposure.";
+                return;
+            }
+
             if (_cachedFrontBitmap == null && ActivePageLayout.Items.Count == 0)
             {
                 StatusMessage = "No document loaded to print.";
@@ -1323,6 +1371,12 @@ namespace PVCStudioPro.App.ViewModels
         [RelayCommand]
         public async Task ExportPdfAsync()
         {
+            if (IsMaskAadhaar && !IsMaskApplied)
+            {
+                StatusMessage = "Operation Blocked: UIDAI Masked Aadhaar was requested, but mask verification failed. Export and printing blocked to prevent accidental PII exposure.";
+                return;
+            }
+
             var dlg = new SaveFileDialog
             {
                 Filter = "Print-Ready Vector PDF (*.pdf)|*.pdf",

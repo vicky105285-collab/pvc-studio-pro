@@ -13,6 +13,7 @@
     <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="SidebarActiveItemBrush" Color="#EBF3FC"/>
     <SolidColorBrush x:Key="StatusPillBackgroundBrush" Color="#F1F5F9"/>
+    <SolidColorBrush x:Key="ModalBackdropBrush" Color="#80000000"/>
 
     <!-- Borders & Dividers -->
     <SolidColorBrush x:Key="NeutralBorderBrush" Color="#E2E8F0"/>
@@ -55,5 +56,11 @@
 
     <SolidColorBrush x:Key="StatusInfoBgBrush" Color="#F0F9FF"/>
     <SolidColorBrush x:Key="StatusInfoFgBrush" Color="#0369A1"/>
+
+    <!-- Legacy Compatibility Aliases -->
+    <SolidColorBrush x:Key="BrandPrimaryBrush" Color="#0067B8"/>
+    <SolidColorBrush x:Key="BrandSuccessBrush" Color="#107C41"/>
+    <SolidColorBrush x:Key="SurfaceBorderBrush" Color="#E2E8F0"/>
+    <SolidColorBrush x:Key="CanvasBackgroundBrush" Color="#E2E8F0"/>
 
 </ResourceDictionary>

@@ -57,5 +57,18 @@ namespace PVCStudioPro.Tests
             var batchCollapsed = converter.Convert(null!, typeof(Visibility), "F-BATCH-SPOOL", CultureInfo.InvariantCulture);
             batchCollapsed.Should().Be(Visibility.Collapsed);
         }
+
+        [Fact]
+        public void FeatureFlags_LoadsFromEmbeddedResource_WhenDocsFolderUnavailable()
+        {
+            // Point to a non-existent path so custom filesystem path fails
+            string nonExistentPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "NonExistentDir_" + System.Guid.NewGuid().ToString("N"), "FEATURES.json");
+            var service = new FeatureFlagsService(nonExistentPath);
+
+            // Should still successfully load statuses from embedded assembly resource
+            service.IsFeatureEnabled("F-COLOR-BGRA").Should().BeTrue();
+            service.IsFeatureEnabled("F-LEDGER-ACID").Should().BeTrue();
+            service.GetFeatureStatus("F-COLOR-BGRA").Should().Be("Verified");
+        }
     }
 }

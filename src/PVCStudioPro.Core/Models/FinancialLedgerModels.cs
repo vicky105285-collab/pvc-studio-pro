@@ -30,6 +30,22 @@ namespace PVCStudioPro.Core.Models
         public decimal NetTotalRupees => NetTotalPaise / 100.0m;
         public decimal PaidRupees => PaidPaise / 100.0m;
         public decimal BalanceRupees => BalancePaise / 100.0m;
+
+        public DateTime CreatedAtIst
+        {
+            get
+            {
+                try
+                {
+                    var istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+                    return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(CreatedAt, DateTimeKind.Utc), istZone);
+                }
+                catch
+                {
+                    return CreatedAt.AddHours(5.5);
+                }
+            }
+        }
     }
 
     public class TransactionPayment

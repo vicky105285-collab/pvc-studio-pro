@@ -345,16 +345,6 @@
                                 <ComboBox ItemsSource="{Binding PaymentModes}" SelectedItem="{Binding SelectedPaymentMode}" Height="34"/>
                             </StackPanel>
 
-                            <!-- Pre-Flight Checklist -->
-                            <Border Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,14">
-                                <StackPanel>
-                                    <TextBlock Text="Quality &amp; Standards Verification" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
-                                    <CheckBox IsChecked="True" Content="ISO/IEC 7810 CR80 (85.60 × 53.98 mm)" FontSize="10.5" IsEnabled="False" Margin="0,0,0,4"/>
-                                    <CheckBox IsChecked="True" Content="Physical tray insertion aligned to feed arrow" FontSize="10.5" IsEnabled="False" Margin="0,0,0,4"/>
-                                    <CheckBox IsChecked="True" Content="Zero-Citizen-PII: No citizen data stored" FontSize="10.5" IsEnabled="False"/>
-                                </StackPanel>
-                            </Border>
-
                             <!-- Success Banner -->
                             <Border Background="{DynamicResource StatusSuccessBgBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,10" Visibility="{Binding PrintSuccessAlert, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <StackPanel Orientation="Horizontal">
@@ -506,16 +496,16 @@
                                     <TextBlock Text="Crop Geometry (300 DPI px):" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
 
                                     <TextBlock Text="Left (X Offset):" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBox Text="{Binding CropX, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,6"/>
+                                    <TextBox Text="{Binding CropX, UpdateSourceTrigger=PropertyChanged}" MinHeight="32" Padding="8,4" VerticalContentAlignment="Center" Margin="0,2,0,6"/>
 
                                     <TextBlock Text="Top (Y Offset):" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBox Text="{Binding CropY, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,6"/>
+                                    <TextBox Text="{Binding CropY, UpdateSourceTrigger=PropertyChanged}" MinHeight="32" Padding="8,4" VerticalContentAlignment="Center" Margin="0,2,0,6"/>
 
                                     <TextBlock Text="Width:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBox Text="{Binding CropWidth, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,6"/>
+                                    <TextBox Text="{Binding CropWidth, UpdateSourceTrigger=PropertyChanged}" MinHeight="32" Padding="8,4" VerticalContentAlignment="Center" Margin="0,2,0,6"/>
 
                                     <TextBlock Text="Height:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBox Text="{Binding CropHeight, UpdateSourceTrigger=PropertyChanged}" Height="28" Margin="0,2,0,10"/>
+                                    <TextBox Text="{Binding CropHeight, UpdateSourceTrigger=PropertyChanged}" MinHeight="32" Padding="8,4" VerticalContentAlignment="Center" Margin="0,2,0,10"/>
 
                                     <!-- Quick Other Cards Presets -->
                                     <Border Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="4" Padding="10" Margin="0,0,0,10">

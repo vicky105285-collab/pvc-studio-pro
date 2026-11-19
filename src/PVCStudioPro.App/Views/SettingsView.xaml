@@ -15,7 +15,7 @@
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid Grid.Row="0" Margin="0,0,0,24">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -31,14 +31,14 @@
             <StackPanel Grid.Row="1">
 
                 <!-- Card 1: Theme & Visual Appearance -->
-                <Border Style="{StaticResource SurfaceCardStyle}" Margin="0,0,0,20">
+                <Border Style="{StaticResource SurfaceCardStyle}" Margin="0,0,0,24">
                     <StackPanel>
                         <TextBlock Text="VISUAL THEME &amp; DISPLAY APPEARANCE" Style="{StaticResource SectionHeaderStyle}"/>
 
                         <Grid Margin="0,0,0,16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="24"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
@@ -64,12 +64,12 @@
                 </Border>
 
                 <!-- Card 2: Local Paths & Storage -->
-                <Border Style="{StaticResource SurfaceCardStyle}" Margin="0,0,0,20">
+                <Border Style="{StaticResource SurfaceCardStyle}" Margin="0,0,0,24">
                     <StackPanel>
                         <TextBlock Text="LOCAL STORAGE &amp; DIRECTORIES" Style="{StaticResource SectionHeaderStyle}"/>
                         <StackPanel Margin="0,0,0,12">
                             <TextBlock Text="Application Root Data Directory:" Style="{StaticResource FormLabelStyle}"/>
-                            <TextBox Text="{Binding StoragePath}" IsReadOnly="True" Height="38" VerticalContentAlignment="Center" Background="{DynamicResource CardSubtleBackgroundBrush}"/>
+                            <TextBox Text="{Binding StoragePath}" IsReadOnly="True" MinHeight="36" Padding="12,8" VerticalContentAlignment="Center" Background="{DynamicResource CardSubtleBackgroundBrush}"/>
                             <TextBlock Text="Stores offline SQLite database, calibration targets, and printer profile JSON files" Style="{StaticResource FormHelpStyle}"/>
                         </StackPanel>
                     </StackPanel>
@@ -79,20 +79,20 @@
                 <Border Style="{StaticResource SurfaceCardStyle}">
                     <StackPanel>
                         <TextBlock Text="ABOUT PVC STUDIO PRO" Style="{StaticResource SectionHeaderStyle}"/>
-                        <Grid Margin="0,6,0,0">
+                        <Grid Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="Application Version: 1.0.0 Commercial Release (x64)" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
-                                <TextBlock Text="Target Framework: .NET 8.0 LTS" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                                <TextBlock Text="Target Framework: .NET 11.0" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                                 <TextBlock Text="PDF Rendering Engine: PDFium Vector Direct via Docnet.Core" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1">
                                 <TextBlock Text="Computer Vision: OpenCV 4.10 (GrabCut Matting)" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
                                 <TextBlock Text="Graphics Subsystem: SkiaSharp High-Fidelity Vector Rasterizer" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                <TextBlock Text="Privacy Model: Zero-Citizen-PII Local Audit Storage" Foreground="{DynamicResource AccentSuccessBrush}" FontWeight="SemiBold"/>
+                                <TextBlock Text="Privacy Model: Local Offline Audit Storage (No Cloud Calls)" Foreground="{DynamicResource AccentSuccessBrush}" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Grid>
                     </StackPanel>
@@ -100,7 +100,7 @@
             </StackPanel>
 
             <!-- Status -->
-            <Border Grid.Row="2" Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,16,0,0">
+            <Border Grid.Row="2" Background="{DynamicResource CardSubtleBackgroundBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="{StaticResource RadiusMedium}" Padding="16,12" Margin="0,16,0,0">
                 <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Medium"/>
             </Border>
         </Grid>

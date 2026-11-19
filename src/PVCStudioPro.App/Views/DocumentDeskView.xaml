@@ -36,7 +36,7 @@
                             <TextBlock Text="{Binding MagicFormatBadge}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource StatusInfoFgBrush}"/>
                         </Border>
                     </StackPanel>
-                    <TextBlock Text="Import official citizen PDFs, mobile camera photos, scanned certificates &amp; office documents (Zero-Citizen-PII Pipeline)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    <TextBlock Text="Import official PDFs, mobile camera photos, scanned certificates &amp; office documents (Local Offline Processing)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </StackPanel>
 
                 <!-- Action Buttons -->

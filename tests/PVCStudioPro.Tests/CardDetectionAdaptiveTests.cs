@@ -326,6 +326,25 @@ namespace PVCStudioPro.Tests
             unmaskedPixel.Should().NotBe(maskedPixel, "Redaction mask must alter the pixels in the output bitmap");
         }
 
+        [Fact]
+        public async Task AadhaarMasking_FailClosedInterlock_BlocksPrintAndExport_WhenMaskNotApplied()
+        {
+            var vm = CreateWorkspaceViewModel();
+            vm.IsMaskAadhaar = true;
+            // Explicitly verify fail-closed state: mask requested but verification flag is false
+            vm.IsMaskApplied = false;
+            vm.HasLoadedDocument = true;
+            vm.SelectedPrinter = "Epson L805";
+
+            // Attempt print
+            await vm.StartPrintingAsync();
+            vm.StatusMessage.Should().Contain("Operation Blocked: UIDAI Masked Aadhaar was requested");
+
+            // Attempt export
+            await vm.ExportPdfAsync();
+            vm.StatusMessage.Should().Contain("Operation Blocked: UIDAI Masked Aadhaar was requested");
+        }
+
         private static PVCStudioPro.App.ViewModels.ProductionWorkspaceViewModel CreateWorkspaceViewModel()
         {
             var importService = new DocumentImportService();
