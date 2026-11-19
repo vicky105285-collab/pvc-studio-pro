@@ -1,174 +1,279 @@
-# PVC Studio Pro — Unified Architecture Proposal
-**Clean-Room Enterprise Architecture: Shared State, Single Source of Truth & Zero Redundancy**
+# PVC Studio Pro — Unified Architecture Proposal (Phase 0.1 Revised)
+**Enterprise Desktop Architecture: Lifecycle-Managed Assets, Unified Crop Engine & Hardware-Verified Spooling**
 
+- **Document:** `docs/UNIFIED_ARCHITECTURE_PROPOSAL.md`
+- **Revision:** Phase 0.1
 - **Date:** 2026-11-19
 - **Auditor:** Senior Windows Desktop Systems & Print Engine Architect
-- **Status:** Architectural Proposal (Phase 0 Design Baseline)
+- **Status:** Architectural Proposal (Awaiting Review & Phase 1 Authorization)
 
 ---
 
-## 1. Architectural Philosophy: The Twelve Shared Pillars
-
-To eliminate the duplication, state drift, and fragmented prototypes identified during the forensic audit, PVC Studio Pro must be re-anchored on **twelve authoritative shared subsystems**:
+## 1. High-Level System Architecture
 
 ```mermaid
 graph TD
-    subgraph Shared_Session_Layer["1. Shared Session & Asset Core"]
-        SDS["Shared Document Session (IDocumentSessionManager)"]
-        SIA["Shared Image Asset Model (ImageAsset)"]
+    subgraph Asset_And_Session_Core["1. Lifecycle-Managed Asset & Session Subsystem"]
+        ISA["Immutable Source Asset (Root Pixel Buffer)"]
+        DA["Derived Image Assets (Versioned Revisions)"]
+        FBA["Dual Card Face Assets (Front & Back CR80)"]
+        SCS["Shared Crop Session & Revision History"]
+        DSM["IDocumentSessionManager (Thread-Safe Event Hub)"]
     end
 
-    subgraph Shared_Processing_Layer["2. Shared Processing Engines"]
-        SCE["Shared Crop Engine (ICropEngine)"]
-        STR["Shared Template Registry (ITemplateRegistry)"]
-        SCDE["Shared Card Detection Engine (ICardDetectionEngine)"]
-        SPPE["Shared Passport Photo Engine (IPassportPhotoEngine)"]
+    subgraph Processing_Engines["2. Unified Processing Engines"]
+        UCE["Unified Visual Crop Engine (InteractiveCropCanvas)"]
+        TR["Universal Template Registry (35 Government Templates)"]
+        ACD["Adaptive Card Detection Engine (OpenCV + Anchors)"]
+        PPE["Passport Photo Biometric Engine (ICAO 9303)"]
     end
 
-    subgraph Shared_Printing_Layer["3. Shared Physical Layout & Print Engine"]
-        SPPLM["Shared Physical Layout Model (PageLayoutModel)"]
-        SPRP["Shared Print Rendering Pipeline (IPhysicalPageRenderService)"]
-        SPPM["Shared Printer Profile Manager (IPrinterProfileManager)"]
+    subgraph Physical_Print_Pipeline["3. Physical Layout & Hardware Verification"]
+        SPLM["Single Physical Layout Model (Millimeter Geometry)"]
+        PPRS["Physical Page Render Service (600 DPI SkiaSharp)"]
+        PJLM["7-Stage Print Job Lifecycle Manager (Win32 Spooler Tracking)"]
+        PPM["Printer Profile & Calibration Manager"]
     end
 
-    subgraph Shared_Enterprise_Layer["4. Enterprise Business & Mode Management"]
-        STAS["Shared Transaction & Accounting Service (ITransactionLedgerService)"]
-        SAS["Shared Application Settings (IAppSettingsService)"]
-        DPM["Test / Production Mode Isolator (IDataModeProvider)"]
+    subgraph Accounting_And_Isolation["4. Financial Integrity & Sandbox Isolation"]
+        DMP["Data Mode Provider (Production vs. Test Mode)"]
+        TLM["Normalized Transaction & Multi-Payment Ledger"]
+        AUDIT["Immutable Audit Trail & Daily Cashier Reconciliation"]
     end
 
-    SDS --> SIA
-    SIA --> SCE
-    STR --> SCDE
-    SCDE --> SIA
-    SPPE --> SIA
+    ISA --> DA
+    DA --> FBA
+    DA --> SCS
+    DSM --> ISA
+    DSM --> SCS
 
-    SIA --> SPPLM
-    SPPLM --> SPRP
-    SPPM --> SPRP
-    SPRP --> STAS
-    DPM --> STAS
-    SAS --> DPM
+    SCS --> UCE
+    TR --> ACD
+    ACD --> DA
+    PPE --> DA
+
+    FBA --> SPLM
+    SPLM --> PPRS
+    PPM --> SPLM
+    PPRS --> PJLM
+
+    PJLM --> TLM
+    DMP --> TLM
+    TLM --> AUDIT
 ```
 
 ---
 
-## 2. Specification of the Twelve Shared Subsystems
+## 2. Shared Session & Asset Architecture (Deep Dive)
 
-### Pillar 1: Shared Document Session (`IDocumentSessionManager`)
-- **Role:** Holds the currently active file, decrypted streams, rasterized high-DPI page cache, and security status.
-- **Contract:**
-  ```csharp
-  public interface IDocumentSessionManager
-  {
-      DocumentSessionState CurrentState { get; }
-      event EventHandler<DocumentSessionChangedEventArgs> SessionChanged;
-      Task<bool> OpenDocumentAsync(string filePath, string? password = null);
-      void CloseSession();
-      SKBitmap? GetPageBitmap(int pageIndex = 0, int dpi = 300);
-      string? CurrentPassword { get; }
-      bool IsEncrypted { get; }
-      DocumentKind DetectedKind { get; set; }
-      CardTemplate? ActiveTemplate { get; set; }
-  }
-  ```
-- **Benefit:** When a document is loaded in the top toolbar or production workspace, every workspace (Production, Passport Photo, Batch, Designer) immediately accesses the identical in-memory session. Zero file re-reading or cache desynchronization.
+### 2.1 The Anti-Pattern of Mutable Singletons
+A simplistic singleton containing raw mutable `SKBitmap` fields fails in desktop production:
+- Memory corruptions occur when one thread rasterizes a preview while another thread applies a crop or rotation.
+- If an operator crops an image, the original pixels are destroyed; undoing or adjusting the crop requires re-reading from disk.
+- Workspaces stepping on each other: changing a setting in Crop Studio unintentionally mutates the active canvas in Production Studio.
 
-### Pillar 2: Shared Image Asset Model (`ImageAsset`)
-- **Role:** Encapsulates bitmap pixels, native DPI, millimeter dimensions, rotation angle, and color profile.
-- **Contract:**
-  ```csharp
-  public class ImageAsset : IDisposable
-  {
-      public string AssetId { get; } = Guid.NewGuid().ToString("N");
-      public SKBitmap Bitmap { get; private set; }
-      public int Dpi { get; set; } = 300;
-      public double WidthMm => (Bitmap.Width * 25.4) / Dpi;
-      public double HeightMm => (Bitmap.Height * 25.4) / Dpi;
-      public int RotationDegrees { get; set; }
-      public bool IsLockedToCr80 { get; set; }
-      public void NormalizeToCr80(int targetDpi = 600);
-      public ImageAsset Clone();
-  }
-  ```
+### 2.2 The Immutable Source & Derived Asset Model
+We introduce an explicit, reference-counted, thread-safe asset tree:
 
-### Pillar 3: Shared Interactive Crop Engine (`ICropEngine`)
-- **Role:** A single unified mathematical and interaction engine powering both in-place drawers and modal crop workflows.
-- **Capabilities:**
-  - Standard rectangular crop with locked aspect ratios (CR80: $85.60 \times 53.98$, Passport: $35 \times 45$, Freeform).
-  - Perspective quadrilateral 4-point quad warp for mobile camera scans.
-  - Smooth mouse-wheel zoom ($0.1\times$ to $5\times$) centered on cursor.
-  - Interactive 8-point adorner bounding handles with live sub-pixel coordinates.
-  - Immediate SkiaSharp bicubic rectification without intermediate disk writes.
+```mermaid
+graph TD
+    File["PDF or Image File on Disk"] -->|Decoded once via PDFium / Skia| ISA["SourceImageAsset (Immutable Root)"]
+    ISA -->|Revision 0: Native Uncropped| DA0["DerivedImageAsset (Active Session Root)"]
+    DA0 -->|Op: Adaptive Front Crop| DAF["DerivedImageAsset (Front Face Asset)"]
+    DA0 -->|Op: Adaptive Back Crop| DAB["DerivedImageAsset (Back Face Asset)"]
+    DAF -->|Op: Interactive Re-crop| DAF2["DerivedImageAsset (Front Rev 2)"]
+    DAF2 -->|Op: Color Adjust (Brightness/Contrast)| DAF3["DerivedImageAsset (Front Rev 3 - Active)"]
+```
 
-### Pillar 4: Shared Template Registry (`ITemplateRegistry`)
-- **Role:** Authoritative inventory of all 35 Indian identity and document templates matching `Real.db` and national specifications.
-- **Capabilities:**
-  - Multi-factor keyword matching with confidence scoring.
-  - Visual aspect and geometry verification.
-  - Allows the operator to manually override and pick any template from a categorized dropdown.
+#### Class Contract: `SourceImageAsset`
+```csharp
+public sealed class SourceImageAsset : IDisposable
+{
+    public string SourceId { get; } = Guid.NewGuid().ToString("N");
+    public string OriginalFilePath { get; }
+    public FileMagicKind FileKind { get; }
+    public SKBitmap ImmutableBitmap { get; } // Read-Only Native Buffer
+    public int NativeDpi { get; }
+    public double PhysicalWidthMm => (ImmutableBitmap.Width * 25.4) / NativeDpi;
+    public double PhysicalHeightMm => (ImmutableBitmap.Height * 25.4) / NativeDpi;
+    public DateTime LoadedAtUtc { get; } = DateTime.UtcNow;
 
-### Pillar 5: Shared Card Detection Engine (`ICardDetectionEngine`)
-- **Role:** Replaces blind static pixel slicing with **adaptive confidence-based detection**.
-- **Algorithm:**
-  1. Sniff document keywords and OCR markers.
-  2. If template matches with $>90\%$ confidence, fetch calibrated anchor coordinates.
-  3. Execute OpenCV adaptive Canny thresholding + Hough line detection within a $\pm 15\text{ mm}$ search window around the anchor to locate the physical card cut-box.
-  4. If card borders are found, snap crop boundaries to the real cutlines. If not, fallback safely to calibrated anchor defaults.
-  5. Letterbox / pad cleanly to $85.60 \times 53.98\text{ mm}$ CR80 without stretching.
+    private int _referenceCount = 1;
+    public void Retain() => Interlocked.Increment(ref _referenceCount);
+    public void Release()
+    {
+        if (Interlocked.Decrement(ref _referenceCount) == 0)
+        {
+            ImmutableBitmap.Dispose();
+        }
+    }
+}
+```
 
-### Pillar 6: Shared Passport Photo Engine (`IPassportPhotoEngine`)
-- **Role:** Implements ICAO 9303 compliant portrait processing.
-- **Algorithm:**
-  1. Detect face bounding box, eye centerlines, and chin base via OpenCV Haar/DNN.
-  2. Center and scale portrait to enforce standard $70\%–80\%$ head coverage ($32\text{ mm}$ to $36\text{ mm}$).
-  3. **Correct GrabCut Boundary:** Keep bottom margin at 0; mark bottom edge as Probable Foreground (`PR_FGD`) to eliminate the wavy edge artifact.
-  4. Interactive face positioner allows operator to nudge head alignment.
-  5. Solid color studio replacement (White, Off-White Grey, Passport Blue).
+#### Class Contract: `DerivedImageAsset`
+```csharp
+public sealed class DerivedImageAsset : IDisposable
+{
+    public string RevisionId { get; } = Guid.NewGuid().ToString("N");
+    public string ParentRevisionId { get; }
+    public SourceImageAsset SourceRoot { get; }
+    public SKBitmap Bitmap { get; }
+    public ImageTransformPipeline AppliedTransforms { get; }
+    public int Dpi { get; }
+    public double WidthMm => (Bitmap.Width * 25.4) / Dpi;
+    public double HeightMm => (Bitmap.Height * 25.4) / Dpi;
+    public bool IsCr80Standard => Math.Abs(WidthMm - 85.60) < 0.2 && Math.Abs(HeightMm - 53.98) < 0.2;
 
-### Pillar 7: Shared Physical Page Layout Model (`PageLayoutModel`)
-- **Role:** Single source of truth for physical paper and tray geometry.
-- **Rule:** Every coordinate is expressed in millimeters. All items (front card, back card, passport photos, cut guides) are stored as `PageLayoutItem` instances in a single unified list.
+    public DerivedImageAsset CreateDerivedRevision(
+        SKBitmap newBitmap, 
+        ImageTransformOperation operation, 
+        int newDpi);
+}
+```
 
-### Pillar 8: Shared Print Rendering Pipeline (`IPhysicalPageRenderService`)
-- **Role:** Executes identical SkiaSharp rendering across:
-  - Screen preview canvas (fitted to window).
-  - High-DPI rasterization for GDI+ spooling ($600\text{ DPI}$).
-  - Vector PDF export (`SKDocument.CreatePdf`).
-  - High-resolution PNG export.
+### 2.3 Shared Crop Session (`SharedCropSession`)
+The crop session is a thread-safe state object shared across workspaces:
+- Holds the active `CropBounds` (in millimeters and native pixels).
+- Tracks `SelectedAspectRatio` (CR80, Passport, Freeform, Custom).
+- Manages an internal `UndoRedoStack<CropBounds>` supporting at least 20 historical operations.
+- Manages perspective quad corner coordinates (`Point2f[4]`).
+- Exposes `IObservable<CropBoundsChangedEventArgs>` using clean MVVM event dispatching to the WPF UI thread (`Dispatcher.InvokeAsync`).
 
-### Pillar 9: Shared Printer Profile Manager (`IPrinterProfileManager`)
-- **Role:** Discovers Windows print queues, stores printer-specific $X/Y$ offset calibrations, remembers default trays, and manages tray media profiles.
-
-### Pillar 10: Shared Transaction & Accounting Service (`ITransactionLedgerService`)
-- **Role:** Full commercial transaction management.
-- **Capabilities:**
-  - Create transaction with invoice ID (`INV-YYYYMMDD-XXXX`).
-  - Edit transaction (adjust fee, change payment mode, update customer notes).
-  - Record partial payments and track outstanding balance.
-  - Void / cancel transaction with auditable reason.
-  - Daily closing, cashier reconciliation, and CSV export.
-
-### Pillar 11: Shared Application Settings (`IAppSettingsService`)
-- **Role:** Application preferences, hardware defaults, theme, and language.
-
-### Pillar 12: Test / Production Mode Isolator (`IDataModeProvider`)
-- **Role:** Complete physical isolation between business accounting and test operations.
+### 2.4 Cross-Workspace State Observation & Mutation Guardrails
+- **The Observation Pattern:** When an operator loads an Aadhaar PDF in Production Studio, `IDocumentSessionManager` fires `SessionLoadedEvent`.
+- **Workspace Isolation:** Each workspace (`ProductionStudioViewModel`, `CropStudioViewModel`, `PhotoStudioViewModel`) receives a **read-only projected view** of the session.
+- **Explicit Commits:** If an operator opens the interactive crop drawer and edits crop bounds:
+  - The changes exist in a private workspace `WorkingDraft` state.
+  - The rest of the application (e.g. Center Canvas) does not alter its physical layout until the operator clicks `[Apply Crop]`.
+  - Upon commit, `CommitRevisionAsync()` publishes the new `DerivedImageAsset` to the session hub, safely updating the physical canvas in one atomic operation.
 
 ---
 
-## 3. Existing Code Reuse, Refactoring, and Deprecation Matrix
+## 3. Centralized Reusable Visual Crop Engine
 
-| Existing Component | Planned Action | Rationale & Migration Strategy |
-| :--- | :---: | :--- |
-| `src/PVCStudioPro.Core/Models/PageLayoutModels.cs` | **RETAIN & EXPAND** | High quality millimeter layout model. Add `PassportPhoto` item kind and cut-line styling. |
-| `src/PVCStudioPro.Core/Services/Implementations/PhysicalPageRenderService.cs` | **RETAIN & REFACTOR** | Proven 600 DPI rendering engine. Refactor to serve as the sole print pipeline for both cards and photos. |
-| `src/PVCStudioPro.Core/Services/Implementations/TemplateService.cs` | **RETAIN & WIRE** | Contains 29 high-accuracy templates. Wire directly to `ProductionWorkspaceViewModel`. |
-| `src/PVCStudioPro.Core/Services/Implementations/PdfService.cs` | **RETAIN** | Solid PDFium/Docnet implementation. Retain stream handling and password unlocking. |
-| `src/PVCStudioPro.Core/Services/Implementations/CardDetectionService.cs` | **REFACTOR** | Replace static array slicing with adaptive Canny edge search + anchor fallbacks. |
-| `src/PVCStudioPro.Core/Services/Implementations/VisionService.cs` | **REFACTOR** | Fix GrabCut bottom boundary condition; move portrait sheet composition to `PhysicalPageRenderService`. |
-| `src/PVCStudioPro.Core/Services/Implementations/JobLedgerService.cs` | **REPLACE** | Replace insert-only SQL with comprehensive `TransactionLedgerService` supporting edits and test mode. |
-| `src/PVCStudioPro.App/ViewModels/CropStudioViewModel.cs` | **MERGE** | Merge interactive zoom/pan/adorners into a reusable user control consumable across all workspaces. |
-| `src/PVCStudioPro.App/ViewModels/DocumentDeskViewModel.cs` | **MERGE / DEPRECATE** | Redundant with `ProductionWorkspaceViewModel`. Consolidate document handling into the unified hero workspace. |
-| `src/PVCStudioPro.App/ViewModels/PhotoStudioViewModel.cs` | **REFACTOR** | Connect to real `IPrintService` and unify sheet composition with `PageLayoutModel`. |
-| `src/PVCStudioPro.App/ViewModels/ProductionWorkspaceViewModel.cs` | **REFACTOR** | Establish as the single unified production workspace, consuming the shared session, crop engine, and template registry. |
+### 3.1 Component Architecture (`InteractiveCropCanvas.xaml`)
+Instead of duplicating crop UI across windows, a single WPF UserControl (`InteractiveCropCanvas`) is embedded into:
+1. `ProductionWorkspaceView` (inside the in-place crop drawer).
+2. `CropStudioView` (for full-screen advanced rectification).
+3. `PhotoStudioView` (for custom portrait framing).
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ InteractiveCropCanvas (Zoom: 125% | Pan: [X: 120, Y: -40] | Mode: CR80 Aspect Locked)  │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                        │
+│               [● Handle NW]          [■ Handle N]          [● Handle NE]               │
+│                     ┌──────────────────────────────────────────┐                       │
+│                     │                                          │                       │
+│                     │   Interactive Card Bounding Box          │                       │
+│                     │   85.60 x 53.98 mm (CR80)                │                       │
+│                     │                                          │                       │
+│         [■ Handle W]│              [+ Center Cross]            │[■ Handle E]           │
+│                     │                                          │                       │
+│                     │   Sub-pixel Skia Coordinates:            │                       │
+│                     │   X: 210 px, Y: 2595 px                  │                       │
+│                     │   W: 1045 px, H: 665 px                  │                       │
+│                     └──────────────────────────────────────────┘                       │
+│               [● Handle SW]          [■ Handle S]          [● Handle SE]               │
+│                                                                                        │
+│  [+] [-] [Fit to Window] [100% Zoom] | [Aspect: CR80 ▼] [Perspective Quad ☐] [Undo]   │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 3.2 Interaction Capabilities:
+- **Cursor-Centric Zoom:** Mouse wheel smoothly scales the canvas from $0.1\times$ to $5.0\times$ maintaining the mouse pointer's focus point.
+- **Pan Navigation:** Middle-mouse drag or Spacebar+Left-Click pans the image smoothly.
+- **8 Interactive Handles:** 4 corner handles (scaling with aspect-ratio preservation) + 4 edge handles (unconstrained adjustment).
+- **Perspective Quad Warp:** Toggling perspective mode activates 4 independent corner pins, invoking OpenCV `WarpPerspective` for distorted mobile photos.
+- **Two-Way Synchronized Inputs:** Dragging handles on screen immediately updates the numeric Millimeter / Pixel textboxes; conversely, typing exact millimeter offsets immediately snaps the handles.
+
+---
+
+## 4. Hardware-Verified Print Job Lifecycle Architecture
+
+### 4.1 The 7-Stage Print Job State Machine
+To guarantee commercial integrity, print jobs must traverse an explicit lifecycle verified against the Windows print spooler:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft: Configuration in UI
+    Draft --> AwaitingOperatorApproval: Layout & Billing Verified
+    AwaitingOperatorApproval --> SubmittedToSpooler: Operator Clicks 'Start Printing'
+    SubmittedToSpooler --> SpoolAccepted: Win32 Spooler Accepts Bytes
+    SubmittedToSpooler --> Failed: Win32 Error / Port Inaccessible
+    SpoolAccepted --> CompletedWithEvidence: Win32 Spooler Job Finished
+    SpoolAccepted --> Failed: Queue Error / Aborted
+    AwaitingOperatorApproval --> Cancelled: Operator Aborts Job
+    Draft --> Cancelled: Discarded
+```
+
+### 4.2 Win32 Spooler Verification Protocol
+1. **Dispatched Stream:** `PrintService.cs` opens the printer queue via Win32 `OpenPrinterW` and sets `DEVMODEW`.
+2. **Spool Acceptance:** Writes EMF/RAW print stream using `StartDocPrinter`, `StartPagePrinter`, `WritePrinter`, `EndPagePrinter`, `EndDocPrinter`. If `EndDocPrinter` returns true, status transitions to `SpoolAccepted`.
+3. **Evidence Monitoring:** A background task polls `GetJob` or subscribes to Windows print queue WMI events (`Win32_PrintJob`). When the job leaves the queue without an error flag, status transitions to `CompletedWithEvidence`.
+4. **Physical Failure Recovery:** If the driver reports an error (e.g. Paper Out, Paper Jam, Ribbon Error), the status transitions to `Failed`. The software presents the operator with options: `[Retry Spool]`, `[Switch Printer]`, or `[Cancel & Void Invoice]`.
+
+---
+
+## 5. Adaptive Identity Document Detection & Extraction Pipeline
+
+### 5.1 Rejection of "100% Automatic" Claims
+Real-world government documents have print offsets, margin displacement from scanner glass, and rotation errors. Claiming 100% unattended automation leads to silent truncation of citizen names and photos.
+
+### 5.2 The 5-Stage Adaptive Detection Engine
+```mermaid
+graph TD
+    In["Decrypted Document Stream"] --> S1["Stage 1: Geometry & Point Inspection"]
+    S1 --> S2["Stage 2: OCR Keyword Anchor Matching"]
+    S2 --> S3["Stage 3: Calibrated Template Seed from Registry"]
+    S3 --> S4["Stage 4: OpenCV Canny Edge & Hough Line Refinement (±15mm window)"]
+    S4 --> S5{"Stage 5: Confidence Scoring"}
+
+    S5 -->|Confidence >= 85%| AutoExtract["Auto-Mount Extracted Cards on Physical A4 Sheet"]
+    S5 -->|Confidence < 85%| OperatorHandoff["Amber Alert: Low Confidence (<85%) -> Open Visual Crop Drawer with Calibrated Guides"]
+    OperatorHandoff -->|Operator 1-Click Confirm| SaveOverride["Optionally Save as Custom Shop Profile"]
+```
+
+### 5.3 Low-Confidence Graceful Fallback
+If confidence is below 85% (e.g. skewed scan or non-standard margins):
+- The software **never generates a wrongly cropped card silently**.
+- An amber status pill is displayed: `⚠️ Low Detection Confidence (68%) — Please Confirm Card Bounds`.
+- The in-place crop drawer opens automatically, centered on the best-guess coordinates with visible guides. The operator can confirm with 1 click (`Enter`) or nudge the handles before committing.
+
+---
+
+## 6. Comprehensive Template Registry & Reachability
+
+Every template defined in Core must be **100% reachable and selectable** in the main Production Studio toolbar via a categorized dropdown:
+
+| Template ID | Display Name | Category | Detection Method | Calibrated Dimensions (mm) | Variants Supported | Tested Status | Manual Override Supported? |
+| :--- | :--- | :--- | :--- | :---: | :--- | :---: | :---: |
+| `aadhaar_v2024` | UIDAI e-Aadhaar (Letter / Download) | Identity | Keywords + Geometry | $85.60 \times 53.98$ | Modern post-2022, 2018-2021 | Tested | Yes (Live Drawer) |
+| `child_aadhaar` | Baal Aadhaar (Child / Blue) | Identity | Keywords + Anchor | $85.60 \times 53.98$ | Blue Child Aadhaar | Tested | Yes (Live Drawer) |
+| `m_aadhaar` | mAadhaar Mobile Card | Identity | Keywords + Geometry | $85.60 \times 53.98$ | Mobile UIDAI app PDF | Tested | Yes (Live Drawer) |
+| `pan_nsdl` | NSDL Income Tax PAN Card | Tax | Keywords + OCR | $85.60 \times 53.98$ | NSDL Form 49A / e-PAN | Tested | Yes (Live Drawer) |
+| `pan_utiitsl` | UTIITSL Income Tax PAN Card | Tax | Keywords + OCR | $85.60 \times 53.98$ | UTIITSL e-PAN | Tested | Yes (Live Drawer) |
+| `pan_instant` | Instant e-PAN (Income Tax Portal) | Tax | Keywords + Anchor | $85.60 \times 53.98$ | Instant 10-minute e-PAN | Tested | Yes (Live Drawer) |
+| `voter_epic_v2` | Election Commission Voter ID (EPIC) | Identity | Keywords + Border | $85.60 \times 53.98$ | National Voter Portal PDF | Tested | Yes (Live Drawer) |
+| `ayushman_pmjay` | Ayushman Bharat PM-JAY Golden Card | Health | Keywords + Colors | $85.60 \times 53.98$ | BIS 1.0 PM-JAY | Tested | Yes (Live Drawer) |
+| `ayushman_new` | Ayushman Card (BIS 2.0 New Format) | Health | Keywords + Geometry | $85.60 \times 53.98$ | National Health Authority 2.0 | Tested | Yes (Live Drawer) |
+| `abha_health_id` | ABHA Health ID Card (ABDM) | Health | Keywords + QR | $85.60 \times 53.98$ | Ayushman Digital Mission | Tested | Yes (Live Drawer) |
+| `cm_insurance` | CMCHIS Comprehensive Health Card | Health | Keywords + Text | $85.60 \times 53.98$ | Tamil Nadu Amma / CM Card | Tested | Yes (Live Drawer) |
+| `umid_railways` | Indian Railways UMID Medical Card | Health | Keywords + Logo | $85.60 \times 53.98$ | Railway Employee / Pensioner | Tested | Yes (Live Drawer) |
+| `eshram_card` | e-Shram Universal Account Card | Labour | Keywords + UAN | $85.60 \times 53.98$ | Labour & Employment Portal | Tested | Yes (Live Drawer) |
+| `pm_sym` | PM Shram Yogi Maan-dhan (PM-SYM) | Labour | Keywords + Text | $85.60 \times 53.98$ | PM-SYM Pension Card | Tested | Yes (Live Drawer) |
+| `pm_kmy` | PM Kisan Maan-dhan Yojana (PM-KMY) | Labour | Keywords + Text | $85.60 \times 53.98$ | Agriculture Pension Card | Tested | Yes (Live Drawer) |
+| `pf_insurance` | EPFO Member Identification Card | Labour | Keywords + MemberId | $85.60 \times 53.98$ | Provident Fund Member Card | Tested | Yes (Live Drawer) |
+| `uan_card` | EPFO Universal Account Number Card | Labour | Keywords + UAN | $85.60 \times 53.98$ | EPFO Unified Portal Card | Tested | Yes (Live Drawer) |
+| `e_pran` | NPS e-PRAN Card (PFRDA) | Pension | Keywords + PRAN | $85.60 \times 53.98$ | NSDL / CRA Pension Card | Tested | Yes (Live Drawer) |
+| `udid_card` | Unique Disability ID (Swavlamban) | Welfare | Keywords + Medical | $85.60 \times 53.98$ | DEPwD Disability ID | Tested | Yes (Live Drawer) |
+| `senior_citizen` | Senior Citizen Identity Card | Welfare | Keywords + Age | $85.60 \times 53.98$ | State Social Welfare Depts | Tested | Yes (Live Drawer) |
+| `jan_aadhaar` | Rajasthan Jan-Aadhaar Card | State | Keywords + Rajasthani | $85.60 \times 53.98$ | Rajasthan Family ID | Tested | Yes (Live Drawer) |
+| `pravasi_card` | Pravasi Bharatiya Card | State | Keywords + Passport | $85.60 \times 53.98$ | Non-Resident Indian Card | Tested | Yes (Live Drawer) |
+| `vaccination_card`| Co-WIN Vaccination Certificate | Health | Keywords + Beneficiary| $85.60 \times 53.98$ | MoHFW Co-WIN QR Card | Tested | Yes (Live Drawer) |
+| `tn_smart_ration` | Tamil Nadu Digital Smart Ration Card | Ration | Keywords + Family | $85.60 \times 53.98$ | TNPDS Civil Supplies Card | Tested | Yes (Live Drawer) |
+| `kerala_ration` | Kerala Civil Supplies Digital Ration | Ration | Keywords + Malayalam | $85.60 \times 53.98$ | Civil Supplies Dept Kerala | Tested | Yes (Live Drawer) |
+| `wb_ration` | West Bengal Digital Ration Card | Ration | Keywords + Bengali | $85.60 \times 53.98$ | Food & Supplies West Bengal | Tested | Yes (Live Drawer) |
+| `parivahan_dl` | Indian Driving Licence (Form 7) | Transport | Keywords + Sarathi | $85.60 \times 53.98$ | MoRTH Sarathi Form 7 | Tested | Yes (Live Drawer) |
+| `parivahan_rc` | Vehicle Registration Certificate (RC) | Transport | Keywords + Vahan | $85.60 \times 53.98$ | MoRTH Vahan Form 23 | Tested | Yes (Live Drawer) |
+| `custom_cr80_generic`| Generic Dual-Face ID Card | Generic | Geometry Fallback | $85.60 \times 53.98$ | Corporate / Student / Club | Tested | Yes (Live Drawer) |
