@@ -8,11 +8,17 @@
                    xmlns:views="clr-namespace:PVCStudioPro.App.Views"
                    mc:Ignorable="d"
                    Title="{DynamicResource AppTitle}"
-                   Height="900" Width="1440"
-                   MinHeight="720" MinWidth="1100"
+                   Height="800" Width="1280"
+                   MinHeight="750" MinWidth="1200"
                    WindowStartupLocation="CenterScreen"
                    ExtendsContentIntoTitleBar="True"
                    WindowBackdropType="Mica">
+
+    <Window.InputBindings>
+        <KeyBinding Modifiers="Ctrl" Key="O" Command="{Binding QuickOpenDocumentCommand}"/>
+        <KeyBinding Modifiers="Ctrl" Key="P" Command="{Binding QuickPrintCommand}"/>
+        <KeyBinding Modifiers="Ctrl" Key="S" Command="{Binding QuickExportPdfCommand}"/>
+    </Window.InputBindings>
 
     <Window.Resources>
         <!-- Workspace DataTemplates -->

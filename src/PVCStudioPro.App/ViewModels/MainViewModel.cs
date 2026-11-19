@@ -396,6 +396,32 @@ namespace PVCStudioPro.App.ViewModels
             IsTestMode = false;
         }
 
+        [RelayCommand]
+        public async System.Threading.Tasks.Task QuickOpenDocumentAsync()
+        {
+            CurrentView = ProductionVM;
+            ActiveWorkspaceTitle = "Production Studio";
+            await ProductionVM.OpenDocumentFileDialogAsync();
+        }
+
+        [RelayCommand]
+        public async System.Threading.Tasks.Task QuickPrintAsync()
+        {
+            if (CurrentView == ProductionVM)
+            {
+                await ProductionVM.StartPrintingAsync();
+            }
+        }
+
+        [RelayCommand]
+        public async System.Threading.Tasks.Task QuickExportPdfAsync()
+        {
+            if (CurrentView == ProductionVM)
+            {
+                await ProductionVM.ExportPdfAsync();
+            }
+        }
+
         private static void ApplyLanguageDictionary(string dictFile)
         {
             var dictUri = new Uri($"pack://application:,,,/I18n/{dictFile}", UriKind.Absolute);

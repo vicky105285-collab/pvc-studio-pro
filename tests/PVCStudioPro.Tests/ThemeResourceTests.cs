@@ -1,0 +1,206 @@
+using System;
+using System.IO;
+using System.Windows;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Effects;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Xunit;
+using PVCStudioPro.App.ViewModels;
+using PVCStudioPro.Core.Models;
+using PVCStudioPro.Core.Services;
+using PVCStudioPro.Core.Services.Implementations;
+
+namespace PVCStudioPro.Tests
+{
+    public class ThemeResourceTests
+    {
+        private static string GetM3TokensFilePath()
+        {
+            string current = AppContext.BaseDirectory;
+            while (!string.IsNullOrEmpty(current))
+            {
+                string target = Path.Combine(current, "src", "PVCStudioPro.App", "Resources", "Theme", "M3Tokens.xaml");
+                if (File.Exists(target))
+                {
+                    return target;
+                }
+                var parent = Directory.GetParent(current);
+                if (parent == null) break;
+                current = parent.FullName;
+            }
+
+            return Path.GetFullPath(@"..\..\..\..\src\PVCStudioPro.App\Resources\Theme\M3Tokens.xaml");
+        }
+
+        private static ResourceDictionary LoadM3TokensDictionary()
+        {
+            string path = GetM3TokensFilePath();
+            File.Exists(path).Should().BeTrue($"M3Tokens.xaml should exist at {path}");
+
+            using var stream = File.OpenRead(path);
+            var dict = (ResourceDictionary)XamlReader.Load(stream);
+            dict.Should().NotBeNull();
+            return dict;
+        }
+
+        [Fact]
+        public void M3Tokens_File_LoadsAsValidResourceDictionary()
+        {
+            var dict = LoadM3TokensDictionary();
+            dict.Count.Should().BeGreaterThan(15);
+        }
+
+        [Fact]
+        public void M3Tokens_ContainsAllKeyPaletteColorsAndBrushes()
+        {
+            var dict = LoadM3TokensDictionary();
+
+            // Colors
+            dict.Contains("M3PrimaryColor").Should().BeTrue();
+            dict.Contains("M3OnPrimaryColor").Should().BeTrue();
+            dict.Contains("M3PrimaryContainerColor").Should().BeTrue();
+            dict.Contains("M3SecondaryColor").Should().BeTrue();
+            dict.Contains("M3TertiaryColor").Should().BeTrue();
+            dict.Contains("M3ErrorColor").Should().BeTrue();
+            dict.Contains("M3SuccessColor").Should().BeTrue();
+
+            // Brushes
+            dict.Contains("M3PrimaryBrush").Should().BeTrue();
+            dict["M3PrimaryBrush"].Should().BeOfType<SolidColorBrush>();
+
+            dict.Contains("M3PrimaryContainerBrush").Should().BeTrue();
+            dict["M3PrimaryContainerBrush"].Should().BeOfType<SolidColorBrush>();
+
+            dict.Contains("M3SecondaryBrush").Should().BeTrue();
+            dict["M3SecondaryBrush"].Should().BeOfType<SolidColorBrush>();
+
+            dict.Contains("M3TertiaryBrush").Should().BeTrue();
+            dict["M3TertiaryBrush"].Should().BeOfType<SolidColorBrush>();
+
+            dict.Contains("M3ErrorBrush").Should().BeTrue();
+            dict["M3ErrorBrush"].Should().BeOfType<SolidColorBrush>();
+
+            dict.Contains("M3SuccessBrush").Should().BeTrue();
+            dict["M3SuccessBrush"].Should().BeOfType<SolidColorBrush>();
+
+            dict.Contains("M3OutlineBrush").Should().BeTrue();
+            dict.Contains("M3OutlineVariantBrush").Should().BeTrue();
+        }
+
+        [Fact]
+        public void M3Tokens_ContainsCornerRadiiAndElevationDropShadows()
+        {
+            var dict = LoadM3TokensDictionary();
+
+            // Radii
+            dict.Contains("M3RadiusSmall").Should().BeTrue();
+            ((CornerRadius)dict["M3RadiusSmall"]!).TopLeft.Should().Be(4);
+
+            dict.Contains("M3RadiusMedium").Should().BeTrue();
+            ((CornerRadius)dict["M3RadiusMedium"]!).TopLeft.Should().Be(8);
+
+            dict.Contains("M3RadiusLarge").Should().BeTrue();
+            ((CornerRadius)dict["M3RadiusLarge"]!).TopLeft.Should().Be(12);
+
+            // Elevation Effects
+            dict.Contains("M3Elevation1").Should().BeTrue();
+            dict["M3Elevation1"].Should().BeOfType<DropShadowEffect>();
+
+            dict.Contains("M3Elevation2").Should().BeTrue();
+            dict["M3Elevation2"].Should().BeOfType<DropShadowEffect>();
+
+            dict.Contains("M3Elevation3").Should().BeTrue();
+            dict["M3Elevation3"].Should().BeOfType<DropShadowEffect>();
+        }
+
+        [Fact]
+        public void M3Tokens_ContainsCardAndStatusPillStyles()
+        {
+            var dict = LoadM3TokensDictionary();
+
+            dict.Contains("M3ElevatedCardStyle").Should().BeTrue();
+            dict["M3ElevatedCardStyle"].Should().BeOfType<Style>();
+            ((Style)dict["M3ElevatedCardStyle"]!).TargetType.Should().Be(typeof(System.Windows.Controls.Border));
+
+            dict.Contains("M3StatusPillStyle").Should().BeTrue();
+            dict["M3StatusPillStyle"].Should().BeOfType<Style>();
+            ((Style)dict["M3StatusPillStyle"]!).TargetType.Should().Be(typeof(System.Windows.Controls.Border));
+        }
+
+        [Fact]
+        public void MainViewModel_ExposesWorkingKeyboardAccelerators()
+        {
+            string testDir = Path.Combine(Path.GetTempPath(), "PVCStudioPro_ThemeTest_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(testDir);
+            string dbPath = Path.Combine(testDir, "test.db");
+            string configDir = Path.Combine(testDir, "config");
+            Directory.CreateDirectory(configDir);
+
+            try
+            {
+                var services = new ServiceCollection();
+
+                services.AddSingleton<IPdfService, PdfService>();
+                services.AddSingleton<IPdfDocumentService, PdfService>();
+                services.AddSingleton<IDocumentImportService, DocumentImportService>();
+                services.AddSingleton<IDocumentSessionManager, DocumentSessionManager>();
+                services.AddSingleton<IOfficeDocumentService, OfficeDocumentService>();
+                services.AddSingleton<ITemplateService, TemplateService>();
+                services.AddSingleton<IDocumentTypeDetectionService, DocumentTypeDetectionService>();
+                services.AddSingleton<CardDetectionService>();
+                services.AddSingleton<ICardDetectionService>(sp => sp.GetRequiredService<CardDetectionService>());
+                services.AddSingleton<ICardDetectionEngine>(sp => sp.GetRequiredService<CardDetectionService>());
+                services.AddSingleton<IManualCropService, ManualCropService>();
+                services.AddSingleton<IPrintPreviewService, PrintPreviewService>();
+                services.AddSingleton<IPhysicalPageRenderService, PhysicalPageRenderService>();
+                services.AddSingleton<IPhysicalPageLayoutEngine, PhysicalPageLayoutEngine>();
+                services.AddSingleton<IPrinterDiscoveryService, PrinterDiscoveryService>();
+                services.AddSingleton<IPrintService, PrintService>();
+                services.AddSingleton<ISecurityService, SecurityService>();
+                services.AddSingleton<IVisionService, VisionService>();
+                services.AddSingleton<IPassportPhotoEngine, PassportPhotoEngine>();
+                services.AddSingleton<IDatabasePathProvider, DatabasePathProvider>();
+                services.AddSingleton<ITransactionPaymentService, TransactionPaymentService>();
+                services.AddSingleton<IJobLedgerService>(sp => new JobLedgerService(dbPath, sp.GetRequiredService<IDatabasePathProvider>()));
+                services.AddSingleton<IBusinessProfileService>(sp => new BusinessProfileService(Path.Combine(configDir, "business_profile.json")));
+                services.AddSingleton<IPrinterTrayService>(sp => new PrinterTrayService(sp.GetRequiredService<IPrinterDiscoveryService>(), Path.Combine(configDir, "printer_profiles.json")));
+                services.AddSingleton<IBackupService>(sp => new BackupService(dbPath, configDir));
+                services.AddSingleton<IBatchProcessingService, BatchProcessingService>();
+
+                services.AddSingleton<ProductionWorkspaceViewModel>();
+                services.AddSingleton<DashboardViewModel>();
+                services.AddSingleton<DocumentDeskViewModel>();
+                services.AddSingleton<CropStudioViewModel>();
+                services.AddSingleton<DocumentPageDesignerViewModel>();
+                services.AddSingleton<PrintPreviewApprovalViewModel>();
+                services.AddSingleton<CardPrintViewModel>();
+                services.AddSingleton<PhotoStudioViewModel>();
+                services.AddSingleton<DocumentProcessingViewModel>();
+                services.AddSingleton<BatchProcessingViewModel>();
+                services.AddSingleton<PrintCenterViewModel>();
+                services.AddSingleton<PrinterTrayManagerViewModel>();
+                services.AddSingleton<CalibrationViewModel>();
+                services.AddSingleton<TemplateManagerViewModel>();
+                services.AddSingleton<BusinessProfileViewModel>();
+                services.AddSingleton<BusinessLedgerViewModel>();
+                services.AddSingleton<ReportsAnalyticsViewModel>();
+                services.AddSingleton<BackupRestoreViewModel>();
+                services.AddSingleton<SettingsViewModel>();
+                services.AddSingleton<MainViewModel>();
+
+                var sp = services.BuildServiceProvider();
+                var mainVm = sp.GetRequiredService<MainViewModel>();
+
+                mainVm.QuickOpenDocumentCommand.Should().NotBeNull();
+                mainVm.QuickPrintCommand.Should().NotBeNull();
+                mainVm.QuickExportPdfCommand.Should().NotBeNull();
+            }
+            finally
+            {
+                try { Directory.Delete(testDir, true); } catch { }
+            }
+        }
+    }
+}

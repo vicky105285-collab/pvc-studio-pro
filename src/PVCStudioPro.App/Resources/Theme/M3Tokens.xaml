@@ -1,0 +1,99 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+
+    <!-- Material Design 3 (M3) Color & Elevation Design Token System -->
+
+    <!-- Primary Brand Palette (Professional Deep Indigo / Commercial Cobalt) -->
+    <Color x:Key="M3PrimaryColor">#1A56DB</Color>
+    <Color x:Key="M3OnPrimaryColor">#FFFFFF</Color>
+    <Color x:Key="M3PrimaryContainerColor">#E1EFFE</Color>
+    <Color x:Key="M3OnPrimaryContainerColor">#1E429F</Color>
+
+    <!-- Secondary Accent Palette (Slate / Cyan) -->
+    <Color x:Key="M3SecondaryColor">#4B5563</Color>
+    <Color x:Key="M3OnSecondaryColor">#FFFFFF</Color>
+    <Color x:Key="M3SecondaryContainerColor">#F3F4F6</Color>
+    <Color x:Key="M3OnSecondaryContainerColor">#1F2937</Color>
+
+    <!-- Tertiary Accent (Studio Amber / Accent) -->
+    <Color x:Key="M3TertiaryColor">#D97706</Color>
+    <Color x:Key="M3OnTertiaryColor">#FFFFFF</Color>
+    <Color x:Key="M3TertiaryContainerColor">#FEF3C7</Color>
+    <Color x:Key="M3OnTertiaryContainerColor">#92400E</Color>
+
+    <!-- Error & Validation Palette -->
+    <Color x:Key="M3ErrorColor">#DC2626</Color>
+    <Color x:Key="M3OnErrorColor">#FFFFFF</Color>
+    <Color x:Key="M3ErrorContainerColor">#FEE2E2</Color>
+    <Color x:Key="M3OnErrorContainerColor">#991B1B</Color>
+
+    <!-- Success & Verification Palette -->
+    <Color x:Key="M3SuccessColor">#059669</Color>
+    <Color x:Key="M3OnSuccessColor">#FFFFFF</Color>
+    <Color x:Key="M3SuccessContainerColor">#D1FAE5</Color>
+    <Color x:Key="M3OnSuccessContainerColor">#065F46</Color>
+
+    <!-- Solid Brushes -->
+    <SolidColorBrush x:Key="M3PrimaryBrush" Color="{StaticResource M3PrimaryColor}"/>
+    <SolidColorBrush x:Key="M3OnPrimaryBrush" Color="{StaticResource M3OnPrimaryColor}"/>
+    <SolidColorBrush x:Key="M3PrimaryContainerBrush" Color="{StaticResource M3PrimaryContainerColor}"/>
+    <SolidColorBrush x:Key="M3OnPrimaryContainerBrush" Color="{StaticResource M3OnPrimaryContainerColor}"/>
+
+    <SolidColorBrush x:Key="M3SecondaryBrush" Color="{StaticResource M3SecondaryColor}"/>
+    <SolidColorBrush x:Key="M3OnSecondaryBrush" Color="{StaticResource M3OnSecondaryColor}"/>
+    <SolidColorBrush x:Key="M3SecondaryContainerBrush" Color="{StaticResource M3SecondaryContainerColor}"/>
+    <SolidColorBrush x:Key="M3OnSecondaryContainerBrush" Color="{StaticResource M3OnSecondaryContainerColor}"/>
+
+    <SolidColorBrush x:Key="M3TertiaryBrush" Color="{StaticResource M3TertiaryColor}"/>
+    <SolidColorBrush x:Key="M3OnTertiaryBrush" Color="{StaticResource M3OnTertiaryColor}"/>
+    <SolidColorBrush x:Key="M3TertiaryContainerBrush" Color="{StaticResource M3TertiaryContainerColor}"/>
+    <SolidColorBrush x:Key="M3OnTertiaryContainerBrush" Color="{StaticResource M3OnTertiaryContainerColor}"/>
+
+    <SolidColorBrush x:Key="M3ErrorBrush" Color="{StaticResource M3ErrorColor}"/>
+    <SolidColorBrush x:Key="M3OnErrorBrush" Color="{StaticResource M3OnErrorColor}"/>
+    <SolidColorBrush x:Key="M3ErrorContainerBrush" Color="{StaticResource M3ErrorContainerColor}"/>
+    <SolidColorBrush x:Key="M3OnErrorContainerBrush" Color="{StaticResource M3OnErrorContainerColor}"/>
+
+    <SolidColorBrush x:Key="M3SuccessBrush" Color="{StaticResource M3SuccessColor}"/>
+    <SolidColorBrush x:Key="M3OnSuccessBrush" Color="{StaticResource M3OnSuccessColor}"/>
+    <SolidColorBrush x:Key="M3SuccessContainerBrush" Color="{StaticResource M3SuccessContainerColor}"/>
+    <SolidColorBrush x:Key="M3OnSuccessContainerBrush" Color="{StaticResource M3OnSuccessContainerColor}"/>
+
+    <!-- Outlines & Dividers -->
+    <SolidColorBrush x:Key="M3OutlineBrush" Color="#D1D5DB"/>
+    <SolidColorBrush x:Key="M3OutlineVariantBrush" Color="#E5E7EB"/>
+
+    <!-- High Density Commercial Desktop Corner Radii -->
+    <CornerRadius x:Key="M3RadiusExtraSmall">2</CornerRadius>
+    <CornerRadius x:Key="M3RadiusSmall">4</CornerRadius>
+    <CornerRadius x:Key="M3RadiusMedium">8</CornerRadius>
+    <CornerRadius x:Key="M3RadiusLarge">12</CornerRadius>
+    <CornerRadius x:Key="M3RadiusFull">9999</CornerRadius>
+
+    <!-- M3 Elevation Shadows -->
+    <DropShadowEffect x:Key="M3Elevation1" BlurRadius="6" ShadowDepth="1" Direction="270" Color="#000000" Opacity="0.08"/>
+    <DropShadowEffect x:Key="M3Elevation2" BlurRadius="12" ShadowDepth="3" Direction="270" Color="#000000" Opacity="0.12"/>
+    <DropShadowEffect x:Key="M3Elevation3" BlurRadius="20" ShadowDepth="6" Direction="270" Color="#000000" Opacity="0.16"/>
+
+    <!-- Commercial Desktop Elevated Card Style -->
+    <Style x:Key="M3ElevatedCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource M3RadiusMedium}"/>
+        <Setter Property="Effect" Value="{StaticResource M3Elevation1}"/>
+        <Setter Property="Padding" Value="16"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+
+    <!-- Status Pill Badge Style -->
+    <Style x:Key="M3StatusPillStyle" TargetType="Border">
+        <Setter Property="CornerRadius" Value="{StaticResource M3RadiusFull}"/>
+        <Setter Property="Padding" Value="10,3"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+
+</ResourceDictionary>
