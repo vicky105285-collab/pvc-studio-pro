@@ -15,6 +15,7 @@ namespace PVCStudioPro.App.ViewModels
     public partial class PhotoStudioViewModel : ObservableObject
     {
         private readonly IVisionService _visionService;
+        private readonly IPassportPhotoEngine _passportEngine;
         private readonly IPrintService _printService;
         private readonly IJobLedgerService _jobLedger;
 
@@ -49,6 +50,21 @@ namespace PVCStudioPro.App.ViewModels
         private string _paymentMode = "CASH";
 
         [ObservableProperty]
+        private double _panOffsetX = 0.0;
+
+        [ObservableProperty]
+        private double _panOffsetY = 0.0;
+
+        [ObservableProperty]
+        private double _zoomScale = 1.0;
+
+        [ObservableProperty]
+        private System.Collections.Generic.List<string> _availablePrinters = new();
+
+        [ObservableProperty]
+        private string _selectedPrinter = "Default Photo Printer";
+
+        [ObservableProperty]
         private string _statusMessage = "Ready | Load customer portrait photograph to generate passport photo sheet";
 
         [ObservableProperty]
@@ -63,12 +79,44 @@ namespace PVCStudioPro.App.ViewModels
 
         public PhotoStudioViewModel(
             IVisionService visionService,
+            IPassportPhotoEngine passportEngine,
             IPrintService printService,
             IJobLedgerService jobLedger)
         {
             _visionService = visionService;
+            _passportEngine = passportEngine;
             _printService = printService;
             _jobLedger = jobLedger;
+
+            LoadPrinters();
+        }
+
+        private void LoadPrinters()
+        {
+            try
+            {
+                var list = new System.Collections.Generic.List<string>();
+                foreach (string printer in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
+                {
+                    list.Add(printer);
+                }
+
+                if (list.Count > 0)
+                {
+                    AvailablePrinters = list;
+                    SelectedPrinter = list[0];
+                }
+                else
+                {
+                    AvailablePrinters = new System.Collections.Generic.List<string> { "Default Photo Printer", "Virtual Tray Spooler" };
+                    SelectedPrinter = "Default Photo Printer";
+                }
+            }
+            catch
+            {
+                AvailablePrinters = new System.Collections.Generic.List<string> { "Default Photo Printer", "Virtual Tray Spooler" };
+                SelectedPrinter = "Default Photo Printer";
+            }
         }
 
         [RelayCommand]
@@ -133,13 +181,81 @@ namespace PVCStudioPro.App.ViewModels
                 _ => SKColors.White                   // Studio Pure White
             };
 
+            var options = new PassportPhotoOptions
+            {
+                BackgroundColor = bgColor,
+                RemoveBackground = IsRemoveBackground,
+                PanOffsetXRatio = PanOffsetX,
+                PanOffsetYRatio = PanOffsetY,
+                ZoomScale = ZoomScale,
+                Dpi = 600
+            };
+
             _processedSinglePhoto?.Dispose();
-            _processedSinglePhoto = await _visionService.ProcessPassportPhotoAsync(_originalPhoto, bgColor, IsRemoveBackground);
+            _processedSinglePhoto = await _passportEngine.ProcessPassportPhotoAsync(_originalPhoto, options);
             SinglePhotoPreview = _processedSinglePhoto.ToBitmapSource();
 
+            var layout = PhotoCount switch
+            {
+                16 => PhotoSheetLayout.A4_16Up,
+                32 => PhotoSheetLayout.A4_32Up,
+                _ => PhotoSheetLayout.Sheet4x6_8Up
+            };
+
             _composedSheet?.Dispose();
-            _composedSheet = _visionService.ComposePassportPhotoSheet(_processedSinglePhoto, PhotoCount, dpi: 600);
+            _composedSheet = _passportEngine.ComposeMultiUpSheet(_processedSinglePhoto, layout, dpi: 600);
             SheetPreview = _composedSheet.ToBitmapSource();
+        }
+
+        [RelayCommand]
+        public async Task NudgeUpAsync()
+        {
+            PanOffsetY -= 0.02;
+            await RegeneratePassportPhotosAsync();
+        }
+
+        [RelayCommand]
+        public async Task NudgeDownAsync()
+        {
+            PanOffsetY += 0.02;
+            await RegeneratePassportPhotosAsync();
+        }
+
+        [RelayCommand]
+        public async Task NudgeLeftAsync()
+        {
+            PanOffsetX -= 0.02;
+            await RegeneratePassportPhotosAsync();
+        }
+
+        [RelayCommand]
+        public async Task NudgeRightAsync()
+        {
+            PanOffsetX += 0.02;
+            await RegeneratePassportPhotosAsync();
+        }
+
+        [RelayCommand]
+        public async Task ZoomInAsync()
+        {
+            ZoomScale = Math.Min(2.5, ZoomScale + 0.05);
+            await RegeneratePassportPhotosAsync();
+        }
+
+        [RelayCommand]
+        public async Task ZoomOutAsync()
+        {
+            ZoomScale = Math.Max(0.5, ZoomScale - 0.05);
+            await RegeneratePassportPhotosAsync();
+        }
+
+        [RelayCommand]
+        public async Task ResetFaceAlignmentAsync()
+        {
+            PanOffsetX = 0.0;
+            PanOffsetY = 0.0;
+            ZoomScale = 1.0;
+            await RegeneratePassportPhotosAsync();
         }
 
         [RelayCommand]
@@ -258,7 +374,27 @@ namespace PVCStudioPro.App.ViewModels
             try
             {
                 IsProcessing = true;
-                StatusMessage = $"Spooled {PhotoCount}-up photo sheet to printer queue...";
+                string targetPrinter = !string.IsNullOrWhiteSpace(SelectedPrinter) ? SelectedPrinter : "Default Photo Printer";
+                StatusMessage = $"Spooling {PhotoCount}-up photo sheet to '{targetPrinter}'...";
+
+                var profile = new PrinterProfile
+                {
+                    ProfileName = targetPrinter,
+                    PrinterDeviceName = targetPrinter,
+                    TrayType = SelectedPaper,
+                    TargetDpi = 600
+                };
+
+                var printResult = await _printService.PrintTrayAsync(
+                    _composedSheet,
+                    profile,
+                    $"Passport Photo Sheet ({PhotoCount}-up)");
+
+                if (!printResult.Success)
+                {
+                    StatusMessage = $"Spooling warning: {printResult.ErrorMessage ?? "Driver rejected print request."}";
+                    return;
+                }
 
                 // Record transaction in ledger
                 await _jobLedger.RecordJobAsync(new PrintJobRecord
@@ -267,11 +403,11 @@ namespace PVCStudioPro.App.ViewModels
                     Quantity = 1,
                     TotalAmount = SheetPrice,
                     PaymentMode = PaymentMode,
-                    PrinterName = "Default Photo Printer",
+                    PrinterName = targetPrinter,
                     Status = "COMPLETED"
                 });
 
-                StatusMessage = $"Passport photo sheet ({PhotoCount}-up) successfully spooled! (Logged in Ledger: ₹{SheetPrice})";
+                StatusMessage = $"Passport photo sheet ({PhotoCount}-up) successfully spooled to {targetPrinter}! (Logged in Ledger: ₹{SheetPrice})";
             }
             catch (Exception ex)
             {

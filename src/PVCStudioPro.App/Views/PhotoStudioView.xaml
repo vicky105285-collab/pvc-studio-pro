@@ -71,6 +71,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" Margin="0,0,0,12">
@@ -110,8 +111,43 @@
                         </Grid>
                     </Border>
 
+                    <!-- Face Alignment & Zoom Controls -->
+                    <StackPanel Grid.Row="2" Margin="0,8,0,4">
+                        <TextBlock Text="PORTRAIT POSITION &amp; SCALE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <ui:Button Command="{Binding NudgeLeftCommand}" ToolTip="Pan Left" Width="26" Height="26" Padding="0" Margin="0,0,3,0">
+                                    <ui:SymbolIcon Symbol="ArrowLeft16"/>
+                                </ui:Button>
+                                <ui:Button Command="{Binding NudgeUpCommand}" ToolTip="Pan Up" Width="26" Height="26" Padding="0" Margin="0,0,3,0">
+                                    <ui:SymbolIcon Symbol="ArrowUp16"/>
+                                </ui:Button>
+                                <ui:Button Command="{Binding NudgeDownCommand}" ToolTip="Pan Down" Width="26" Height="26" Padding="0" Margin="0,0,3,0">
+                                    <ui:SymbolIcon Symbol="ArrowDown16"/>
+                                </ui:Button>
+                                <ui:Button Command="{Binding NudgeRightCommand}" ToolTip="Pan Right" Width="26" Height="26" Padding="0" Margin="0,0,6,0">
+                                    <ui:SymbolIcon Symbol="ArrowRight16"/>
+                                </ui:Button>
+
+                                <ui:Button Command="{Binding ZoomInCommand}" ToolTip="Zoom In" Width="26" Height="26" Padding="0" Margin="0,0,3,0">
+                                    <ui:SymbolIcon Symbol="ZoomIn16"/>
+                                </ui:Button>
+                                <ui:Button Command="{Binding ZoomOutCommand}" ToolTip="Zoom Out" Width="26" Height="26" Padding="0" Margin="0,0,6,0">
+                                    <ui:SymbolIcon Symbol="ZoomOut16"/>
+                                </ui:Button>
+                            </StackPanel>
+
+                            <ui:Button Grid.Column="1" Command="{Binding ResetFaceAlignmentCommand}" Content="Reset" Height="26" Padding="6,0" FontSize="11" Background="{DynamicResource NeutralSurfaceBrush}"/>
+                        </Grid>
+                    </StackPanel>
+
                     <!-- Compliance Specifications -->
-                    <Border Grid.Row="2" Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="6" Padding="12" Margin="0,14,0,12">
+                    <Border Grid.Row="3" Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="6" Padding="12" Margin="0,4,0,8">
                         <StackPanel>
                             <TextBlock Text="ICAO 9303 / Indian Passport Spec" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
                             <TextBlock Text="• Dimension: 35 x 45 mm (600 DPI: 827 x 1063 px)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
@@ -121,7 +157,7 @@
                     </Border>
 
                     <!-- Export Single Photo Button -->
-                    <ui:Button Grid.Row="3" Command="{Binding ExportSinglePhotoCommand}" Height="36" Background="{DynamicResource NeutralSurfaceBrush}" HorizontalAlignment="Stretch">
+                    <ui:Button Grid.Row="4" Command="{Binding ExportSinglePhotoCommand}" Height="36" Background="{DynamicResource NeutralSurfaceBrush}" HorizontalAlignment="Stretch">
                         <StackPanel Orientation="Horizontal">
                             <ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,8,0"/>
                             <TextBlock Text="Export 35x45 mm Photo (PNG/JPG)" VerticalAlignment="Center"/>
@@ -151,10 +187,13 @@
                             <TextBlock Text="Sub-millimeter dashed cut guides | High resolution 600 DPI rasterization" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0"/>
                         </StackPanel>
 
-                        <!-- Price & Payment & Spool -->
+                        <!-- Printer, Price, Payment & Spool -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Printer:" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,4,0"/>
+                            <ComboBox ItemsSource="{Binding AvailablePrinters}" SelectedItem="{Binding SelectedPrinter}" Width="150" Height="36" Margin="0,0,10,0"/>
+
                             <TextBlock Text="Rate: ₹" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,4,0"/>
-                            <TextBox Text="{Binding SheetPrice, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="70" Height="36" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox Text="{Binding SheetPrice, StringFormat=F2, UpdateSourceTrigger=PropertyChanged}" Width="65" Height="36" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
 
                             <ComboBox SelectedValue="{Binding PaymentMode}" SelectedValuePath="Content" Width="85" Height="36" Margin="0,0,10,0">
                                 <ComboBoxItem Content="CASH" IsSelected="True"/>

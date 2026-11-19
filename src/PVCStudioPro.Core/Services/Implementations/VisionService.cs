@@ -89,10 +89,14 @@ namespace PVCStudioPro.Core.Services.Implementations
                     srcMat.CopyTo(bgr);
                 }
 
-                // 2. Define foreground ROI (bounding subject, leaving 5% outer margin as definite background)
+                // 2. Define foreground ROI:
+                // Elimination of 5% margin flaw: Portrait photos have torso/clothing extending down through the bottom edge.
+                // Leaving a bottom margin cuts off the torso and creates wavy scallops.
+                // The ROI rect must extend to the very bottom boundary (bgr.Height).
                 int marginX = Math.Max(2, (int)(bgr.Width * 0.05));
                 int marginY = Math.Max(2, (int)(bgr.Height * 0.05));
-                var rect = new Rect(marginX, marginY, bgr.Width - (2 * marginX), bgr.Height - (2 * marginY));
+                int rectHeight = bgr.Height - marginY;
+                var rect = new Rect(marginX, marginY, bgr.Width - (2 * marginX), rectHeight);
 
                 // 3. Initialize GrabCut masks and models
                 using var mask = new Mat(bgr.Size(), MatType.CV_8UC1, new Scalar((int)GrabCutClasses.BGD));
@@ -110,9 +114,46 @@ namespace PVCStudioPro.Core.Services.Implementations
                 Cv2.Compare(mask, (int)GrabCutClasses.PR_FGD, mask3, CmpType.EQ);
                 Cv2.BitwiseOr(mask1, mask3, fgMask);
 
+                // Anchor bottom rows: The torso at the bottom edge must be straight solid foreground without scalloping.
+                // Any PR_FGD or FGD in the lower boundary extending towards the bottom is anchored to a straight baseline.
+                int anchorThresholdY = Math.Max(0, bgr.Height - 15);
+                for (int x = marginX; x < bgr.Width - marginX; x++)
+                {
+                    bool hasTorsoNearBottom = false;
+                    for (int y = anchorThresholdY; y < bgr.Height; y++)
+                    {
+                        if (fgMask.Get<byte>(y, x) == 255)
+                        {
+                            hasTorsoNearBottom = true;
+                            break;
+                        }
+                    }
+
+                    if (hasTorsoNearBottom)
+                    {
+                        for (int y = anchorThresholdY; y < bgr.Height; y++)
+                        {
+                            fgMask.Set<byte>(y, x, 255);
+                        }
+                    }
+                }
+
                 // Feather mask edges using Gaussian blur to blend hair and shoulders smoothly
                 using var featheredMask = new Mat();
                 Cv2.GaussianBlur(fgMask, featheredMask, new Size(3, 3), 0.5);
+
+                // Ensure bottom boundary maintains 100% opacity for foreground columns (no fade out / transparency)
+                for (int x = 0; x < bgr.Width; x++)
+                {
+                    if (fgMask.Get<byte>(bgr.Height - 1, x) == 255)
+                    {
+                        featheredMask.Set<byte>(bgr.Height - 1, x, 255);
+                        if (bgr.Height > 1)
+                        {
+                            featheredMask.Set<byte>(bgr.Height - 2, x, 255);
+                        }
+                    }
+                }
 
                 // 6. Create solid studio background canvas
                 var segmented = new SKBitmap(portraitBitmap.Width, portraitBitmap.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
@@ -191,34 +232,59 @@ namespace PVCStudioPro.Core.Services.Implementations
 
         public SKBitmap ComposePassportPhotoSheet(SKBitmap singlePhoto, int count = 8, int dpi = 600)
         {
-            // Standard 4x6 inch (102 x 152 mm) photo paper at 600 DPI = 3600 x 2400 landscape
-            int sheetW = (int)Math.Round((152.4 * dpi) / MmPerInch); // 3600 px
-            int sheetH = (int)Math.Round((101.6 * dpi) / MmPerInch); // 2400 px
+            double paperWidthMm;
+            double paperHeightMm;
+            double photoWidthMm = 35.0;
+            double photoHeightMm = 45.0;
+            int cols;
+            int rows;
+
+            if (count <= 8)
+            {
+                // Standard 4x6" (101.6 x 152.4 mm) photo paper landscape (4 x 2 grid)
+                paperWidthMm = 152.4;
+                paperHeightMm = 101.6;
+                cols = 4;
+                rows = 2;
+            }
+            else if (count <= 16)
+            {
+                // Standard A4 (210 x 297 mm) portrait (4 x 4 grid)
+                paperWidthMm = 210.0;
+                paperHeightMm = 297.0;
+                cols = 4;
+                rows = 4;
+            }
+            else
+            {
+                // A4 (210 x 297 mm) portrait 32-up stamp sheet (4 x 8 grid: 25 x 35 mm)
+                paperWidthMm = 210.0;
+                paperHeightMm = 297.0;
+                photoWidthMm = 25.0;
+                photoHeightMm = 35.0;
+                cols = 4;
+                rows = 8;
+            }
+
+            int sheetW = (int)Math.Round((paperWidthMm * dpi) / MmPerInch);
+            int sheetH = (int)Math.Round((paperHeightMm * dpi) / MmPerInch);
 
             var sheet = new SKBitmap(sheetW, sheetH, SKColorType.Bgra8888, SKAlphaType.Premul);
             using var canvas = new SKCanvas(sheet);
             canvas.Clear(SKColors.White);
 
-            int photoW = (int)Math.Round((35.0 * dpi) / MmPerInch); // 827 px
-            int photoH = (int)Math.Round((45.0 * dpi) / MmPerInch); // 1063 px
+            int photoW = (int)Math.Round((photoWidthMm * dpi) / MmPerInch);
+            int photoH = (int)Math.Round((photoHeightMm * dpi) / MmPerInch);
 
-            int cols = 4;
-            int rows = 2; // 8 photos total (4 x 2 grid)
-            if (count > 8)
-            {
-                cols = 4;
-                rows = (int)Math.Ceiling(count / 4.0);
-            }
-
-            int marginX = (sheetW - (cols * photoW)) / (cols + 1);
-            int marginY = (sheetH - (rows * photoH)) / (rows + 1);
+            int marginX = Math.Max(10, (sheetW - (cols * photoW)) / (cols + 1));
+            int marginY = Math.Max(10, (sheetH - (rows * photoH)) / (rows + 1));
 
             using var cutLinePaint = new SKPaint
             {
-                Color = new SKColor(200, 200, 200),
+                Color = new SKColor(180, 180, 180),
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = 2,
-                PathEffect = SKPathEffect.CreateDash(new float[] { 10, 10 }, 0)
+                PathEffect = SKPathEffect.CreateDash(new float[] { 12, 8 }, 0)
             };
 
             int placed = 0;

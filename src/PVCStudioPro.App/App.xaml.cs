@@ -98,6 +98,7 @@ namespace PVCStudioPro.App
                 services.AddSingleton<IPrintService, PrintService>();
                 services.AddSingleton<ISecurityService, SecurityService>();
                 services.AddSingleton<IVisionService, VisionService>();
+                services.AddSingleton<IPassportPhotoEngine, PassportPhotoEngine>();
                 services.AddSingleton<IJobLedgerService>(sp => new JobLedgerService(dbPath));
 
                 string profileConfigPath = Path.Combine(configDir, "business_profile.json");
