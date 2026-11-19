@@ -5,10 +5,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:vm="clr-namespace:PVCStudioPro.App.ViewModels"
+             xmlns:controls="clr-namespace:PVCStudioPro.App.Controls"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:CropStudioViewModel}"
-             d:DesignHeight="900" d:DesignWidth="1300"
-             Loaded="UserControl_Loaded">
+             d:DesignHeight="900" d:DesignWidth="1300">
 
     <Grid Margin="16,8,16,16">
         <Grid.RowDefinitions>
@@ -71,64 +71,26 @@
 
             <!-- LEFT: Interactive Canvas Viewport -->
             <Border Grid.Column="0" Background="{DynamicResource PreviewCanvasBgBrush}" BorderBrush="{DynamicResource NeutralBorderBrush}" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
-                <Grid x:Name="ViewportContainer" SizeChanged="ViewportContainer_SizeChanged">
-                    <!-- Zoom & Pan Canvas Container -->
-                    <Canvas x:Name="InteractionCanvas"
-                            Background="Transparent"
-                            ClipToBounds="True"
-                            MouseWheel="Canvas_MouseWheel"
-                            MouseDown="Canvas_MouseDown"
-                            MouseMove="Canvas_MouseMove"
-                            MouseUp="Canvas_MouseUp">
-                        
-                        <!-- Transformed Content: Source Image + Crop Box Overlay -->
-                        <Canvas x:Name="TransformedContent">
-                            <Canvas.RenderTransform>
-                                <TransformGroup>
-                                    <ScaleTransform x:Name="CanvasScale" ScaleX="{Binding ZoomFactor}" ScaleY="{Binding ZoomFactor}"/>
-                                    <TranslateTransform x:Name="CanvasTranslate" X="{Binding PanOffsetX}" Y="{Binding PanOffsetY}"/>
-                                </TransformGroup>
-                            </Canvas.RenderTransform>
-
-                            <!-- The Document/Card Image -->
-                            <Image x:Name="DocImage" Source="{Binding SourceImage}" RenderOptions.BitmapScalingMode="HighQuality"/>
-
-                            <!-- Dimmed Mask Overlay around crop box (drawn in code-behind) -->
-                            <Path x:Name="DimmedMaskPath" Fill="#90000000"/>
-
-                            <!-- Perspective Connecting Lines (Perspective Mode) -->
-                            <Polygon x:Name="PerspectivePoly" Stroke="#2563EB" StrokeThickness="2" StrokeDashArray="3 1" Fill="#152563EB" Visibility="Collapsed"/>
-
-                            <!-- Crop Box Rectangle & Grid (Standard Mode) -->
-                            <Rectangle x:Name="CropBoxRect" Stroke="#2563EB" StrokeThickness="2" Fill="#102563EB"/>
-                            <Line x:Name="GridLineH1" Stroke="#602563EB" StrokeThickness="1" StrokeDashArray="2 2"/>
-                            <Line x:Name="GridLineH2" Stroke="#602563EB" StrokeThickness="1" StrokeDashArray="2 2"/>
-                            <Line x:Name="GridLineV1" Stroke="#602563EB" StrokeThickness="1" StrokeDashArray="2 2"/>
-                            <Line x:Name="GridLineV2" Stroke="#602563EB" StrokeThickness="1" StrokeDashArray="2 2"/>
-
-                            <!-- Handles (4 Corners + 4 Edges) -->
-                            <!-- Corner 1 (Top-Left) -->
-                            <Ellipse x:Name="HandleC1" Width="14" Height="14" Fill="#3B82F6" Stroke="White" StrokeThickness="2" Cursor="SizeNWSE"/>
-                            <!-- Corner 2 (Top-Right) -->
-                            <Ellipse x:Name="HandleC2" Width="14" Height="14" Fill="#3B82F6" Stroke="White" StrokeThickness="2" Cursor="SizeNESW"/>
-                            <!-- Corner 3 (Bottom-Right) -->
-                            <Ellipse x:Name="HandleC3" Width="14" Height="14" Fill="#3B82F6" Stroke="White" StrokeThickness="2" Cursor="SizeNWSE"/>
-                            <!-- Corner 4 (Bottom-Left) -->
-                            <Ellipse x:Name="HandleC4" Width="14" Height="14" Fill="#3B82F6" Stroke="White" StrokeThickness="2" Cursor="SizeNESW"/>
-
-                            <!-- Edge Handles (Standard Mode) -->
-                            <Rectangle x:Name="HandleTop" Width="12" Height="8" Fill="#3B82F6" Stroke="White" StrokeThickness="1" Cursor="SizeNS"/>
-                            <Rectangle x:Name="HandleBottom" Width="12" Height="8" Fill="#3B82F6" Stroke="White" StrokeThickness="1" Cursor="SizeNS"/>
-                            <Rectangle x:Name="HandleLeft" Width="8" Height="12" Fill="#3B82F6" Stroke="White" StrokeThickness="1" Cursor="SizeWE"/>
-                            <Rectangle x:Name="HandleRight" Width="8" Height="12" Fill="#3B82F6" Stroke="White" StrokeThickness="1" Cursor="SizeWE"/>
-                        </Canvas>
-                    </Canvas>
-
-                    <!-- Viewport Hint Overlay (bottom left) -->
-                    <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" Background="#C0000000" CornerRadius="4" Padding="8,4">
-                        <TextBlock Text="Scroll: Zoom | Drag Center: Move Box | Drag Handles: Resize | Space/Middle-Click: Pan" FontSize="10" Foreground="White"/>
-                    </Border>
-                </Grid>
+                <controls:InteractiveCropCanvas
+                    x:Name="CropCanvas"
+                    SourceImage="{Binding SourceImage}"
+                    CropX="{Binding CropX, Mode=TwoWay}"
+                    CropY="{Binding CropY, Mode=TwoWay}"
+                    CropWidth="{Binding CropWidth, Mode=TwoWay}"
+                    CropHeight="{Binding CropHeight, Mode=TwoWay}"
+                    ZoomFactor="{Binding ZoomFactor, Mode=TwoWay}"
+                    PanOffsetX="{Binding PanOffsetX, Mode=TwoWay}"
+                    PanOffsetY="{Binding PanOffsetY, Mode=TwoWay}"
+                    IsPerspectiveMode="{Binding IsPerspectiveMode, Mode=TwoWay}"
+                    SelectedAspectRatio="{Binding SelectedAspectRatio, Mode=TwoWay}"
+                    Corner1X="{Binding Corner1X, Mode=TwoWay}"
+                    Corner1Y="{Binding Corner1Y, Mode=TwoWay}"
+                    Corner2X="{Binding Corner2X, Mode=TwoWay}"
+                    Corner2Y="{Binding Corner2Y, Mode=TwoWay}"
+                    Corner3X="{Binding Corner3X, Mode=TwoWay}"
+                    Corner3Y="{Binding Corner3Y, Mode=TwoWay}"
+                    Corner4X="{Binding Corner4X, Mode=TwoWay}"
+                    Corner4Y="{Binding Corner4Y, Mode=TwoWay}"/>
             </Border>
 
             <!-- Splitter -->

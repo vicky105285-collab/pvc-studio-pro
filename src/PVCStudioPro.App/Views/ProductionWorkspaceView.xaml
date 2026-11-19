@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:vm="clr-namespace:PVCStudioPro.App.ViewModels"
+             xmlns:controls="clr-namespace:PVCStudioPro.App.Controls"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:ProductionWorkspaceViewModel}"
              d:DesignHeight="850" d:DesignWidth="1300">
@@ -342,9 +343,14 @@
                             <ColumnDefinition Width="260"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Centered Page Preview (Uniform Fit to Window, NEVER excessively zoomed) -->
+                        <!-- Interactive Visual Crop Canvas -->
                         <Border Grid.Column="0" Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="6" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Margin="0,0,14,0" ClipToBounds="True">
-                            <Image Source="{Binding CropSourceImage}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8"/>
+                            <controls:InteractiveCropCanvas
+                                SourceImage="{Binding CropSourceImage}"
+                                CropX="{Binding CropX, Mode=TwoWay}"
+                                CropY="{Binding CropY, Mode=TwoWay}"
+                                CropWidth="{Binding CropWidth, Mode=TwoWay}"
+                                CropHeight="{Binding CropHeight, Mode=TwoWay}"/>
                         </Border>
 
                         <!-- Controls Column -->
