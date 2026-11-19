@@ -21,6 +21,8 @@ namespace PVCStudioPro.App.ViewModels
         private readonly IDocumentTypeDetectionService _detectionService;
         private readonly ICardDetectionService _cardDetection;
         private readonly IManualCropService _cropService;
+        private readonly IDocumentSessionManager? _sessionManager;
+        private IDisposable? _activeSessionSubscription;
 
         public Action<SKBitmap, string>? OpenInCropStudioAction { get; set; }
         public Action<SKBitmap?, SKBitmap?, DocumentKind>? OpenInPrintPreviewAction { get; set; }
@@ -110,7 +112,8 @@ namespace PVCStudioPro.App.ViewModels
             IOfficeDocumentService officeService,
             IDocumentTypeDetectionService detectionService,
             ICardDetectionService cardDetection,
-            IManualCropService cropService)
+            IManualCropService cropService,
+            IDocumentSessionManager? sessionManager = null)
         {
             _importService = importService;
             _pdfService = pdfService;
@@ -118,6 +121,91 @@ namespace PVCStudioPro.App.ViewModels
             _detectionService = detectionService;
             _cardDetection = cardDetection;
             _cropService = cropService;
+            _sessionManager = sessionManager;
+
+            if (_sessionManager != null)
+            {
+                _sessionManager.SessionChanged += OnSessionManagerChanged;
+                if (_sessionManager.ActiveSession != null)
+                {
+                    AttachToSession(_sessionManager.ActiveSession);
+                }
+            }
+        }
+
+        private void OnSessionManagerChanged(SessionEvent ev)
+        {
+            if (ev.EventType == SessionEventType.ActiveChanged || ev.EventType == SessionEventType.DocumentModified)
+            {
+                var session = _sessionManager?.ActiveSession;
+                if (session != null)
+                {
+                    AttachToSession(session);
+                }
+                else
+                {
+                    DetachFromSession();
+                }
+            }
+        }
+
+        public void AttachToSession(IDocumentSession session)
+        {
+            _activeSessionSubscription?.Dispose();
+            _activeSessionSubscription = session.Subscribe(change =>
+            {
+                var app = System.Windows.Application.Current;
+                if (app?.Dispatcher != null && !app.Dispatcher.CheckAccess())
+                {
+                    app.Dispatcher.InvokeAsync(() => SyncFromSession(session));
+                }
+                else
+                {
+                    SyncFromSession(session);
+                }
+            });
+
+            SyncFromSession(session);
+        }
+
+        public void SyncFromSession(IDocumentSession session)
+        {
+            DocumentPath = session.SourceFilePath;
+            FileName = session.FileName;
+            IsFileLoaded = true;
+
+            using (var lease = session.SourceAsset.AcquireLease())
+            {
+                RawPageImage = lease.Surface.ToBitmapSource();
+            }
+
+            if (session.FrontCardAsset != null)
+            {
+                using var lease = session.FrontCardAsset.AcquireLease();
+                FrontCardImage = lease.Surface.ToBitmapSource();
+                HasCardsExtracted = true;
+            }
+
+            if (session.BackCardAsset != null)
+            {
+                using var lease = session.BackCardAsset.AcquireLease();
+                BackCardImage = lease.Surface.ToBitmapSource();
+                HasBackCard = true;
+            }
+        }
+
+        public void DetachFromSession()
+        {
+            _activeSessionSubscription?.Dispose();
+            _activeSessionSubscription = null;
+            DocumentPath = string.Empty;
+            FileName = "No document loaded";
+            IsFileLoaded = false;
+            RawPageImage = null;
+            FrontCardImage = null;
+            BackCardImage = null;
+            HasCardsExtracted = false;
+            HasBackCard = false;
         }
 
         [RelayCommand]

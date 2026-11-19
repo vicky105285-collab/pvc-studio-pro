@@ -38,6 +38,8 @@ namespace PVCStudioPro.App.ViewModels
         private readonly IPrintService _printService;
         private readonly IJobLedgerService _jobLedger;
         private readonly ITemplateService _templateService;
+        private readonly IDocumentSessionManager? _sessionManager;
+        private IDisposable? _activeSessionSubscription;
 
         // Navigation callbacks for secondary workspaces
         public Action<string>? NavigateAction { get; set; }
@@ -221,7 +223,8 @@ namespace PVCStudioPro.App.ViewModels
             IPrinterDiscoveryService printerDiscovery,
             IPrintService printService,
             IJobLedgerService jobLedger,
-            ITemplateService templateService)
+            ITemplateService templateService,
+            IDocumentSessionManager? sessionManager = null)
         {
             _importService = importService;
             _pdfDocumentService = pdfDocumentService;
@@ -233,9 +236,86 @@ namespace PVCStudioPro.App.ViewModels
             _printService = printService;
             _jobLedger = jobLedger;
             _templateService = templateService;
+            _sessionManager = sessionManager;
+
+            if (_sessionManager != null)
+            {
+                _sessionManager.SessionChanged += OnSessionManagerChanged;
+                if (_sessionManager.ActiveSession != null)
+                {
+                    AttachToSession(_sessionManager.ActiveSession);
+                }
+            }
 
             _ = InitializePrintersAsync();
             BuildPhysicalSheetLayout();
+        }
+
+        private void OnSessionManagerChanged(SessionEvent ev)
+        {
+            if (ev.EventType == SessionEventType.ActiveChanged || ev.EventType == SessionEventType.DocumentModified)
+            {
+                var session = _sessionManager?.ActiveSession;
+                if (session != null)
+                {
+                    AttachToSession(session);
+                }
+                else
+                {
+                    DetachFromSession();
+                }
+            }
+        }
+
+        public void AttachToSession(IDocumentSession session)
+        {
+            _activeSessionSubscription?.Dispose();
+            _activeSessionSubscription = session.Subscribe(change =>
+            {
+                var app = System.Windows.Application.Current;
+                if (app?.Dispatcher != null && !app.Dispatcher.CheckAccess())
+                {
+                    app.Dispatcher.InvokeAsync(() => SyncFromSession(session));
+                }
+                else
+                {
+                    SyncFromSession(session);
+                }
+            });
+
+            SyncFromSession(session);
+        }
+
+        public void SyncFromSession(IDocumentSession session)
+        {
+            DocumentPath = session.SourceFilePath;
+            FileName = session.FileName;
+            HasLoadedDocument = true;
+
+            if (session.FrontCardAsset != null)
+            {
+                using var lease = session.FrontCardAsset.AcquireLease();
+                FrontCardImage = lease.Surface.ToBitmapSource();
+            }
+
+            if (session.BackCardAsset != null)
+            {
+                using var lease = session.BackCardAsset.AcquireLease();
+                BackCardImage = lease.Surface.ToBitmapSource();
+            }
+
+            BuildPhysicalSheetLayout();
+        }
+
+        public void DetachFromSession()
+        {
+            _activeSessionSubscription?.Dispose();
+            _activeSessionSubscription = null;
+            DocumentPath = string.Empty;
+            FileName = "No document loaded";
+            HasLoadedDocument = false;
+            FrontCardImage = null;
+            BackCardImage = null;
         }
 
         private async Task InitializePrintersAsync()

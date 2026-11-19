@@ -82,6 +82,7 @@ namespace PVCStudioPro.App
                 services.AddSingleton<IPdfService, PdfService>();
                 services.AddSingleton<IPdfDocumentService, PdfService>();
                 services.AddSingleton<IDocumentImportService, DocumentImportService>();
+                services.AddSingleton<IDocumentSessionManager, DocumentSessionManager>();
                 services.AddSingleton<IOfficeDocumentService, OfficeDocumentService>();
                 services.AddSingleton<IDocumentTypeDetectionService, DocumentTypeDetectionService>();
                 services.AddSingleton<ICardDetectionService, CardDetectionService>();

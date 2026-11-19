@@ -15,6 +15,7 @@ namespace PVCStudioPro.App.ViewModels
     {
         private readonly IManualCropService _cropService;
         private readonly ICardDetectionService _cardDetection;
+        private readonly IDocumentSessionManager? _sessionManager;
 
         public Action<SKBitmap, bool>? ReturnToDeskAction { get; set; }
         public Action? CloseAction { get; set; }
@@ -126,10 +127,22 @@ namespace PVCStudioPro.App.ViewModels
         private SKBitmap? _activeBitmap;
         private SKBitmap? _croppedBitmap;
 
-        public CropStudioViewModel(IManualCropService cropService, ICardDetectionService cardDetection)
+        public CropStudioViewModel(
+            IManualCropService cropService,
+            ICardDetectionService cardDetection,
+            IDocumentSessionManager? sessionManager = null)
         {
             _cropService = cropService;
             _cardDetection = cardDetection;
+            _sessionManager = sessionManager;
+        }
+
+        public void LoadFromSession(IDocumentSession session, bool isFront = true)
+        {
+            using var lease = session.SourceAsset.AcquireLease();
+            using var snapshot = lease.Surface.CreateImmutableSnapshot();
+            var bmp = SKBitmap.FromImage(snapshot);
+            LoadImage(bmp, $"{session.FileName} ({(isFront ? "Front" : "Back")})");
         }
 
         public void LoadImage(SKBitmap bitmap, string title = "Document Image")
@@ -408,6 +421,20 @@ namespace PVCStudioPro.App.ViewModels
         {
             if (_croppedBitmap != null)
             {
+                if (_sessionManager?.ActiveSession != null)
+                {
+                    var session = _sessionManager.ActiveSession;
+                    using var lease = session.SourceAsset.AcquireLease();
+                    var derived = DerivedImageAsset.Create(
+                        session.SourceAsset.AssetId,
+                        session.ActiveRevision + 1,
+                        600,
+                        "Crop Studio Front",
+                        _croppedBitmap.Copy(),
+                        lease);
+                    session.CommitRevision("Crop Studio Front Card", frontAsset: derived);
+                }
+
                 ReturnToDeskAction?.Invoke(_croppedBitmap.Copy(), true);
                 CloseAction?.Invoke();
             }
@@ -418,6 +445,20 @@ namespace PVCStudioPro.App.ViewModels
         {
             if (_croppedBitmap != null)
             {
+                if (_sessionManager?.ActiveSession != null)
+                {
+                    var session = _sessionManager.ActiveSession;
+                    using var lease = session.SourceAsset.AcquireLease();
+                    var derived = DerivedImageAsset.Create(
+                        session.SourceAsset.AssetId,
+                        session.ActiveRevision + 1,
+                        600,
+                        "Crop Studio Back",
+                        _croppedBitmap.Copy(),
+                        lease);
+                    session.CommitRevision("Crop Studio Back Card", backAsset: derived);
+                }
+
                 ReturnToDeskAction?.Invoke(_croppedBitmap.Copy(), false);
                 CloseAction?.Invoke();
             }

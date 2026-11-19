@@ -1,12 +1,23 @@
 using System;
+using System.Collections.ObjectModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PVCStudioPro.Core.Models;
+using PVCStudioPro.Core.Services;
+using PVCStudioPro.Core.Services.Implementations;
 
 namespace PVCStudioPro.App.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
+        public IDocumentSessionManager SessionManager { get; }
+
+        public ObservableCollection<IDocumentSession> OpenSessions { get; } = new();
+
+        [ObservableProperty]
+        private IDocumentSession? _selectedSession;
+
         [ObservableProperty]
         private object? _currentView;
 
@@ -62,8 +73,13 @@ namespace PVCStudioPro.App.ViewModels
             BusinessLedgerViewModel ledgerVM,
             ReportsAnalyticsViewModel reportsVM,
             BackupRestoreViewModel backupVM,
-            SettingsViewModel settingsVM)
+            SettingsViewModel settingsVM,
+            IDocumentSessionManager? sessionManager = null)
         {
+            SessionManager = sessionManager ?? new DocumentSessionManager();
+            SessionManager.SessionChanged += OnSessionChanged;
+            SyncSessions();
+
             ProductionVM = productionVM;
             DashboardVM = dashboardVM;
             DocumentDeskVM = documentDeskVM;
@@ -160,6 +176,43 @@ namespace PVCStudioPro.App.ViewModels
 
             CurrentView = ProductionVM;
             ActiveWorkspaceTitle = "Production Studio";
+        }
+
+        private void OnSessionChanged(SessionEvent ev)
+        {
+            var app = Application.Current;
+            if (app?.Dispatcher != null && !app.Dispatcher.CheckAccess())
+            {
+                app.Dispatcher.InvokeAsync(SyncSessions);
+            }
+            else
+            {
+                SyncSessions();
+            }
+        }
+
+        public void SyncSessions()
+        {
+            OpenSessions.Clear();
+            foreach (var s in SessionManager.Sessions)
+            {
+                OpenSessions.Add(s);
+            }
+            SelectedSession = SessionManager.ActiveSession;
+        }
+
+        [RelayCommand]
+        public void SwitchSession(string sessionId)
+        {
+            SessionManager.SwitchActiveSession(sessionId);
+            SyncSessions();
+        }
+
+        [RelayCommand]
+        public void CloseSession(string sessionId)
+        {
+            SessionManager.CloseSession(sessionId);
+            SyncSessions();
         }
 
         [RelayCommand]
