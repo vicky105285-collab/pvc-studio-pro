@@ -82,9 +82,9 @@ graph TD
   4. `ConcurrentAcquisition_AndOwnerDisposal_IsThreadSafe`
   5. `OwnerDisposal_WhileLeaseHeld_KeepsResourceAlive`
   6. `ExceptionAndCancellation_InRenderingPipeline_ReleasesLeaseCleanly`
-  7. `UndoRedo_RetentionAndEviction_DisposesEvictedNativeBuffers`
-  8. `MemoryQuota_Enforcement_EvictsOldestRevisionsWhenExceeding250MB`
-  9. `NoUseAfterFree_OrNativeResourceLeak`
+  7. `UseAfterLeaseDisposal_ThrowsObjectDisposedException`
+  8. `ConcurrentRendering_AndLeaseDisposal_IsThreadSafe`
+  9. `NoUseAfterFree_DuringStressTesting`
 - **Manual Acceptance Criteria:** Run automated tests under high load; verify that memory allocates and frees cleanly without native access violation crashes.
 - **Definition of Done:** 100% passed unit tests in `NativeAssetLifecycleTests.cs`; zero exposed raw mutable `SKBitmap` properties.
 - **Estimated Effort:** 1.5 Engineering Days.
@@ -92,7 +92,7 @@ graph TD
 ---
 
 ### Phase 1B: Multi-Document Session Management & Isolation
-- **Objectives:** Implement `IDocumentSessionManager` and `IDocumentSession`, supporting multiple open documents simultaneously, active document switching, isolated revision histories, and cancelable asynchronous loading pipelines.
+- **Objectives:** Implement `IDocumentSessionManager` and `IDocumentSession`, supporting multiple open documents simultaneously, active document switching, isolated revision histories, undo/redo eviction, 250 MB native memory quota enforcement, and cancelable asynchronous loading pipelines.
 - **Exact Source Files Likely to Change:**
   - `src/PVCStudioPro.Core/Services/IDocumentSessionManager.cs` (New)
   - `src/PVCStudioPro.Core/Services/Implementations/DocumentSessionManager.cs` (New)
@@ -100,7 +100,10 @@ graph TD
   - `tests/PVCStudioPro.Tests/DocumentSessionManagerTests.cs` (New)
 - **Existing Functionality to Reuse:** `PdfDocumentService` (PDFium loading), `DocumentImportService` (Magic byte sniffing).
 - **New Models / Interfaces:** `IDocumentSessionManager`, `IDocumentSession`, `SessionEvent`, `CropSettings`.
-- **Automated Tests:** Multi-document concurrency tests: verify opening Document A and Document B maintains independent revisions; verify closing Document A disposes only Document A's assets.
+- **Automated Tests:**
+  - Multi-document concurrency tests: verify opening Document A and Document B maintains independent revisions; verify closing Document A disposes only Document A's assets.
+  - `UndoRedo_RetentionAndEviction_DisposesEvictedNativeBuffers`: verifies pushing 16 revisions into an undo manager with depth 15 evicts Revision 0 and frees its native buffer.
+  - `MemoryQuota_Enforcement_EvictsOldestRevisionsWhenExceeding250MB`: verifies exceeding the 250 MB ceiling triggers FIFO eviction of oldest unreferenced revisions.
 - **Manual Acceptance Criteria:** Load 3 distinct PDFs in succession; verify each session maintains independent state; cancel a loading task mid-flight; verify unmanaged resources are reclaimed.
 - **Definition of Done:** Multi-document manager fully operational with thread-safe session switching and leak-free event subscriptions.
 - **Estimated Effort:** 1.5 Engineering Days.
@@ -214,7 +217,7 @@ graph TD
 ---
 
 ### Phase 7: Integer-Paise Financial Ledger, IST Boundaries & Transactional Payment Service
-- **Objectives:** Implement enterprise financial ledger with 64-bit integer paise, separate `transaction_payments` table, `print_job_attempts` linked attempts, centralized `ITransactionPaymentService` with ACID guarantees, explicit `Asia/Kolkata` day boundaries (`@StartUtc` to `@EndUtc`), overpayment prevention, refund ceiling enforcement, auditable edits, voids, daily closing reconciliation, and total physical Test Mode sandbox isolation.
+- **Objectives:** Implement enterprise financial ledger with 64-bit integer paise, separate `transaction_payments` table, `print_job_attempts` linked attempts, centralized `ITransactionPaymentService` with ACID guarantees, explicit half-open `Asia/Kolkata` day boundaries (`collected_at >= @StartUtc AND collected_at < @NextDayStartUtc`), overpayment prevention, refund ceiling enforcement, auditable edits, voids, daily closing reconciliation, and total physical Test Mode sandbox isolation.
 - **Exact Source Files Likely to Change:**
   - `src/PVCStudioPro.Core/Services/ITransactionPaymentService.cs` (New)
   - `src/PVCStudioPro.Core/Services/Implementations/TransactionPaymentService.cs` (New)

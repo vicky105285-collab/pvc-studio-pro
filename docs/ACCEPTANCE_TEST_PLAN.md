@@ -46,17 +46,17 @@ flowchart TD
 ## 2. End-to-End Acceptance Test Scripts
 
 ### Test Suite 0: Native Memory Lifecycle & Asset Ownership (Tier 1 — Phase 1A Gate)
-- **Objective:** Verify absolute memory safety, idempotent disposal, atomic ref-counting, quota eviction, and non-disposable read-only surface enforcement before any session or UI integration.
+- **Objective:** Verify absolute memory safety, idempotent disposal, atomic ref-counting, lease-bound surface lifetime, protected pixel reading, and non-disposable read-only surface enforcement before any session or UI integration.
 - **Automated Test Cases (`NativeAssetLifecycleTests.cs`):**
-  1. `DoubleDisposal_OfAssetOwner_IsIdempotent`: Calling `.Dispose()` multiple times on `SafeNativeBitmap` does not throw exceptions or double-free native memory.
+  1. `DoubleDisposal_OfAssetOwner_IsIdempotent`: Calling `.Dispose()` multiple times on `SafeNativeBitmap` succeeds silently without double-freeing native memory.
   2. `DoubleDisposal_OfLease_IsIdempotent`: Calling `.Dispose()` multiple times on `IAssetLease` decrements ref-count exactly once.
   3. `AcquireLease_AfterOwnerDisposal_ThrowsObjectDisposedException`: Calling `AcquireLease()` after owner disposal immediately throws `ObjectDisposedException`.
-  4. `ConcurrentAcquisition_AndOwnerDisposal_IsThreadSafe`: 20 parallel tasks acquiring leases while another thread calls `Dispose()`. Zero memory corruptions, zero crashes.
+  4. `ConcurrentAcquisition_AndOwnerDisposal_IsThreadSafe`: 20 parallel tasks acquiring leases while another thread calls `Dispose()`. Zero unmanaged memory faults; all operations either return a valid lease or throw `ObjectDisposedException`.
   5. `OwnerDisposal_WhileLeaseHeld_KeepsResourceAlive`: Disposing owner while a lease is active keeps unmanaged bitmap alive; resource is released only when the lease is disposed.
-  6. `ExceptionAndCancellation_InRenderingPipeline_ReleasesLeaseCleanly`: An exception or cancellation thrown during rendering releases the lease in `finally`.
-  7. `UndoRedo_RetentionAndEviction_DisposesEvictedNativeBuffers`: Pushing 16 revisions into an undo manager with depth limit 15 evicts Revision 0, immediately releasing its native memory.
-  8. `MemoryQuota_Enforcement_EvictsOldestRevisionsWhenExceeding250MB`: Allocating 300 MB of native revision buffers triggers FIFO eviction and disposal when exceeding the 250 MB ceiling.
-  9. `NoUseAfterFree_OrNativeResourceLeak`: 1,000 rapid acquire/release cycles across 4 threads complete with 0 unmanaged leaks and baseline working set.
+  6. `ExceptionAndCancellation_InRenderingPipeline_ReleasesLeaseCleanly`: An exception or cancellation thrown during rendering releases the lease in `finally`, safely decrementing ref-count without memory leaks.
+  7. `UseAfterLeaseDisposal_ThrowsObjectDisposedException`: Calling `surface.RenderTo()`, `surface.CreateImmutableSnapshot()`, or `surface.ReadPixels()` after `lease.Dispose()` throws `ObjectDisposedException`.
+  8. `ConcurrentRendering_AndLeaseDisposal_IsThreadSafe`: Rendering operation on Thread A finishes safely even if Thread B calls `lease.Dispose()` concurrently; no use-after-free or native memory fault occurs.
+  9. `NoUseAfterFree_DuringStressTesting`: 1,000 rapid concurrent acquire/render/read/release cycles across 4 threads complete with zero unmanaged memory leaks or access violations.
 - **Pass Criteria:** 100% passed xUnit tests with zero native memory access violations.
 
 ---
@@ -185,10 +185,11 @@ flowchart TD
   6. **Scenario 5: Voided invoice with previous payment and refund:**
      - Void a ₹70 transaction and record refund.
      - Verify net cash contribution is 0 and invoice is excluded from revenue reports.
-  7. **IST Midnight Boundary Verification:**
+  7. **IST Midnight Boundary Verification (Half-Open Intervals):**
+     - Query uses half-open interval: `collected_at >= @StartUtc AND collected_at < @NextDayStartUtc`.
      - Insert transaction at `2026-11-18 23:59:50 IST` (`2026-11-18T18:29:50Z`). Verify it falls into Day 1 ledger.
      - Insert transaction at `2026-11-19 00:00:10 IST` (`2026-11-18T18:30:10Z`). Verify it falls into Day 2 ledger.
-     - Insert transaction at `2026-11-19 04:30:00 IST` (`2026-11-18T23:00:00Z`). Verify it falls into Day 2 ledger (confirming rejection of raw SQLite `date('now')`).
+     - Insert transaction at `2026-11-19 04:30:00 IST` (`2026-11-18T23:00:00Z`). Verify it falls into Day 2 ledger (confirming rejection of raw SQLite `date('now')` and zero fractional-second boundary ambiguity).
   8. **Transactional Payment Consistency & Safety Rules:**
      - Attempt to refund ₹120 on a ₹100 payment: verify `RefundExceedsCollectedException` is thrown and operation rolls back.
      - Attempt to pay ₹150 on a ₹140 bill without credit flag: verify `OverpaymentNotPermittedException` is thrown and operation rolls back.

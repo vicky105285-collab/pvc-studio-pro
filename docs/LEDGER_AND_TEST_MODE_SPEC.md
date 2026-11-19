@@ -204,8 +204,8 @@ In SQLite, executing `WHERE date(collected_at) = date('now')` is fatal:
 - Using `date('now')` would exclude all transactions recorded between midnight and 5:30 AM IST on November 19, erroneously attributing them to November 18.
 - Wrapping database columns in functions (e.g. `date(datetime(collected_at, '+5 hours', '30 minutes'))`) causes full table scans and prevents SQLite from using B-Tree index seeks on `idx_pay_collected`.
 
-### 4.2 Parameterized IST Day Bounds
-The service computes explicit UTC bounds for the requested IST business day:
+### 4.2 Parameterized Half-Open IST Day Bounds
+The service computes explicit UTC bounds for the requested IST business day using a mathematical half-open interval $[StartUtc, NextDayStartUtc)$, eliminating fractional-second boundary ambiguity:
 
 ```csharp
 public static class IndianBusinessDay
@@ -213,29 +213,31 @@ public static class IndianBusinessDay
     private static readonly TimeZoneInfo IstZone = 
         TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
 
-    public static (string StartUtcString, string EndUtcString) GetIstDayUtcBounds(DateOnly istDate)
+    public static (string StartUtcString, string NextDayStartUtcString) GetIstDayUtcBounds(DateOnly istDate)
     {
+        // 00:00:00.000 IST today
         var istStart = istDate.ToDateTime(TimeOnly.MinValue);
         var startUtc = TimeZoneInfo.ConvertTimeToUtc(istStart, IstZone);
 
-        var istEnd = istDate.ToDateTime(new TimeOnly(23, 59, 59, 999));
-        var endUtc = TimeZoneInfo.ConvertTimeToUtc(istEnd, IstZone);
+        // 00:00:00.000 IST tomorrow
+        var nextDayIstStart = istDate.AddDays(1).ToDateTime(TimeOnly.MinValue);
+        var nextDayStartUtc = TimeZoneInfo.ConvertTimeToUtc(nextDayIstStart, IstZone);
 
         return (
             startUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-            endUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+            nextDayStartUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
         );
     }
 }
 ```
 
-*Example for Business Date November 19, 2026:*
-- `StartUtc`: `2026-11-18T18:30:00.000Z` ($00:00:00\text{ IST}$)
-- `EndUtc`: `2026-11-19T18:29:59.999Z` ($23:59:59.999\text{ IST}$)
+*Example for Business Date November 19, 2026 IST:*
+- `StartUtcString`: `2026-11-18T18:30:00.000Z` ($00:00:00.000\text{ IST}$, inclusive)
+- `NextDayStartUtcString`: `2026-11-19T18:30:00.000Z` ($00:00:00.000\text{ IST}$ next day, exclusive)
 
-### 4.3 High-Performance Indexed SQL Reporting
+### 4.3 High-Performance Indexed SQL Reporting (Half-Open Query)
 ```sql
--- Daily Cash Reconciliation Query (IST Business Day)
+-- Daily Cash Reconciliation Query (Half-Open IST Business Day)
 SELECT 
     COALESCE(SUM(CASE WHEN is_refund = 0 THEN amount_paise ELSE 0 END), 0) AS total_collected_paise,
     COALESCE(SUM(CASE WHEN is_refund = 1 THEN amount_paise ELSE 0 END), 0) AS total_refunded_paise,
@@ -244,7 +246,7 @@ FROM transaction_payments
 WHERE payment_method = 'CASH'
   AND is_test_mode = 0
   AND collected_at >= @StartUtcString 
-  AND collected_at <= @EndUtcString;
+  AND collected_at < @NextDayStartUtcString;
 ```
 
 ---
@@ -266,7 +268,7 @@ FROM transaction_payments
 WHERE payment_method = 'CASH' 
   AND is_test_mode = 0
   AND collected_at >= @StartUtcString 
-  AND collected_at <= @EndUtcString;
+  AND collected_at < @NextDayStartUtcString;
 ```
 - **Expected Output:**
   - `total_collected_paise`: `10000` (₹100.00)
@@ -320,7 +322,7 @@ SELECT
 FROM transaction_payments p
 JOIN business_transactions t ON p.transaction_id = t.transaction_id
 WHERE p.collected_at >= @StartUtcString 
-  AND p.collected_at <= @EndUtcString 
+  AND p.collected_at < @NextDayStartUtcString 
   AND p.transaction_id = 'TX-0901';
 ```
 - **Expected Output:**

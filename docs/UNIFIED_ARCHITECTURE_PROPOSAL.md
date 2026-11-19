@@ -1,8 +1,8 @@
-# PVC Studio Pro — Unified Architecture Proposal (Phase 0.3 Validated)
-**Enterprise Desktop Architecture: Non-Disposable Leased Surfaces, Multi-Document Sessions & Linked Print Lifecycles**
+# PVC Studio Pro — Unified Architecture Proposal (Phase 0.4 Validated)
+**Enterprise Desktop Architecture: Scoped Pixel Delegates, Lease-Bound Surfaces & Half-Open IST Boundaries**
 
 - **Document:** `docs/UNIFIED_ARCHITECTURE_PROPOSAL.md`
-- **Revision:** Phase 0.3 Validated
+- **Revision:** Phase 0.4 Validated
 - **Date:** 2026-11-19
 - **Status:** Architectural Proposal (Pre-Implementation Gate)
 
@@ -78,6 +78,9 @@ Exposing public mutable `SKBitmap` properties in desktop applications introduces
 Application consumers (preview renderers, PDF composers, print spoolers) interact only with an immutable surface contract:
 
 ```csharp
+public delegate void ReadOnlyPixelSpanAction(ReadOnlySpan<byte> pixelBytes, int rowBytes);
+public delegate TResult ReadOnlyPixelSpanFunc<out TResult>(ReadOnlySpan<byte> pixelBytes, int rowBytes);
+
 public interface IReadOnlyRasterSurface
 {
     string AssetId { get; }
@@ -88,14 +91,15 @@ public interface IReadOnlyRasterSurface
     double WidthMm => (Width * 25.4) / Dpi;
     double HeightMm => (Height * 25.4) / Dpi;
     
-    // Renders the underlying pixels to a destination canvas without exposing bitmap pointers
+    // Renders the underlying pixels to a destination canvas while lease is active
     void RenderTo(SKCanvas canvas, SKRect destRect, SKPaint? paint = null);
     
-    // Obtains an immutable, thread-safe Skia image snapshot
+    // Obtains an independent, immutable, thread-safe Skia image snapshot
     SKImage CreateImmutableSnapshot();
     
-    // Read-only span for OCR / barcode analysis without mutation capabilities
-    ReadOnlySpan<byte> ReadPixelBytes();
+    // Protected pixel inspection: native memory lock is held for the ENTIRE callback execution
+    void ReadPixels(ReadOnlyPixelSpanAction action);
+    TResult ReadPixels<TResult>(ReadOnlyPixelSpanFunc<TResult> func);
 }
 
 public interface IAssetLease : IDisposable
@@ -132,81 +136,62 @@ public sealed class SafeNativeBitmap : IDisposable
 {
     private SKBitmap? _nativeBitmap;
     private int _refCount;
-    private int _ownerDisposed; // 0 = active, 1 = owner disposed
+    private bool _isOwnerDisposed;
     private readonly object _syncLock = new();
 
     public SafeNativeBitmap(SKBitmap bitmap)
     {
         _nativeBitmap = bitmap ?? throw new ArgumentNullException(nameof(bitmap));
-        _refCount = 1; // Initial owner reference
-        _ownerDisposed = 0;
+        _refCount = 1; // Owner owns 1 reference
+        _isOwnerDisposed = false;
     }
 
-    public int ReferenceCount => Volatile.Read(ref _refCount);
-    public bool IsOwnerDisposed => Volatile.Read(ref _ownerDisposed) == 1;
-    public bool IsNativeDisposed => _nativeBitmap == null;
+    public int ReferenceCount
+    {
+        get { lock (_syncLock) { return _refCount; } }
+    }
 
+    public bool IsOwnerDisposed
+    {
+        get { lock (_syncLock) { return _isOwnerDisposed; } }
+    }
+
+    public bool IsNativeDisposed
+    {
+        get { lock (_syncLock) { return _nativeBitmap == null; } }
+    }
+
+    /// <summary>
+    /// Linearization Point for Acquisition vs Owner Disposal:
+    /// Inside _syncLock, if _isOwnerDisposed is true, acquisition is strictly rejected.
+    /// If _isOwnerDisposed is false, _refCount is incremented atomically under lock.
+    /// </summary>
     public IAssetLease AcquireLease(string assetId, int revision, int dpi)
     {
         lock (_syncLock)
         {
-            if (IsOwnerDisposed || _nativeBitmap == null || _refCount <= 0)
+            if (_isOwnerDisposed || _nativeBitmap == null || _refCount <= 0)
             {
-                throw new ObjectDisposedException(nameof(SafeNativeBitmap), 
-                    $"Cannot acquire lease on disposed native asset '{assetId}'.");
+                throw new ObjectDisposedException(nameof(SafeNativeBitmap),
+                    $"Cannot acquire lease on disposed asset '{assetId}'.");
             }
 
-            Interlocked.Increment(ref _refCount);
-            var surface = new ReadOnlyRasterSurface(this, assetId, revision, dpi);
-            return new AssetLease(this, surface, assetId, revision);
+            _refCount++;
+            return new AssetLease(this, assetId, revision, dpi);
         }
     }
 
-    internal void RenderInternal(SKCanvas canvas, SKRect destRect, SKPaint? paint)
+    internal void ReleaseReference()
     {
         lock (_syncLock)
         {
-            if (_nativeBitmap == null)
-                throw new ObjectDisposedException(nameof(SafeNativeBitmap), "Native bitmap has been released.");
-            
-            canvas.DrawBitmap(_nativeBitmap, destRect, paint);
-        }
-    }
-
-    internal SKImage CreateSnapshotInternal()
-    {
-        lock (_syncLock)
-        {
-            if (_nativeBitmap == null)
-                throw new ObjectDisposedException(nameof(SafeNativeBitmap), "Native bitmap has been released.");
-
-            return SKImage.FromBitmap(_nativeBitmap);
-        }
-    }
-
-    internal ReadOnlySpan<byte> ReadPixelBytesInternal()
-    {
-        lock (_syncLock)
-        {
-            if (_nativeBitmap == null)
-                throw new ObjectDisposedException(nameof(SafeNativeBitmap), "Native bitmap has been released.");
-
-            return _nativeBitmap.GetPixelSpan();
-        }
-    }
-
-    internal void ReleaseLease()
-    {
-        lock (_syncLock)
-        {
-            int remaining = Interlocked.Decrement(ref _refCount);
-            if (remaining < 0)
+            if (_refCount <= 0)
             {
-                Interlocked.Exchange(ref _refCount, 0);
                 throw new InvalidOperationException("Reference count underflow detected on native bitmap handle.");
             }
 
-            if (remaining == 0 && _nativeBitmap != null)
+            _refCount--;
+            if (_refCount == 0 && _nativeBitmap != null)
             {
                 _nativeBitmap.Dispose();
                 _nativeBitmap = null;
@@ -214,65 +199,195 @@ public sealed class SafeNativeBitmap : IDisposable
         }
     }
 
+    /// <summary>
+    /// Linearization Point for Owner Disposal:
+    /// Inside _syncLock, marks _isOwnerDisposed = true and releases the owner reference.
+    /// If active leases exist (_refCount > 1), _nativeBitmap remains alive until all leases call ReleaseReference().
+    /// </summary>
     public void Dispose()
     {
-        // Idempotent owner disposal
-        if (Interlocked.CompareExchange(ref _ownerDisposed, 1, 0) == 0)
+        lock (_syncLock)
         {
-            ReleaseLease();
+            if (_isOwnerDisposed)
+            {
+                return; // Idempotent
+            }
+
+            _isOwnerDisposed = true;
+            ReleaseReference();
         }
     }
 
-    private sealed class ReadOnlyRasterSurface : IReadOnlyRasterSurface
+    internal void RenderInternal(IAssetLease lease, SKCanvas canvas, SKRect destRect, SKPaint? paint)
     {
-        private readonly SafeNativeBitmap _handle;
-        public string AssetId { get; }
-        public int Revision { get; }
-        public int Dpi { get; }
-
-        public ReadOnlyRasterSurface(SafeNativeBitmap handle, string assetId, int revision, int dpi)
+        if (lease.IsDisposed)
         {
-            _handle = handle;
-            AssetId = assetId;
-            Revision = revision;
-            Dpi = dpi;
+            throw new ObjectDisposedException(nameof(IAssetLease), "Cannot use surface after lease is disposed.");
         }
 
-        public int Width => _handle._nativeBitmap?.Width ?? 0;
-        public int Height => _handle._nativeBitmap?.Height ?? 0;
+        lock (_syncLock)
+        {
+            if (lease.IsDisposed)
+            {
+                throw new ObjectDisposedException(nameof(IAssetLease), "Cannot use surface after lease is disposed.");
+            }
 
-        public void RenderTo(SKCanvas canvas, SKRect destRect, SKPaint? paint = null) =>
-            _handle.RenderInternal(canvas, destRect, paint);
+            if (_nativeBitmap == null)
+            {
+                throw new ObjectDisposedException(nameof(SafeNativeBitmap), "Native bitmap has been destroyed.");
+            }
 
-        public SKImage CreateImmutableSnapshot() =>
-            _handle.CreateSnapshotInternal();
+            canvas.DrawBitmap(_nativeBitmap, destRect, paint);
+        }
+    }
 
-        public ReadOnlySpan<byte> ReadPixelBytes() =>
-            _handle.ReadPixelBytesInternal();
+    internal SKImage CreateSnapshotInternal(IAssetLease lease)
+    {
+        if (lease.IsDisposed)
+        {
+            throw new ObjectDisposedException(nameof(IAssetLease), "Cannot use surface after lease is disposed.");
+        }
+
+        lock (_syncLock)
+        {
+            if (lease.IsDisposed)
+            {
+                throw new ObjectDisposedException(nameof(IAssetLease), "Cannot use surface after lease is disposed.");
+            }
+
+            if (_nativeBitmap == null)
+            {
+                throw new ObjectDisposedException(nameof(SafeNativeBitmap), "Native bitmap has been destroyed.");
+            }
+
+            return SKImage.FromBitmap(_nativeBitmap);
+        }
+    }
+
+    internal void ReadPixelsInternal(IAssetLease lease, ReadOnlyPixelSpanAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        if (lease.IsDisposed)
+        {
+            throw new ObjectDisposedException(nameof(IAssetLease), "Cannot use surface after lease is disposed.");
+        }
+
+        lock (_syncLock)
+        {
+            if (lease.IsDisposed)
+            {
+                throw new ObjectDisposedException(nameof(IAssetLease), "Cannot use surface after lease is disposed.");
+            }
+
+            if (_nativeBitmap == null)
+            {
+                throw new ObjectDisposedException(nameof(SafeNativeBitmap), "Native bitmap has been destroyed.");
+            }
+
+            // Lock is held for the ENTIRE duration of action execution
+            action(_nativeBitmap.GetPixelSpan(), _nativeBitmap.RowBytes);
+        }
+    }
+
+    internal TResult ReadPixelsInternal<TResult>(IAssetLease lease, ReadOnlyPixelSpanFunc<TResult> func)
+    {
+        ArgumentNullException.ThrowIfNull(func);
+
+        if (lease.IsDisposed)
+        {
+            throw new ObjectDisposedException(nameof(IAssetLease), "Cannot use surface after lease is disposed.");
+        }
+
+        lock (_syncLock)
+        {
+            if (lease.IsDisposed)
+            {
+                throw new ObjectDisposedException(nameof(IAssetLease), "Cannot use surface after lease is disposed.");
+            }
+
+            if (_nativeBitmap == null)
+            {
+                throw new ObjectDisposedException(nameof(SafeNativeBitmap), "Native bitmap has been destroyed.");
+            }
+
+            // Lock is held for the ENTIRE duration of func execution
+            return func(_nativeBitmap.GetPixelSpan(), _nativeBitmap.RowBytes);
+        }
     }
 
     private sealed class AssetLease : IAssetLease
     {
         private SafeNativeBitmap? _handle;
-        public IReadOnlyRasterSurface Surface { get; }
+        private readonly LeaseBoundSurface _surface;
         public string AssetId { get; }
         public int Revision { get; }
 
-        public AssetLease(SafeNativeBitmap handle, IReadOnlyRasterSurface surface, string assetId, int revision)
+        public AssetLease(SafeNativeBitmap handle, string assetId, int revision, int dpi)
         {
             _handle = handle;
-            Surface = surface;
             AssetId = assetId;
             Revision = revision;
+            _surface = new LeaseBoundSurface(this, handle, assetId, revision, dpi);
         }
+
+        public IReadOnlyRasterSurface Surface => _surface;
 
         public bool IsDisposed => _handle == null;
 
         public void Dispose()
         {
             var handle = Interlocked.Exchange(ref _handle, null);
-            handle?.ReleaseLease();
+            handle?.ReleaseReference();
         }
+    }
+
+    private sealed class LeaseBoundSurface : IReadOnlyRasterSurface
+    {
+        private readonly AssetLease _lease;
+        private readonly SafeNativeBitmap _handle;
+        public string AssetId { get; }
+        public int Revision { get; }
+        public int Dpi { get; }
+
+        public LeaseBoundSurface(AssetLease lease, SafeNativeBitmap handle, string assetId, int revision, int dpi)
+        {
+            _lease = lease;
+            _handle = handle;
+            AssetId = assetId;
+            Revision = revision;
+            Dpi = dpi;
+        }
+
+        public int Width
+        {
+            get
+            {
+                if (_lease.IsDisposed) throw new ObjectDisposedException(nameof(IAssetLease));
+                return _handle._nativeBitmap?.Width ?? 0;
+            }
+        }
+
+        public int Height
+        {
+            get
+            {
+                if (_lease.IsDisposed) throw new ObjectDisposedException(nameof(IAssetLease));
+                return _handle._nativeBitmap?.Height ?? 0;
+            }
+        }
+
+        public void RenderTo(SKCanvas canvas, SKRect destRect, SKPaint? paint = null) =>
+            _handle.RenderInternal(_lease, canvas, destRect, paint);
+
+        public SKImage CreateImmutableSnapshot() =>
+            _handle.CreateSnapshotInternal(_lease);
+
+        public void ReadPixels(ReadOnlyPixelSpanAction action) =>
+            _handle.ReadPixelsInternal(_lease, action);
+
+        public TResult ReadPixels<TResult>(ReadOnlyPixelSpanFunc<TResult> func) =>
+            _handle.ReadPixelsInternal(_lease, func);
     }
 }
 ```
@@ -551,5 +666,5 @@ CREATE TABLE IF NOT EXISTS transaction_payments (
 4. **Persistent Banner & Watermarks:** Test mode locks an amber status bar across the UI, and print jobs append a prominent test watermark.
 
 ### 8.4 Indian Business Day Reporting & Transactional Consistency
-1. **Explicit IST Boundaries:** Timestamps are stored in UTC strings, but daily shop reports query parameterized `Asia/Kolkata` day boundaries (`@StartUtc` to `@EndUtc`), avoiding the 5.5-hour midnight cutoff distortion caused by SQLite `date('now')`.
+1. **Explicit Half-Open IST Boundaries:** Timestamps are stored in UTC strings, but daily shop reports query parameterized half-open `Asia/Kolkata` day boundaries (`collected_at >= @StartUtc AND collected_at < @NextDayStartUtc`). This avoids the 5.5-hour midnight cutoff distortion caused by SQLite `date('now')` and eliminates fractional-second boundary ambiguity.
 2. **Centralized Payment Service (`ITransactionPaymentService`):** All receipts, refunds, and void adjustments run in ACID transactions. Independent UI updates to `paid_paise` or `balance_paise` are prohibited; these fields are strictly read-only derived properties. Overpayments are rejected by default, and refunds can never exceed total collected funds.
