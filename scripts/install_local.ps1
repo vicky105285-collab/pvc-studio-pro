@@ -18,6 +18,11 @@ Write-Host "==========================================" -ForegroundColor Cyan
 # 0. Publish self-contained if requested or missing
 if ($Rebuild -or (-not (Test-Path (Join-Path $sourceDir "coreclr.dll")))) {
     Write-Host "[0/6] Publishing self-contained release package (Zero .NET prerequisites required)..." -ForegroundColor Yellow
+    Get-Process -Name "PVCStudioPro.App" -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep -Milliseconds 300
+    if (Test-Path $sourceDir) {
+        Remove-Item $sourceDir -Recurse -Force
+    }
     if (Test-Path "$env:LOCALAPPDATA\Microsoft\dotnet") {
         $env:DOTNET_ROOT = "$env:LOCALAPPDATA\Microsoft\dotnet"
         $env:PATH = "$env:LOCALAPPDATA\Microsoft\dotnet;$env:PATH"
@@ -46,9 +51,9 @@ if (-not (Test-Path $installDir)) {
     New-Item -ItemType Directory -Path $installDir -Force | Out-Null
 }
 
-# 3. Copy Application Files
+# 3. Copy Application Files (Mirror clean deployment)
 Write-Host "[2/6] Copying binaries and dependencies..." -ForegroundColor Yellow
-robocopy $sourceDir $installDir /E /IS /IT /NP /NDL /NFL /R:2 /W:1 | Out-Null
+robocopy $sourceDir $installDir /MIR /IS /IT /NP /NDL /NFL /R:2 /W:1 | Out-Null
 if ($LASTEXITCODE -gt 7) {
     throw "Robocopy failed with exit code $LASTEXITCODE"
 }
