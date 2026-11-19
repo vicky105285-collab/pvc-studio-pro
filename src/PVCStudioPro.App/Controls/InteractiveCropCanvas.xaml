@@ -13,7 +13,8 @@
              MouseWheel="OnMouseWheel"
              MouseDown="OnMouseDown"
              MouseMove="OnMouseMove"
-             MouseUp="OnMouseUp">
+             MouseUp="OnMouseUp"
+             MouseLeave="OnMouseLeave">
 
     <Grid x:Name="RootGrid">
         <!-- Canvas containing the image and interactive overlay -->
@@ -81,6 +82,36 @@
                 <TextBlock x:Name="CoordsHudText" Text="X: 0 Y: 0 | 0 x 0 px" Foreground="White" FontSize="11" FontFamily="Consolas" Margin="0,0,12,0"/>
                 <TextBlock x:Name="ZoomHudText" Text="100%" Foreground="#00B0FF" FontSize="11" FontWeight="Bold"/>
             </StackPanel>
+        </Border>
+
+        <!-- Interactive Live Cursor Magnifier Loupe (Auto-zooms where cursor is placed) -->
+        <Border x:Name="MagnifierLoupe"
+                Width="120" Height="120"
+                CornerRadius="60"
+                BorderBrush="#0078D4"
+                BorderThickness="2.5"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                IsHitTestVisible="False"
+                Visibility="Collapsed"
+                ClipToBounds="True">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="16" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.5"/>
+            </Border.Effect>
+            <Grid Background="#1E1E1E" ClipToBounds="True">
+                <Canvas x:Name="LoupeCanvas" Width="120" Height="120" ClipToBounds="True">
+                    <Image x:Name="LoupeImage"
+                           RenderOptions.BitmapScalingMode="NearestNeighbor"
+                           Stretch="Fill"/>
+                </Canvas>
+                <!-- Reticle Crosshairs -->
+                <Line X1="0" Y1="60" X2="120" Y2="60" Stroke="#0078D4" StrokeThickness="1" StrokeDashArray="3 2" Opacity="0.85"/>
+                <Line X1="60" Y1="0" X2="60" Y2="120" Stroke="#0078D4" StrokeThickness="1" StrokeDashArray="3 2" Opacity="0.85"/>
+                <Ellipse Width="8" Height="8" Stroke="#F59E0B" StrokeThickness="1.5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <!-- Sub-pixel Zoom Badge -->
+                <Border Background="#DD000000" CornerRadius="3" Padding="4,1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,6">
+                    <TextBlock x:Name="LoupeInfoText" Text="3x MAG" Foreground="White" FontSize="9.5" FontWeight="Bold" FontFamily="Consolas"/>
+                </Border>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

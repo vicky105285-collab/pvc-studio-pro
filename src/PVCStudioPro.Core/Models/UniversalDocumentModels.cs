@@ -129,9 +129,10 @@ namespace PVCStudioPro.Core.Models
 
     public enum CropAspectRatio
     {
-        Cr80Card,       // 85.60 x 53.98 mm = 1.5857
-        PassportPhoto,  // 35 x 45 mm = 0.7778
-        StampPhoto,     // 25 x 30 mm = 0.8333
+        Cr80Card,          // 85.60 x 53.98 mm = 1.5857
+        AadhaarFullPouch,  // 88.50 x 56.50 mm = 1.5664 (Full e-Aadhaar without top/bottom cropping)
+        PassportPhoto,     // 35 x 45 mm = 0.7778
+        StampPhoto,        // 25 x 30 mm = 0.8333
         Freeform
     }
 

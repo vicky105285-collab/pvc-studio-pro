@@ -432,16 +432,24 @@ namespace PVCStudioPro.App.Controls
 
         private void OnMouseMove(object sender, MouseEventArgs e)
         {
-            if (SourceImage == null || _activeDrag == DragMode.None) return;
+            if (SourceImage == null)
+            {
+                MagnifierLoupe.Visibility = Visibility.Collapsed;
+                return;
+            }
 
             Point currentPos = e.GetPosition(this);
-            double dx = currentPos.X - _lastMousePos.X;
-            double dy = currentPos.Y - _lastMousePos.Y;
-            _lastMousePos = currentPos;
-
             var state = GetInteractionState();
             double imgW = SourceImage.PixelWidth;
             double imgH = SourceImage.PixelHeight;
+
+            UpdateMagnifierLoupe(currentPos, state, imgW, imgH);
+
+            if (_activeDrag == DragMode.None) return;
+
+            double dx = currentPos.X - _lastMousePos.X;
+            double dy = currentPos.Y - _lastMousePos.Y;
+            _lastMousePos = currentPos;
 
             if (_activeDrag == DragMode.Pan)
             {
@@ -508,6 +516,65 @@ namespace PVCStudioPro.App.Controls
         {
             _activeDrag = DragMode.None;
             ReleaseMouseCapture();
+        }
+
+        private void OnMouseLeave(object sender, MouseEventArgs e)
+        {
+            if (MagnifierLoupe != null)
+            {
+                MagnifierLoupe.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void UpdateMagnifierLoupe(Point currentPos, CropInteractionState state, double imgW, double imgH)
+        {
+            if (SourceImage == null || MagnifierLoupe == null || LoupeImage == null)
+            {
+                if (MagnifierLoupe != null) MagnifierLoupe.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var (imgX, imgY) = _cropEngine.ScreenToImage(currentPos.X, currentPos.Y, state, imgW, imgH);
+
+            // Show magnifier only when cursor is within or near the active image
+            if (imgX < -20 || imgX > imgW + 20 || imgY < -20 || imgY > imgH + 20)
+            {
+                MagnifierLoupe.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            // Offset the loupe comfortably so it doesn't block the cursor
+            double loupeX = currentPos.X + 24;
+            double loupeY = currentPos.Y - 130;
+
+            if (loupeX + 130 > ActualWidth)
+            {
+                loupeX = currentPos.X - 144;
+            }
+            if (loupeY < 10)
+            {
+                loupeY = currentPos.Y + 24;
+            }
+
+            MagnifierLoupe.Margin = new Thickness(Math.Max(0, loupeX), Math.Max(0, loupeY), 0, 0);
+
+            // 3.0x Magnification level
+            double mag = 3.0;
+            if (LoupeImage.Source != SourceImage)
+            {
+                LoupeImage.Source = SourceImage;
+            }
+            LoupeImage.Width = imgW * mag;
+            LoupeImage.Height = imgH * mag;
+
+            Canvas.SetLeft(LoupeImage, 60.0 - imgX * mag);
+            Canvas.SetTop(LoupeImage, 60.0 - imgY * mag);
+
+            int clampedX = (int)Math.Clamp(imgX, 0, imgW);
+            int clampedY = (int)Math.Clamp(imgY, 0, imgH);
+            LoupeInfoText.Text = $"{clampedX}, {clampedY} (3x)";
+
+            MagnifierLoupe.Visibility = Visibility.Visible;
         }
 
         #endregion

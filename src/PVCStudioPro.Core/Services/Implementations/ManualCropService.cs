@@ -28,6 +28,11 @@ namespace PVCStudioPro.Core.Services.Implementations
                     targetW = (int)Math.Round((25.0 * dpi) / MmPerInch);
                     targetH = (int)Math.Round((30.0 * dpi) / MmPerInch);
                     break;
+                case CropAspectRatio.AadhaarFullPouch:
+                    // 88.50 x 56.50 mm (Full e-Aadhaar pouch cutline without edge clipping)
+                    targetW = (int)Math.Round((88.50 * dpi) / MmPerInch);
+                    targetH = (int)Math.Round((56.50 * dpi) / MmPerInch);
+                    break;
                 case CropAspectRatio.Freeform:
                     float topDist = MathF.Sqrt(MathF.Pow(quad.TopRight.X - quad.TopLeft.X, 2) + MathF.Pow(quad.TopRight.Y - quad.TopLeft.Y, 2));
                     float bottomDist = MathF.Sqrt(MathF.Pow(quad.BottomRight.X - quad.BottomLeft.X, 2) + MathF.Pow(quad.BottomRight.Y - quad.BottomLeft.Y, 2));
@@ -78,6 +83,9 @@ namespace PVCStudioPro.Core.Services.Implementations
                     break;
                 case CropAspectRatio.StampPhoto:
                     targetAspect = 25.0f / 30.0f; // ~0.8333
+                    break;
+                case CropAspectRatio.AadhaarFullPouch:
+                    targetAspect = 88.50f / 56.50f; // ~1.5664
                     break;
                 case CropAspectRatio.Freeform:
                     targetAspect = 1.0f;

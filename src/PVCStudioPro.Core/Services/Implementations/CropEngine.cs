@@ -18,6 +18,7 @@ namespace PVCStudioPro.Core.Services.Implementations
         public double GetTargetAspectRatioValue(CropAspectRatio ratio) => ratio switch
         {
             CropAspectRatio.Cr80Card => 85.60 / 53.98, // ~1.58577
+            CropAspectRatio.AadhaarFullPouch => 88.50 / 56.50, // ~1.56637
             CropAspectRatio.PassportPhoto => 35.0 / 45.0, // ~0.77778
             CropAspectRatio.StampPhoto => 25.0 / 30.0, // ~0.83333
             _ => 1.0

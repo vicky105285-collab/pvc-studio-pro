@@ -8,7 +8,13 @@
              xmlns:controls="clr-namespace:PVCStudioPro.App.Controls"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:ProductionWorkspaceViewModel}"
-             d:DesignHeight="850" d:DesignWidth="1300">
+             d:DesignHeight="850" d:DesignWidth="1300"
+             Focusable="True">
+
+    <UserControl.InputBindings>
+        <KeyBinding Key="Escape" Command="{Binding CloseCropDrawerCommand}"/>
+    </UserControl.InputBindings>
+
     <Grid Margin="12,8,12,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- Top Action Bar -->
@@ -404,8 +410,9 @@
                         <!-- Aspect Ratio Presets & Mode -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
                             <TextBlock Text="Preset:" VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0"/>
-                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="CR80" Content="CR80 PVC (85.6×54)" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
-                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Free" Content="Free Crop" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
+                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="CR80" Content="CR80 (85.6×54)" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Standard ISO CR80 PVC Card"/>
+                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Aadhaar" Content="Aadhaar Pouch (88.5×56.5)" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Full e-Aadhaar without top or bottom cutoffs"/>
+                            <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Free" Content="Free Crop" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}" ToolTip="Unconstrained freeform crop"/>
                             <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Passport" Content="Passport (35×45)" Height="30" Margin="0,0,4,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
                             <ui:Button Command="{Binding SetCropRatioCommand}" CommandParameter="Stamp" Content="Stamp (25×30)" Height="30" Margin="0,0,8,0" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
                             <ui:Button Command="{Binding TogglePerspectiveCropModeCommand}" Content="Perspective Quad" Height="30" Padding="8,0" Style="{StaticResource SecondaryActionButtonStyle}"/>
@@ -507,6 +514,29 @@
                                     <TextBlock Text="Height:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     <TextBox Text="{Binding CropHeight, UpdateSourceTrigger=PropertyChanged}" MinHeight="32" Padding="8,4" VerticalContentAlignment="Center" Margin="0,2,0,10"/>
 
+                                    <!-- Custom Physical Dimensions (mm) -->
+                                    <Border Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <TextBlock Text="Physical Card Dimensions (mm):" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="6"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="Width (mm):" FontSize="9.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                    <TextBox Text="{Binding CustomCardWidthMm, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Padding="6,2" VerticalContentAlignment="Center"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="Height (mm):" FontSize="9.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                    <TextBox Text="{Binding CustomCardHeightMm, UpdateSourceTrigger=PropertyChanged}" MinHeight="30" Padding="6,2" VerticalContentAlignment="Center"/>
+                                                </StackPanel>
+                                            </Grid>
+                                            <ui:Button Command="{Binding OpenSavePresetDialogCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Content="💾 Save as Custom Preset..." Height="30" HorizontalAlignment="Stretch"/>
+                                        </StackPanel>
+                                    </Border>
+
                                     <!-- Quick Other Cards Presets -->
                                     <Border Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="4" Padding="10" Margin="0,0,0,10">
                                         <StackPanel>
@@ -542,6 +572,57 @@
                         <ui:Button Grid.Column="2" Command="{Binding ApplyCustomCropCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Content="Apply &amp; Update Layout" Height="36" Padding="20,0"/>
                     </Grid>
                 </Grid>
+            </Border>
+        </Border>
+
+        <!-- SAVE CUSTOM PRESET MODAL DIALOG -->
+        <Border Background="{DynamicResource ModalBackdropBrush}"
+                Visibility="{Binding IsSavePresetDialogOpen, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"
+                VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+            <Border Style="{StaticResource SurfaceCardStyle}"
+                    Width="440" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+                <StackPanel>
+                    <TextBlock Text="Save Custom Card Layout Preset" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6"/>
+                    <TextBlock Text="Save these physical dimensions so you can instantly select this card size from the presets dropdown in any future session." FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                    <TextBlock Text="Preset Name / Label:" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding CustomPresetName, UpdateSourceTrigger=PropertyChanged}" MinHeight="34" Padding="8,4" VerticalContentAlignment="Center" Margin="0,0,0,12"/>
+
+                    <Border Background="{DynamicResource NeutralSurfaceBrush}" CornerRadius="4" Padding="12,8" Margin="0,0,0,20">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="Saved Physical Geometry: " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{Binding CustomCardWidthMm, StringFormat='{}{0:0.0}'}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                            <TextBlock Text=" × " FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{Binding CustomCardHeightMm, StringFormat='{}{0:0.0}'}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                            <TextBlock Text=" mm" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ui:Button Grid.Column="1" Command="{Binding CloseSavePresetDialogCommand}" Style="{StaticResource SecondaryActionButtonStyle}" Content="Cancel" Height="34" Padding="16,0"/>
+                        <ui:Button Grid.Column="3" Command="{Binding ConfirmSavePresetCommand}" Style="{StaticResource PrimaryActionButtonStyle}" Content="Save Preset" Height="34" Padding="20,0"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- GLOBAL ASYNC LOADING OVERLAY (Zero-blocking, clean indeterminate progress ring) -->
+        <Border Background="{DynamicResource ModalBackdropBrush}"
+                Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"
+                VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+            <Border Style="{StaticResource SurfaceCardStyle}"
+                    Width="320" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+                <StackPanel HorizontalAlignment="Center">
+                    <ProgressBar IsIndeterminate="True" Height="4" Margin="0,0,0,16" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                    <TextBlock Text="Processing Document..." FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                </StackPanel>
             </Border>
         </Border>
     </Grid>

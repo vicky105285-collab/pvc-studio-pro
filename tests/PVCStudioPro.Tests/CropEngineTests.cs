@@ -189,5 +189,58 @@ namespace PVCStudioPro.Tests
         }
 
         #endregion
+
+        #region Test 7: Aadhaar Full Pouch Preset Aspect Ratio & Distortion-Free Geometry
+
+        [Fact]
+        public void AspectRatio_AadhaarFullPouch_PreservesCalibratedDimensionsWithoutClipping()
+        {
+            double targetAspect = _engine.GetTargetAspectRatioValue(CropAspectRatio.AadhaarFullPouch);
+            targetAspect.Should().BeApproximately(88.50 / 56.50, 0.0001);
+
+            using var rawBmp = CreateTestBitmap(2500, 1800, SKColors.Navy);
+            using var sourceAsset = SourceImageAsset.Create("aadhaar_pouch_test.png", rawBmp, 600);
+
+            var quad = new QuadrilateralPoints(
+                new SKPoint(100, 100),
+                new SKPoint(1870, 100),
+                new SKPoint(1870, 1230),
+                new SKPoint(100, 1230)
+            );
+
+            using var warped = _engine.CropPerspective(sourceAsset, quad, CropAspectRatio.AadhaarFullPouch, targetDpi: 600, "Aadhaar Full Pouch Warping");
+
+            warped.Should().NotBeNull();
+            // 88.50 mm @ 600 DPI = 2091 px; 56.50 mm @ 600 DPI = 1335 px
+            warped.Width.Should().Be(2091);
+            warped.Height.Should().Be(1335);
+        }
+
+        [Fact]
+        public void PhysicalPageLayoutEngine_CustomCardDimensions_PreservesExactMillimeterDimensions()
+        {
+            var layoutEngine = new PhysicalPageLayoutEngine();
+            // Create a custom 88.50 x 56.50 mm bitmap at 600 DPI (2091 x 1335 px)
+            using var customFront = CreateTestBitmap(2091, 1335, SKColors.DarkGreen);
+            using var customBack = CreateTestBitmap(2091, 1335, SKColors.DarkSlateBlue);
+
+            var model = layoutEngine.CreateLayout(
+                SheetLayoutMode.SingleSideA4,
+                customFront,
+                customBack,
+                showCutMarks: true,
+                targetDpi: 600);
+
+            model.Items.Should().HaveCount(2);
+            var frontItem = model.Items[0];
+            var backItem = model.Items[1];
+
+            frontItem.WidthMm.Should().BeApproximately(88.5, 0.05);
+            frontItem.HeightMm.Should().BeApproximately(56.5, 0.05);
+            backItem.WidthMm.Should().BeApproximately(88.5, 0.05);
+            backItem.HeightMm.Should().BeApproximately(56.5, 0.05);
+        }
+
+        #endregion
     }
 }

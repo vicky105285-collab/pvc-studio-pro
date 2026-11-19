@@ -145,5 +145,49 @@ namespace PVCStudioPro.Tests
             isValid.Should().BeFalse();
             errors.Should().Contain(e => e.Contains(expectedErrorSubstring));
         }
+
+        [Fact]
+        public async Task SaveCustomTemplate_PersistsAndAppearsInOptions()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), "pvc_templates_test_" + System.Guid.NewGuid().ToString("N"));
+            try
+            {
+                var service = new TemplateService(tempDir);
+                await service.InitializeTemplatesAsync();
+
+                var customTemplate = new CardTemplate
+                {
+                    TemplateId = "custom_aadhaar_pouch",
+                    DisplayName = "Custom Aadhaar Pouch 88.5x56.5",
+                    Category = "CUSTOM_PRESETS",
+                    DocumentType = "CUSTOM",
+                    PhysicalCard = new PhysicalCardSpec { WidthMm = 88.5, HeightMm = 56.5 },
+                    Faces = new CardFaces
+                    {
+                        Front = new FaceDefinition
+                        {
+                            SourcePage = 0,
+                            CropRectMm = new MillimeterRect { X = 15, Y = 15, Width = 88.5, Height = 56.5 }
+                        }
+                    }
+                };
+
+                await service.SaveCustomTemplateAsync(customTemplate);
+
+                var retrieved = service.GetTemplateById("custom_aadhaar_pouch");
+                retrieved.Should().NotBeNull();
+                retrieved!.DisplayName.Should().Be("Custom Aadhaar Pouch 88.5x56.5");
+
+                var options = service.GetTemplateOptions();
+                options.Should().Contain(o => o.TemplateId == "custom_aadhaar_pouch");
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
     }
 }

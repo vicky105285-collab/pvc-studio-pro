@@ -76,8 +76,8 @@ namespace PVCStudioPro.Core.Services.Implementations
             double effectiveDpi = dpi > 0 ? dpi : 600.0;
             double wMm = bitmap.Width * MmPerInch / effectiveDpi;
             double hMm = bitmap.Height * MmPerInch / effectiveDpi;
-            // If within standard CR80 tolerance (within 1mm), snap to exact CR80 specification
-            if (Math.Abs(wMm - Cr80WidthMm) < 1.0 && Math.Abs(hMm - Cr80HeightMm) < 1.0)
+            // If within standard CR80 tolerance (within 0.2 mm), snap to exact CR80 specification
+            if (Math.Abs(wMm - Cr80WidthMm) < 0.2 && Math.Abs(hMm - Cr80HeightMm) < 0.2)
             {
                 return (Cr80WidthMm, Cr80HeightMm);
             }

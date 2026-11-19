@@ -16,9 +16,11 @@
     <sys:String x:Key="NavPageDesigner">Page Designer</sys:String>
     <sys:String x:Key="NavPhotoStudio">Photo Studio</sys:String>
     <sys:String x:Key="NavDocProcessing">Document Processing</sys:String>
-    <sys:String x:Key="NavBatch">Batch Processing</sys:String>
+    <sys:String x:Key="NavBatch">High Volume Batch</sys:String>
+    <sys:String x:Key="NavBatchProcessing">High Volume Batch</sys:String>
     <sys:String x:Key="NavPrintCenter">Print Center</sys:String>
     <sys:String x:Key="NavPrinterTray">Printer &amp; Tray Manager</sys:String>
+    <sys:String x:Key="NavPrinterTrayManager">Printer &amp; Tray Manager</sys:String>
     <sys:String x:Key="NavCalibration">Calibration Studio</sys:String>
     <sys:String x:Key="NavTemplates">Template Manager</sys:String>
     <sys:String x:Key="NavBusinessProfile">Business Profile</sys:String>

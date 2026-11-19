@@ -152,24 +152,31 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Streamlined Fluent Navigation View -->
-            <ui:NavigationView Grid.Column="0" PaneDisplayMode="Left" OpenPaneLength="240" IsBackButtonVisible="Collapsed">
+            <!-- Collapsible Fluent Navigation Rail (Compact 56px icon rail by default, expands to 240px on mouse hover) -->
+            <ui:NavigationView x:Name="RootNavigation"
+                               Grid.Column="0"
+                               PaneDisplayMode="Left"
+                               CompactPaneLength="56"
+                               OpenPaneLength="240"
+                               IsPaneOpen="False"
+                               IsBackButtonVisible="Collapsed"
+                               MouseEnter="Navigation_MouseEnter"
+                               MouseLeave="Navigation_MouseLeave">
                 <ui:NavigationView.MenuItems>
-                    <!-- HERO: UNIFIED PVC PRODUCTION STUDIO (ZERO-SCROLL COMPLETE WORKFLOW) -->
-                    <ui:NavigationViewItem Content="{DynamicResource NavProductionStudio}" Command="{Binding NavigateCommand}" CommandParameter="Production">
+                    <!-- HERO: UNIFIED PVC PRODUCTION STUDIO -->
+                    <ui:NavigationViewItem Content="{DynamicResource NavProductionStudio}" Command="{Binding NavigateCommand}" CommandParameter="Production" ToolTip="Production Studio">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Print24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavPhotoStudio}" Command="{Binding NavigateCommand}" CommandParameter="Photo">
+                    <ui:NavigationViewItem Content="{DynamicResource NavPhotoStudio}" Command="{Binding NavigateCommand}" CommandParameter="Photo" ToolTip="Photo Studio">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Image24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavBatchProcessing}" Command="{Binding NavigateCommand}" CommandParameter="Batch"
-                                           Visibility="{Binding Converter={StaticResource FeatureVisibilityConverter}, ConverterParameter=F-BATCH-SPOOL}">
+                    <ui:NavigationViewItem Content="{DynamicResource NavBatchProcessing}" Command="{Binding NavigateCommand}" CommandParameter="Batch" ToolTip="High Volume Batch">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="FolderZip24" />
                         </ui:NavigationViewItem.Icon>
@@ -178,13 +185,13 @@
                     <!-- HARDWARE & CALIBRATION -->
                     <ui:NavigationViewItemSeparator Margin="4,8,4,8"/>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavPrinterTrayManager}" Command="{Binding NavigateCommand}" CommandParameter="PrinterTray">
+                    <ui:NavigationViewItem Content="{DynamicResource NavPrinterTrayManager}" Command="{Binding NavigateCommand}" CommandParameter="PrinterTray" ToolTip="Printer &amp; Tray Manager">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Board24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavCalibration}" Command="{Binding NavigateCommand}" CommandParameter="Calibration">
+                    <ui:NavigationViewItem Content="{DynamicResource NavCalibration}" Command="{Binding NavigateCommand}" CommandParameter="Calibration" ToolTip="Calibration Studio">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Wrench24" />
                         </ui:NavigationViewItem.Icon>
@@ -193,13 +200,13 @@
                     <!-- BUSINESS & AUDIT -->
                     <ui:NavigationViewItemSeparator Margin="4,8,4,8"/>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavLedger}" Command="{Binding NavigateCommand}" CommandParameter="Ledger">
+                    <ui:NavigationViewItem Content="{DynamicResource NavLedger}" Command="{Binding NavigateCommand}" CommandParameter="Ledger" ToolTip="Transactions &amp; Ledger">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Receipt24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavBusinessProfile}" Command="{Binding NavigateCommand}" CommandParameter="BusinessProfile">
+                    <ui:NavigationViewItem Content="{DynamicResource NavBusinessProfile}" Command="{Binding NavigateCommand}" CommandParameter="BusinessProfile" ToolTip="Business Profile">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Building24" />
                         </ui:NavigationViewItem.Icon>
@@ -208,19 +215,19 @@
                     <!-- UTILITIES & ADVANCED TOOLS -->
                     <ui:NavigationViewItemSeparator Margin="4,8,4,8"/>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavDocumentDesk}" Command="{Binding NavigateCommand}" CommandParameter="DocumentDesk">
+                    <ui:NavigationViewItem Content="{DynamicResource NavDocumentDesk}" Command="{Binding NavigateCommand}" CommandParameter="DocumentDesk" ToolTip="Document Desk">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="DocumentTable24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavPageDesigner}" Command="{Binding NavigateCommand}" CommandParameter="PageDesigner">
+                    <ui:NavigationViewItem Content="{DynamicResource NavPageDesigner}" Command="{Binding NavigateCommand}" CommandParameter="PageDesigner" ToolTip="Page Designer">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="DesignIdeas24" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
 
-                    <ui:NavigationViewItem Content="{DynamicResource NavSettings}" Command="{Binding NavigateCommand}" CommandParameter="Settings">
+                    <ui:NavigationViewItem Content="{DynamicResource NavSettings}" Command="{Binding NavigateCommand}" CommandParameter="Settings" ToolTip="Settings &amp; Preferences">
                         <ui:NavigationViewItem.Icon>
                             <ui:SymbolIcon Symbol="Settings24" />
                         </ui:NavigationViewItem.Icon>

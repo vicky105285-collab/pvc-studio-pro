@@ -276,6 +276,12 @@ namespace PVCStudioPro.App.ViewModels
         private bool _isCustomDimensionsVisible = false;
 
         [ObservableProperty]
+        private string _customPresetName = string.Empty;
+
+        [ObservableProperty]
+        private bool _isSavePresetDialogOpen = false;
+
+        [ObservableProperty]
         private ObservableCollection<string> _cropFaceOptions = new()
         {
             "Front Card (Slot 1)",
@@ -658,6 +664,10 @@ namespace PVCStudioPro.App.ViewModels
                     targetW = (int)Math.Round(25.0 * 600.0 / 25.4); // 591
                     targetH = (int)Math.Round(30.0 * 600.0 / 25.4); // 709
                     break;
+                case CropAspectRatio.AadhaarFullPouch:
+                    targetW = (int)Math.Round(88.50 * 600.0 / 25.4); // 2091 px @ 600 DPI
+                    targetH = (int)Math.Round(56.50 * 600.0 / 25.4); // 1335 px @ 600 DPI
+                    break;
                 case CropAspectRatio.Cr80Card:
                 default:
                     if (Math.Abs(customW - 85.60) > 0.05 || Math.Abs(customH - 53.98) > 0.05)
@@ -971,15 +981,28 @@ namespace PVCStudioPro.App.ViewModels
                 case "FREEFORM":
                     SelectedCropRatio = CropAspectRatio.Freeform;
                     break;
+                case "AADHAAR":
+                case "AADHAAR_POUCH":
+                case "FULL_AADHAAR":
+                    SelectedCropRatio = CropAspectRatio.AadhaarFullPouch;
+                    CustomCardWidthMm = 88.50;
+                    CustomCardHeightMm = 56.50;
+                    break;
                 case "PASSPORT":
                     SelectedCropRatio = CropAspectRatio.PassportPhoto;
+                    CustomCardWidthMm = 35.00;
+                    CustomCardHeightMm = 45.00;
                     break;
                 case "STAMP":
                     SelectedCropRatio = CropAspectRatio.StampPhoto;
+                    CustomCardWidthMm = 25.00;
+                    CustomCardHeightMm = 30.00;
                     break;
                 case "CR80":
                 default:
                     SelectedCropRatio = CropAspectRatio.Cr80Card;
+                    CustomCardWidthMm = 85.60;
+                    CustomCardHeightMm = 53.98;
                     break;
             }
             StatusMessage = $"Crop aspect ratio: {SelectedCropRatio}";
@@ -1001,6 +1024,82 @@ namespace PVCStudioPro.App.ViewModels
                 CropCorner4Y = (float)(CropY + CropHeight);
             }
             StatusMessage = IsPerspectiveCropMode ? "4-Corner Perspective Mode enabled." : "Standard 8-Handle Rectangular Mode enabled.";
+        }
+
+        [RelayCommand]
+        public void OpenSavePresetDialog()
+        {
+            CustomPresetName = $"Custom {CustomCardWidthMm:0.0}x{CustomCardHeightMm:0.0} mm";
+            IsSavePresetDialogOpen = true;
+        }
+
+        [RelayCommand]
+        public void CloseSavePresetDialog()
+        {
+            IsSavePresetDialogOpen = false;
+        }
+
+        [RelayCommand]
+        public async Task ConfirmSavePresetAsync()
+        {
+            if (string.IsNullOrWhiteSpace(CustomPresetName))
+            {
+                StatusMessage = "Please enter a valid name for the custom layout preset.";
+                return;
+            }
+
+            try
+            {
+                var template = new CardTemplate
+                {
+                    TemplateId = "custom_" + Guid.NewGuid().ToString("N")[..8],
+                    DisplayName = CustomPresetName.Trim(),
+                    Category = "CUSTOM_PRESETS",
+                    DocumentType = "CUSTOM",
+                    Faces = new CardFaces
+                    {
+                        Front = new FaceDefinition
+                        {
+                            SourcePage = 0,
+                            CropRectMm = new MillimeterRect
+                            {
+                                X = 15.0,
+                                Y = 15.0,
+                                Width = CustomCardWidthMm,
+                                Height = CustomCardHeightMm
+                            }
+                        },
+                        Back = new FaceDefinition
+                        {
+                            SourcePage = 0,
+                            CropRectMm = new MillimeterRect
+                            {
+                                X = 15.0 + CustomCardWidthMm + 8.8,
+                                Y = 15.0,
+                                Width = CustomCardWidthMm,
+                                Height = CustomCardHeightMm
+                            }
+                        }
+                    }
+                };
+
+                await _templateService.SaveCustomTemplateAsync(template);
+                LoadTemplateOptions();
+
+                var match = TemplateOptions.FirstOrDefault(o => o.TemplateId == template.TemplateId);
+                if (match != null)
+                {
+                    SelectedTemplateOption = match;
+                }
+
+                IsSavePresetDialogOpen = false;
+                BuildPhysicalSheetLayout();
+                StatusMessage = $"✓ Successfully saved custom layout preset '{template.DisplayName}' ({CustomCardWidthMm:0.0}×{CustomCardHeightMm:0.0} mm).";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Failed to save custom preset: {ex.Message}";
+            }
         }
 
         [RelayCommand]

@@ -16,9 +16,11 @@
     <sys:String x:Key="NavPageDesigner">பக்க வடிவமைப்பு (Page Designer)</sys:String>
     <sys:String x:Key="NavPhotoStudio">புகைப்பட அரங்கு</sys:String>
     <sys:String x:Key="NavDocProcessing">ஆவண சீரமைப்பு</sys:String>
-    <sys:String x:Key="NavBatch">மொத்த அச்சிடுதல்</sys:String>
+    <sys:String x:Key="NavBatch">மொத்த அச்சிடுதல் (Batch)</sys:String>
+    <sys:String x:Key="NavBatchProcessing">மொத்த அச்சிடுதல் (Batch)</sys:String>
     <sys:String x:Key="NavPrintCenter">அச்சு மையம்</sys:String>
     <sys:String x:Key="NavPrinterTray">அச்சுப்பொறி &amp; தட்டு மேலாளர்</sys:String>
+    <sys:String x:Key="NavPrinterTrayManager">அச்சுப்பொறி &amp; தட்டு மேலாளர்</sys:String>
     <sys:String x:Key="NavCalibration">தட்டு அளவுத்திருத்தம்</sys:String>
     <sys:String x:Key="NavTemplates">அட்டை வார்ப்புருக்கள்</sys:String>
     <sys:String x:Key="NavBusinessProfile">வணிக சுயவிவரம்</sys:String>
